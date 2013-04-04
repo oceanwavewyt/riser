@@ -33,7 +33,7 @@ private:
 	int ServerSocket();
 public:
     int Init();
-	void Run(int count=1);
+	int Run(int count=1);
 	int Register(int key, GentBasic *app);
 	void Destory();
 	int GetModule(GentBasic *&app, int cmd);

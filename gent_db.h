@@ -24,7 +24,7 @@ public:
 public:
     bool Init(string &err);
     bool Put(string &key, string &value);
-    bool Get(string &key,string &key);
+    bool Get(string &key,string &value);
     void del();
 public:
 	static GentDb *Instance();

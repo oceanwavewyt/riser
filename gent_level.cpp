@@ -66,8 +66,9 @@ int GentLevel::CommandWord() {
     if(ntokens == 3 && memcmp(token[0].value, "get",3) == 0) {
         LOG(GentLog::INFO, "the command is get and the key is %s", token[1].value);
 		commandtype = CommandType::COMM_GET;
-        AssignVal(token);
-        conn->SetStatus(Status::CONN_DATA);
+        //AssignVal(token);
+        keystr = token[1].value;
+		conn->SetStatus(Status::CONN_DATA);
         return 0;                                                                 
     }else if(ntokens == 6 && memcmp(token[0].value, "set",3) == 0) {
 		LOG(GentLog::INFO, "the command is set and the key is %s", token[1].value);

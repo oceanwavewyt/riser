@@ -70,7 +70,7 @@ int GentFrame::Socket() {
 int GentFrame::ServerSocket()  {
 	struct sockaddr_in addr;
 	int fd;
-	int port = 3555;
+	int port = atoi(config["port"].c_str());
 	if((fd = Socket()) == -1) {
 		return -1;
 	}
@@ -92,8 +92,11 @@ int GentFrame::ServerSocket()  {
 	return fd;
 }
 
-void GentFrame::Run(int count) {
+int GentFrame::Run(int count) {
     int fd = ServerSocket();
+	if(fd == 0) {
+		return -1;
+	}
 //	string ip="127.0.0.1";
 //	unsigned int port=10;
 	GentConnect *conn = new GentConnect(fd);
