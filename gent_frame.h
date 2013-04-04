@@ -10,6 +10,7 @@
 #include "prefine.h"
 #include "gent_event.h"
 #include "gent_msg.h"
+#include "gent_config.h"
 class GentBasic;
 
 class GentFrame
@@ -20,6 +21,7 @@ private:
 	static GentFrame *instance_;
 public:
 	GENT_MSG_CONNECT msg_;
+    GentConfig config;
 public:
 	GentFrame();
 	~GentFrame();

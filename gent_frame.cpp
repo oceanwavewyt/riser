@@ -38,6 +38,7 @@ GentFrame::~GentFrame() {
 
 int GentFrame::Init()
 {
+    config.Parse("riser.conf");
     //config info
     string msg;
     if(!GentDb::Instance()->Init(msg))

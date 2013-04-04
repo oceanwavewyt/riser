@@ -11,6 +11,7 @@
 
 class GentConfig {
 	static GentConfig *instance_;
+public:
 	static GentConfig *Instance();
 	static void Unstance();
 private:
@@ -20,6 +21,8 @@ public:
 	~GentConfig();
 	void set(string &,string &);
 	string &operator [](const string &key);
+    void Parse(const string &filename);
 };
+
 
 #endif /* GENT_CONFIG_CPP_ */

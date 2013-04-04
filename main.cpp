@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include "gent_frame.h"
+#include "gent_config.h"
 
 int main(int argc, const char * argv[])
 {
@@ -19,6 +20,10 @@ int main(int argc, const char * argv[])
         std::cout << "init fail!\n";
         return 1;
     }
+    std::cout << GentFrame::Instance()->config["abc"] << endl;
+    GentFrame::Instance()->config["abc"] = "test";
+     std::cout << GentFrame::Instance()->config["abc"] << endl;
+    return 0;
     GentFrame::Instance()->Run(10);
     return 0;
 }

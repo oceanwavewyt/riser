@@ -34,11 +34,12 @@
 #include <vector>
 using namespace std;
 
-#define LOGBUFSIZE	2048
-#define LINEBUFSIZE	4096
+const uint32_t LOGBUFSIZE = 2048;
+const uint32_t LINEBUFSIZE = 4096;
+
+
+
 //LOG
-
-
 
 struct GentLog
 {

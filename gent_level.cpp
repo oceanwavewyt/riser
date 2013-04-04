@@ -61,7 +61,7 @@ int GentLevel::CommandWord() {
     int maxtoken = 10;                                                            
     token_t token[maxtoken];                                                      
                                                                                   
-    int ntokens = TokenCommand(rbuf, token, maxtoken);      
+    uint8_t ntokens = TokenCommand(rbuf, token, maxtoken);
     LOG(GentLog::INFO, "the number of tokens is %d.", ntokens);
     if(ntokens == 3 && memcmp(token[0].value, "get",3) == 0) {
         LOG(GentLog::INFO, "the command is get and the key is %s", token[1].value);
