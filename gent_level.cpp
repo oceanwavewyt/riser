@@ -124,8 +124,20 @@ int GentLevel::ParseCommand() {
     return 1;                                            
 }                                                        
 
+int GentLevel::ParseCommand2(const string &str) {
+	if(str.size() == 0) return 0;
+	int pos = str.find_first_of("\n");
+	if(pos == string::npos) return 0;
+	string commandStr = str.substr(0, pos);	
+	cout << "string commandStr: "<< commandStr <<endl;
+	return 1;
+}
+
 int GentLevel::Process(string &outstr) {
 	 rcurr =  rbuf;
+	if(rbytes>0) {
+		ParseCommand2(string(rbuf, rbytes));
+	}
 	//rbytes = blen;
 	if(!ParseCommand()) {
 		outstr = "ERROR\r\n";
