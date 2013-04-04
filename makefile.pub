@@ -1,0 +1,21 @@
+CC:=g++
+CXX:=g++
+DEBUG=DEBUG
+OUTPUTNAME:=gentle
+OUTPATH=output
+ROOT=./
+INCLUDES += -I$(ROOT) -I/usr/include/ -L/lib/
+
+LDFLAGS += -lpthread -levent -lleveldb
+CPPFLAGS += -fPIC -pg -Wall
+
+objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+
+.PHONY: all clean
+all: $(OBJNAME)
+
+%.o:%.cpp
+	$(CXX) $(CPPFLAGS) -c $< -o $@ $(INCLUDES) -D$(DEBUG)
+
+clean:
+	-rm -f $(OUTPUTNAME) $(objects)
