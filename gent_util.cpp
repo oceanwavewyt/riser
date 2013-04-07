@@ -22,3 +22,15 @@ void GentUtil::AssignVal(const char *str, string &outstr, int len) {
     outstr.assign(str,0,len);
 }
 
+string GentUtil::LTrim(const string& str) {
+    return str.substr(str.find_first_not_of(" \n\r\t"));
+}
+
+string GentUtil::RTrim(const string& str) {
+    return str.substr(0,str.find_last_not_of(" \n\r\t")+1);
+}
+
+string GentUtil::Trim(const string& str) {
+    return LTrim(RTrim(str));
+}
+

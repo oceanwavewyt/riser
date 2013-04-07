@@ -11,13 +11,37 @@ GentLevel::GentLevel(GentConnect *c):GentCommand(c)
 GentLevel::~GentLevel()
 {}
 
+void GentLevel::Split(const string &str, const string &delimit) {
+    vector<string> v;
+    int pos,last_pos=0;
+    while((pos = str.find_first_of(delimit,last_pos)) != string::npos){
+        if(pos == last_pos){
+            last_pos++;
+            cout << "last_pos1: " << last_pos << endl;
+        }else{
+            v.push_back(str.substr(last_pos, pos-last_pos));
+            last_pos = pos+1;
+            cout << "last_pos2: " << last_pos << endl;
+        }
+    }
+    cout << "str.size(): " << str.size() << "last_pos: " << last_pos << endl;
+    if(str.size()!=last_pos){
+        string curstr = str.substr(last_pos);
+        cout<< "curstr: "<< endl;
+        v.push_back(curstr);
+    }
+    vector<string>::iterator iter;
+    for(iter=v.begin(); iter!=v.end();iter++){
+        cout<<"split: " <<  *iter << endl;
+    }
+}
 size_t GentLevel::TokenCommand(char *command, token_t *tokens, const size_t max_tokens)
 {
     char *s, *e;                                                                                   
     size_t ntokens = 0;                                                                            
     size_t len = strlen(command);                                                                  
     unsigned int i = 0;                                                                            
-                                                                                                   
+    Split(string(command,strlen(command)), " ");
     assert(command != NULL && tokens != NULL && max_tokens > 1);                                   
                                                                                                    
     s = e = command;                                                                               
@@ -60,7 +84,7 @@ size_t GentLevel::TokenCommand(char *command, token_t *tokens, const size_t max_
 int GentLevel::CommandWord() {
     int maxtoken = 10;                                                            
     token_t token[maxtoken];                                                      
-                                                                                  
+
     uint8_t ntokens = TokenCommand(rbuf, token, maxtoken);
     LOG(GentLog::INFO, "the number of tokens is %d.", ntokens);
     if(ntokens == 3 && memcmp(token[0].value, "get",3) == 0) {

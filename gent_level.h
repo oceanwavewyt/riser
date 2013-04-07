@@ -55,6 +55,7 @@ private:
    size_t TokenCommand(char *command, token_t *tokens, const size_t max_tokens);
    int ParseCommand();
    int ParseCommand2(const string &str);
+    void Split(const string &str, const string &delimit);
    int CommandWord();
    void AssignVal(token_t *tokens);
     void ProcessGet(string &);
