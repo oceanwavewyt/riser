@@ -7,13 +7,13 @@
 GentLevel::GentLevel(GentConnect *c):GentCommand(c)
 {
   keystr = "";
-  remains = 0;
 }
 GentLevel::~GentLevel()
 {}
 
-uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string> &v) {
-    uint64_t pos,last_pos=0;
+uint8_t GentLevel::Split(const string &str, const string &delimit) {
+    vector<string> v;
+    int pos,last_pos=0;
 	uint8_t num = 0;
     while((pos = str.find_first_of(delimit,last_pos)) != string::npos){
         if(pos == last_pos){
@@ -45,6 +45,7 @@ size_t GentLevel::TokenCommand(char *command, token_t *tokens, const size_t max_
     size_t ntokens = 0;                                                                            
     size_t len = strlen(command);                                                                  
     unsigned int i = 0;                                                                            
+    uint8_t clength = Split(string(command,strlen(command)), " ");
     assert(command != NULL && tokens != NULL && max_tokens > 1);                                   
                                                                                                    
     s = e = command;                                                                               
@@ -84,47 +85,47 @@ size_t GentLevel::TokenCommand(char *command, token_t *tokens, const size_t max_
     return ntokens;                                                         
 }
 
-int GentLevel::CommandWord(string &data) {
-   // int maxtoken = 10;                                                            
-   // token_t token[maxtoken];                                                      
-	
-	vector<string> tokenList;
-	uint8_t clength = Split(data, " ", tokenList);
-	LOG(GentLog::INFO, "tokenList clength: %d", clength);
-	if(clength == 2 && tokenList[0] == "get") {
-		LOG(GentLog::INFO, "tokenList get");
+int GentLevel::CommandWord() {
+    int maxtoken = 10;                                                            
+    token_t token[maxtoken];                                                      
+
+    uint8_t ntokens = TokenCommand(rbuf, token, maxtoken);
+    LOG(GentLog::INFO, "the number of tokens is %d.", ntokens);
+    if(ntokens == 3 && memcmp(token[0].value, "get",3) == 0) {
+        LOG(GentLog::INFO, "the command is get and the key is %s", token[1].value);
 		commandtype = CommandType::COMM_GET;
-        keystr = tokenList[1];
+        //AssignVal(token);
+        keystr = token[1].value;
 		conn->SetStatus(Status::CONN_DATA);
-		return 0;
-	}else if(clength == 5 && tokenList[0] == "set") {
-	    LOG(GentLog::INFO, "the command is set and the key is %s", tokenList[1].c_str());
-        keystr = tokenList[1];
-		commandtype = CommandType::COMM_SET;
+        return 0;                                                                 
+    }else if(ntokens == 6 && memcmp(token[0].value, "set",3) == 0) {
+		LOG(GentLog::INFO, "the command is set and the key is %s", token[1].value);
+        commandtype = CommandType::COMM_SET;
+        AssignVal(token);
         conn->SetStatus(Status::CONN_NREAD);
         int vlen;                                                                 
-        if(!GentUtil::SafeStrtol(tokenList[4].c_str(), (int32_t *)&vlen)) {
+        if(!GentUtil::SafeStrtol(token[4].value, (int32_t *)&vlen)) {
             LOG(GentLog::WARN, "the length of set's command  is failed");
             return -1;                                                             
         }
-		LOG(GentLog::INFO, "need read the lenth of client's data is %d,and the key is %s", vlen, tokenList[1].c_str());
+		LOG(GentLog::INFO, "need read the lenth of client's data is %d,and the key is %s", vlen, token[1].value);
         rlbytes = vlen+2;
-        return rlbytes-remains;
-        return rlbytes; 
-	}else if(clength == 2 && tokenList[0] == "del") {
-		LOG(GentLog::INFO, "the command is del and the key is %s", tokenList[1].c_str());
+        return rlbytes;                                           
+    }else if(ntokens == 3 && memcmp(token[0].value, "del",3) == 0) {
+		LOG(GentLog::INFO, "the command is del and the key is %s", token[1].value);
         commandtype = CommandType::COMM_DEL;
-        //AssignVal(token);
-        keystr = tokenList[1];
+        AssignVal(token);
         conn->SetStatus(Status::CONN_DATA);
-        return 0; 
-	}else if(clength == 1 && tokenList[0] == "quit") {
+        return 0;                                           
+    }else if(ntokens == 2 && memcmp(token[0].value, "quit",4) == 0) {
 		LOG(GentLog::INFO, "the command is quit");
         commandtype = CommandType::COMM_QUIT;
         conn->SetStatus(Status::CONN_CLOSE);
-        return 0; 
-	}
-	return -1;	
+        return 0;                                           
+    }
+                                                            
+    return -1;                                               
+ 
 }
 
 int GentLevel::ParseCommand() {
@@ -153,34 +154,24 @@ int GentLevel::ParseCommand() {
 
 int GentLevel::ParseCommand2(const string &str) {
 	if(str.size() == 0) return 0;
-	uint64_t pos = str.find_first_of("\n");
+	int pos = str.find_first_of("\n");
 	if(pos == string::npos) return 0;
 	string commandStr = str.substr(0, pos);	
-	content = "";
-	remains = str.size()-pos-1;
-	content.assign(str.substr(pos+1,remains));
 	cout << "string commandStr: "<< commandStr <<endl;
 	return 1;
 }
 
-int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
-	// rcurr =  rbuf;
-	if(size <=0 ) {	
-		outstr = "ERROR\r\n";
-		return 0;
+int GentLevel::Process(string &outstr) {
+	 rcurr =  rbuf;
+	if(rbytes>0) {
+		ParseCommand2(string(rbuf, rbytes));
 	}
-	string data = string(rbuf, size);
-	if(!ParseCommand2(data)) {
+	//rbytes = blen;
+	if(!ParseCommand()) {
 		outstr = "ERROR\r\n";
 		return 0;	
 	}
-	
-	//rbytes = blen;
-	//if(!ParseCommand()) {
-	//	outstr = "ERROR\r\n";
-	//	return 0;	
-	//}
-	int cword = CommandWord(data);
+	int cword = CommandWord();
     if(cword < 0) {
         outstr = "CLIENT ERROR\r\n";
         return 0;
@@ -205,7 +196,7 @@ void GentLevel::ProcessGet(string &outstr)
     outstr += nr+"\r\nEND\r\n";
 }
 
-void GentLevel::Complete(string &outstr, const char *recont)
+void GentLevel::Complete(string &outstr)
 {
 	switch(commandtype)
 	{
@@ -215,19 +206,7 @@ void GentLevel::Complete(string &outstr, const char *recont)
 			break;	
 		case CommandType::COMM_SET:
 			//NOT_STORED
-			
 			LOG(GentLog::WARN, "commandtype::comm_set");
-			content += recont;
-			cout << "content:  " << content << endl;
-			if(content.substr(rlbytes-2,2)!="\r\n") {
-				outstr = "CLIENT_ERROR bad data chunk\r\n";
-			}else{
-				outstr = "STORED\r\n";
-			}
-		
-/*	
-			break;
-	
 			if (strncmp(content+rlbytes-2, "\r\n", 2) != 0) {
 				outstr = "CLIENT_ERROR bad data chunk\r\n";
 			}else{
@@ -241,7 +220,6 @@ void GentLevel::Complete(string &outstr, const char *recont)
                     outstr = "STORED\r\n";
                 }
 			}
-*/
 			break;
 		case CommandType::COMM_QUIT:
 			break;

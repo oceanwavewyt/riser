@@ -32,6 +32,15 @@ class GentConnect
     int clen;
     GentCommand *comm;	    
     char *rbuf;
+
+    char *rcurr;
+    char *content;
+    char *rcont;
+    int rsize;
+    int rbytes;
+
+
+
     int curstatus;
 	int remainsize;
 public:
