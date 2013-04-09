@@ -28,7 +28,7 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
     }
     cout << "str.size(): " << str.size() << "last_pos: " << last_pos << endl;
     if(str.size()!=last_pos){
-        string curstr = str.substr(last_pos);
+        string curstr = str.substr(last_pos, str.find("\r\n",last_pos)-last_pos);
         cout<< "curstr: "<< endl;
         v.push_back(curstr);
 		num++;
@@ -84,12 +84,12 @@ size_t GentLevel::TokenCommand(char *command, token_t *tokens, const size_t max_
     return ntokens;                                                         
 }
 
-int GentLevel::CommandWord(string &data) {
+int GentLevel::CommandWord() {
    // int maxtoken = 10;                                                            
    // token_t token[maxtoken];                                                      
 	
 	vector<string> tokenList;
-	uint8_t clength = Split(data, " ", tokenList);
+	uint8_t clength = Split(commandstr, " ", tokenList);
 	LOG(GentLog::INFO, "tokenList clength: %d", clength);
 	if(clength == 2 && tokenList[0] == "get") {
 		LOG(GentLog::INFO, "tokenList get");
@@ -155,11 +155,11 @@ int GentLevel::ParseCommand2(const string &str) {
 	if(str.size() == 0) return 0;
 	uint64_t pos = str.find_first_of("\n");
 	if(pos == string::npos) return 0;
-	string commandStr = str.substr(0, pos);	
+	commandstr = str.substr(0, pos);
 	content = "";
-	remains = str.size()-pos-1;
+	remains = str.size()-pos;
 	content.assign(str.substr(pos+1,remains));
-	cout << "string commandStr: "<< commandStr <<endl;
+	cout << "string commandStr: "<< commandstr <<endl;
 	return 1;
 }
 
@@ -180,7 +180,7 @@ int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
 	//	outstr = "ERROR\r\n";
 	//	return 0;	
 	//}
-	int cword = CommandWord(data);
+	int cword = CommandWord();
     if(cword < 0) {
         outstr = "CLIENT ERROR\r\n";
         return 0;
@@ -215,9 +215,10 @@ void GentLevel::Complete(string &outstr, const char *recont)
 			break;	
 		case CommandType::COMM_SET:
 			//NOT_STORED
-			
+			//cout << "content1:  " << content << endl;
 			LOG(GentLog::WARN, "commandtype::comm_set");
-			content += recont;
+            //cout << "recont:  " << recont << endl;
+			//content += recont;
 			cout << "content:  " << content << endl;
 			if(content.substr(rlbytes-2,2)!="\r\n") {
 				outstr = "CLIENT_ERROR bad data chunk\r\n";

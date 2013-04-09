@@ -48,7 +48,8 @@ class GentLevel : public GentCommand
    
    int 	  commandtype; 
    string keystr;
-   string content;    
+   string content;
+   string commandstr;
 public:
     GentLevel(GentConnect *c);
     ~GentLevel();
@@ -57,7 +58,7 @@ private:
    int ParseCommand();
    int ParseCommand2(const string &str);
    uint8_t Split(const string &str, const string &delimit, vector<string> &v);
-   int CommandWord(string &data);
+   int CommandWord();
    void AssignVal(token_t *tokens);
     void ProcessGet(string &);
 public:

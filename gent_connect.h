@@ -58,6 +58,8 @@ private:
     int InitRead(int &rbytes);
 	void ResetConnect(); 
 	int NextRead();
+    void Init();
+    void Reset();
 };
 
 #endif

@@ -18,23 +18,39 @@ GentConnect::GentConnect(int sfd)
     //configure info
     comm = new GentLevel(this);
     curstatus = Status::CONN_READ;
-	   
-	rsize = GentCommand::READ_BUFFER_SIZE;
-    cout << "rsize: " << rsize << endl;
-	rcurr = NULL;
-    rbuf = (char *)malloc(rsize);
-    memset(rbuf,0,rsize);                 
+	Init();
 }
 
 GentConnect::~GentConnect()
 {
     close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);
+    if(rbuf) {
+        free(rbuf);
+    }
     if(comm) {
-        if(comm->rbuf)
-            free(comm->rbuf);
         delete comm;
     }
+}
+
+void GentConnect::Init() {
+    rsize = GentCommand::READ_BUFFER_SIZE;
+    cout << "rsize: " << rsize << endl;
+	rcurr = NULL;
+    content = NULL;
+    rbuf = (char *)malloc(rsize);
+    memset(rbuf,0,rsize);
+}
+
+void GentConnect::Reset() {
+    comm->Reset();
+    if(rbuf) {
+        free(rbuf);
+    }
+    if(content) {
+        free(content);
+    }
+    Init();
 }
 
 int GentConnect::TryRunning(string &outstr) {
@@ -48,17 +64,17 @@ int GentConnect::TryRunning(string &outstr) {
         switch(curstatus) {
             case Status::CONN_READ:
                 readNum = InitRead(rbytes);
-		LOG(GentLog::INFO, "init read the number of byte is %d.", readNum);	
+                LOG(GentLog::INFO, "init read the number of byte is %d.", readNum);
                 if(readNum < 0) {
-		    LOG(GentLog::WARN, "init read the number of byte less than zero");
+                    LOG(GentLog::WARN, "init read the number of byte less than zero");
                     outstr = "read error\r\n";
                     //printf("read error num:%d\n",readNum);
-                    comm->Reset();
+                    Reset();
                     return readNum;
                 }else if(readNum == 0) {                                
                     return readNum;
                 }
-				cout <<"rbtyes:" << rbytes << " return rbuf: "<< rbuf << endl;
+				//cout <<"rbtyes:" << rbytes << " return rbuf: "<< rbuf << endl;
                 remainsize = comm->Process(rbuf, rbytes, outstr);
                  if(!remainsize && outstr != "") {
                     //
@@ -68,11 +84,11 @@ int GentConnect::TryRunning(string &outstr) {
             case Status::CONN_NREAD:
                 //OutString("ok\r\n"); 
                 LOG(GentLog::INFO, "start conn_nread remainsize:%d",remainsize);
-				//if(!comm->content) {
+				if(!content) {
                     new_rbuf = (char *)malloc(remainsize);
                     memset(new_rbuf,0,remainsize);
                     rcont = content = new_rbuf;
-                //}
+                }
                 if(NextRead() == -1) {
                     stop = 1;
                     break;		
@@ -80,7 +96,7 @@ int GentConnect::TryRunning(string &outstr) {
                 break;
             case Status::CONN_DATA:
                 outstr = "";
-                comm->Complete(outstr,"");
+                comm->Complete(outstr,content);
                 curstatus = Status::CONN_WRITE;	
                 break;
             case Status::CONN_WRITE:
@@ -90,7 +106,7 @@ int GentConnect::TryRunning(string &outstr) {
             case Status::CONN_WAIT:
 				LOG(GentLog::INFO, "the status of %d is connect wait", fd);
                 remainsize = 0;
-                comm->Reset();
+                Reset();
                 //GentEvent::Instance()->UpdateEvent(fd, this);
                 gevent->UpdateEvent(fd, this);
                 curstatus = Status::CONN_READ;
@@ -122,8 +138,7 @@ int GentConnect::InitRead(int &rbytes) {
                 rbytes = 0; /* ignore what we read */
                 return -2;                                               
             } 
-            rbuf = new_rbuf;
- //           c->rcurr = c->rbuf = new_rbuf;                               
+            rbuf = new_rbuf;                               
             rsize *= 2;
         }                                                                
                                                                          
