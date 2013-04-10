@@ -10,14 +10,14 @@
 
 GentAppMgr *GentAppMgr::intance_ = NULL;
 
-GentAppMgr *GentAppMgr::Intance() {
+GentAppMgr *GentAppMgr::Instance() {
 	if(intance_ == NULL) {
 		intance_ = new GentAppMgr();
 	}
 	return intance_;
 }
 
-void GentAppMgr::UnIntance() {
+void GentAppMgr::UnInstance() {
 	if(intance_) delete intance_;
 }
 
@@ -73,3 +73,27 @@ int GentAppMgr::SetModule(int cmd, GentBasic *&app)
 	return 0;
 }
 
+void GentAppMgr::SetPlugin(GentCommand *command) 
+{
+	plus = command;	
+}
+       
+bool GentAppMgr::Init()
+{
+	return true;
+}
+
+GentCommand *GentAppMgr::GetCommand(int id)
+{
+	GentCommand *p = plus->Clone();	
+	plus_mgr[id] = p;
+	return p;		
+}
+
+void GentAppMgr::Destroy(int id)
+{
+	PLUGIN::iterator iter = plus_mgr.find(id);
+	if(iter != plus_mgr.end()){
+		delete plus_mgr[id];	
+	}
+}

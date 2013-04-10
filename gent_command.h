@@ -25,11 +25,12 @@ public:
 public:
     GentCommand(GentConnect *c);
     ~GentCommand();
-    void Init();
 public:
     virtual int Process(const char *rbuf, uint64_t size, string &outstr) = 0;
     virtual void Complete(string &outstr, const char *recont, uint64_t len) = 0;
-    virtual void Reset();
+    virtual GentCommand *Clone() = 0;
+	virtual bool Init(string &msg) = 0;
+	virtual void Reset();
 public:
     static const int READ_BUFFER_SIZE = 1024;
 };

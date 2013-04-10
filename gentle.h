@@ -21,8 +21,5 @@ public:
 	virtual GentBasic *CloneProccess() = 0;
 };
 
-#define REGISTER_COMMAND(p, cmd, LogicModule) \
-	p = new LogicModule(); \
-	GentFrame::Instance()->Register(cmd, p);
 
 #endif /* GENTLE_H_ */

@@ -9,7 +9,7 @@
 #include "gent_frame.h"
 #include "gent_app_mgr.h"
 #include "gent_thread.h"
-#include "gent_db.h"
+#include "gent_level.h"
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -41,11 +41,16 @@ int GentFrame::Init()
     config.Parse("riser.conf");
     //config info
     string msg;
+	GentLevel *p;
+	REGISTER_COMMAND(p, GentLevel);
+	p->Init(msg);
+/*
     if(!GentDb::Instance()->Init(msg))
     {
         LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
         return false;
     }
+*/
     return true;
 
 }
@@ -117,7 +122,7 @@ int GentFrame::Register(int key, GentBasic *app) {
 		return 0;
 	}
 	modules_[key] = app;
-	GentAppMgr::Intance()->Register(key,app);
+	GentAppMgr::Instance()->Register(key,app);
 	return 0;
 }
 

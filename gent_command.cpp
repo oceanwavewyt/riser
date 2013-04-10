@@ -3,7 +3,7 @@
 GentCommand::GentCommand(GentConnect *c)
 {
     conn = c;
-    Init();
+    //Init();
 }
 
 GentCommand::~GentCommand()
@@ -11,13 +11,7 @@ GentCommand::~GentCommand()
 
 }
 
-void GentCommand::Init()
-{
-    rsize = GentCommand::READ_BUFFER_SIZE;
-    rcurr = NULL;
-    rbuf = (char *)malloc(rsize);
-    memset(rbuf,0,rsize);
-}
+
 
 void GentCommand::Reset()
 {

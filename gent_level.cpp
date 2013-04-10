@@ -159,6 +159,19 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 	}		
 
 }
+GentCommand *GentLevel::Clone()
+{
+	return new GentLevel();
+}
+bool GentCommand::Init(string &msg)
+{
+   if(!GentDb::Instance()->Init(msg))
+   {
+       LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
+       return false;
+   }
+   return true;
+}
 
 void GentLevel::AssignVal(token_t *tokens)
 {

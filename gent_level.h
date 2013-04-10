@@ -51,7 +51,7 @@ class GentLevel : public GentCommand
    string content;
    string commandstr;
 public:
-    GentLevel(GentConnect *c);
+    GentLevel(GentConnect *c=NULL);
     ~GentLevel();
 private:
    size_t TokenCommand(char *command, token_t *tokens, const size_t max_tokens);
@@ -59,11 +59,13 @@ private:
    uint8_t Split(const string &str, const string &delimit, vector<string> &v);
    int CommandWord();
    void AssignVal(token_t *tokens);
-    void ProcessGet(string &);
+   void ProcessGet(string &);
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	
    void Complete(string &outstr, const char *, uint64_t);
+   GentCommand *Clone();
    int GetStatus();
+   bool Init(string &msg);
 };
 
 

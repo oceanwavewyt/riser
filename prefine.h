@@ -32,6 +32,8 @@
 #include <map>
 #include <iostream>
 #include <vector>
+#include "gent_app_mgr.h"
+
 using namespace std;
 
 const uint32_t LOGBUFSIZE = 2048;
@@ -50,7 +52,9 @@ public:
 
 #define LOG(level, args...)  GentLog::write(level, __FILE__, __LINE__, __func__, args)
 
-
+#define REGISTER_COMMAND(p, LogicModule) \
+			p = new LogicModule(); \
+			GentAppMgr::Instance()->SetPlugin(p); 
 
 
 #endif /* PREFINE_H_ */
