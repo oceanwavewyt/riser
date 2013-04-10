@@ -35,15 +35,15 @@ class GentLevel : public GentCommand
 {
   // char   *rcurr;  /** but if we parsed some already, this is where we stopped */
    
-   char   *wbuf;
-   char   *wcurr;
-   int    wsize;
-   int    wbytes;
+//   char   *wbuf;
+//   char   *wcurr;
+//   int    wsize;
+//   int    wbytes;
    /** which state to go into after finishing current write */
    //void   *write_and_free; /** free this memory after finishing writing */
    
-   char   *ritem;  /** when we read in an item's value, it goes here */
-   int    rlbytes;
+//   char   *ritem;  /** when we read in an item's value, it goes here */
+   uint64_t  rlbytes;
    int 	  remains;	
    
    int 	  commandtype; 
@@ -63,7 +63,7 @@ private:
     void ProcessGet(string &);
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	
-   void Complete(string &outstr, const char *);
+   void Complete(string &outstr, const char *, uint64_t);
    int GetStatus();
 };
 

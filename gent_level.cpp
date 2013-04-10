@@ -154,17 +154,15 @@ int GentLevel::ParseCommand() {
 int GentLevel::ParseCommand2(const string &str) {
 	if(str.size() == 0) return 0;
 	uint64_t pos = str.find_first_of("\n");
-	if(pos == string::npos) return 0;
+	if(pos == string::npos || pos == 0) return 0;
 	commandstr = str.substr(0, pos);
 	content = "";
-	remains = str.size()-pos;
+	remains = str.size()-pos-1;
 	content.assign(str.substr(pos+1,remains));
-	cout << "string commandStr: "<< commandstr <<endl;
 	return 1;
 }
 
 int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
-	// rcurr =  rbuf;
 	if(size <=0 ) {	
 		outstr = "ERROR\r\n";
 		return 0;
@@ -205,23 +203,25 @@ void GentLevel::ProcessGet(string &outstr)
     outstr += nr+"\r\nEND\r\n";
 }
 
-void GentLevel::Complete(string &outstr, const char *recont)
+void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 {
 	switch(commandtype)
 	{
 		case CommandType::COMM_GET:
 			//NOT_FOUND
-            		ProcessGet(outstr);
+            ProcessGet(outstr);
 			break;	
 		case CommandType::COMM_SET:
 			//NOT_STORED
-			//cout << "content1:  " << content << endl;
 			LOG(GentLog::WARN, "commandtype::comm_set");
-            //cout << "recont:  " << recont << endl;
-			//content += recont;
-			cout << "content:  " << content << endl;
+			content += string(recont,len);
+			//cout << "content:  " << content << endl;
+			cout << "rlbytes: " << rlbytes << endl;
+			cout << "recont len: " << len << endl;
+			cout << "content len: " << content.size() << endl;
 			if(content.substr(rlbytes-2,2)!="\r\n") {
 				outstr = "CLIENT_ERROR bad data chunk\r\n";
+				 LOG(GentLog::WARN, "CLIENT_ERROR bad data chunk");
 			}else{
 				outstr = "STORED\r\n";
 			}

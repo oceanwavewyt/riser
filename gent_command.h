@@ -19,7 +19,6 @@ protected:
 public:
     char *rbuf;
     char *rcurr;
-//	char *content;
 	char *rcont;
     int rsize;
     int rbytes;
@@ -29,7 +28,7 @@ public:
     void Init();
 public:
     virtual int Process(const char *rbuf, uint64_t size, string &outstr) = 0;
-    virtual void Complete(string &outstr, const char *recont);
+    virtual void Complete(string &outstr, const char *recont, uint64_t len) = 0;
     virtual void Reset();
 public:
     static const int READ_BUFFER_SIZE = 1024;

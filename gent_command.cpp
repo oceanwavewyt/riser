@@ -19,9 +19,6 @@ void GentCommand::Init()
     memset(rbuf,0,rsize);
 }
 
-void GentCommand::Complete(string &outstr, const char *recont)
-{}
-
 void GentCommand::Reset()
 {
 /*

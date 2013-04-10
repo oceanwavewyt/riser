@@ -38,6 +38,7 @@ void GentConnect::Init() {
     cout << "rsize: " << rsize << endl;
 	rcurr = NULL;
     content = NULL;
+	actualsize = 0;
     rbuf = (char *)malloc(rsize);
     memset(rbuf,0,rsize);
 }
@@ -85,6 +86,7 @@ int GentConnect::TryRunning(string &outstr) {
                 //OutString("ok\r\n"); 
                 LOG(GentLog::INFO, "start conn_nread remainsize:%d",remainsize);
 				if(!content) {
+					LOG(GentLog::INFO, "conten malloc");
                     new_rbuf = (char *)malloc(remainsize);
                     memset(new_rbuf,0,remainsize);
                     rcont = content = new_rbuf;
@@ -96,7 +98,7 @@ int GentConnect::TryRunning(string &outstr) {
                 break;
             case Status::CONN_DATA:
                 outstr = "";
-                comm->Complete(outstr,content);
+                comm->Complete(outstr,content, actualsize);
                 curstatus = Status::CONN_WRITE;	
                 break;
             case Status::CONN_WRITE:
@@ -205,7 +207,8 @@ int GentConnect::NextRead() {
 	res = read(fd, rcont, remainsize);
 	if (res > 0) {
 		rcont += res;                                             
-		remainsize -= res;                                           
+		remainsize -= res;
+		actualsize += res;                                           
 		return 0;                                  
 	}                                                                
 	if (res == 0) { /* end of stream */                             

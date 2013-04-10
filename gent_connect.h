@@ -43,6 +43,7 @@ class GentConnect
 
     int curstatus;
 	int remainsize;
+	uint64_t actualsize;
 public:
     struct event ev;
     GentEvent *gevent;
