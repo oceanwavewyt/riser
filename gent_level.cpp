@@ -159,11 +159,11 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 	}		
 
 }
-GentCommand *GentLevel::Clone()
+GentCommand *GentLevel::Clone(GentConnect *connect)
 {
-	return new GentLevel();
+	return new GentLevel(connect);
 }
-bool GentCommand::Init(string &msg)
+bool GentLevel::Init(string &msg)
 {
    if(!GentDb::Instance()->Init(msg))
    {

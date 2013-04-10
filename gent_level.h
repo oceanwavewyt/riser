@@ -63,7 +63,7 @@ private:
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	
    void Complete(string &outstr, const char *, uint64_t);
-   GentCommand *Clone();
+   GentCommand *Clone(GentConnect *);
    int GetStatus();
    bool Init(string &msg);
 };

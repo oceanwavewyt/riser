@@ -80,12 +80,16 @@ void GentAppMgr::SetPlugin(GentCommand *command)
        
 bool GentAppMgr::Init()
 {
+    string msg;
+    if(plus->Init(msg)) {
+        return false;
+    }
 	return true;
 }
 
-GentCommand *GentAppMgr::GetCommand(int id)
+GentCommand *GentAppMgr::GetCommand(GentConnect *connect,int id)
 {
-	GentCommand *p = plus->Clone();	
+	GentCommand *p = plus->Clone(connect);
 	plus_mgr[id] = p;
 	return p;		
 }

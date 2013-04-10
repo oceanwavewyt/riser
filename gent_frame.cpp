@@ -43,14 +43,10 @@ int GentFrame::Init()
     string msg;
 	GentLevel *p;
 	REGISTER_COMMAND(p, GentLevel);
-	p->Init(msg);
-/*
-    if(!GentDb::Instance()->Init(msg))
+	if(!p->Init(msg))
     {
-        LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
         return false;
     }
-*/
     return true;
 
 }

@@ -16,7 +16,7 @@ GentConnect::GentConnect(int sfd)
     clen = 0;
     remainsize = 0;
     //configure info
-    comm = new GentLevel(this);
+    comm = GentAppMgr::Instance()->GetCommand(this, fd);
     curstatus = Status::CONN_READ;
 	Init();
 }
@@ -28,9 +28,7 @@ GentConnect::~GentConnect()
     if(rbuf) {
         free(rbuf);
     }
-    if(comm) {
-        delete comm;
-    }
+    GentAppMgr::Instance()->Destroy(fd);
 }
 
 void GentConnect::Init() {

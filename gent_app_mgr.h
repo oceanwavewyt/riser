@@ -10,6 +10,7 @@
 #include "prefine.h"
 class GentBasic;
 class GentCommand;
+class GentConnect;
 typedef std::map<int,std::vector<GentBasic *> > APP_MODULE;
 typedef std::map<int,GentCommand*> PLUGIN;
 
@@ -33,7 +34,7 @@ public:
 	
 	bool Init();
 	void SetPlugin(GentCommand *command);	
-	GentCommand *GetCommand(int id);
+	GentCommand *GetCommand(GentConnect *, int id);
 	void Destroy(int id);		
 };
 
