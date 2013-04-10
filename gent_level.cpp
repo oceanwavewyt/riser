@@ -18,76 +18,26 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
     while((pos = str.find_first_of(delimit,last_pos)) != string::npos){
         if(pos == last_pos){
             last_pos++;
-            cout << "last_pos1: " << last_pos << endl;
         }else{
             v.push_back(str.substr(last_pos, pos-last_pos));
 			num++;
             last_pos = pos+1;
-            cout << "last_pos2: " << last_pos << endl;
         }
     }
-    cout << "str.size(): " << str.size() << "last_pos: " << last_pos << endl;
     if(str.size()!=last_pos){
-        string curstr = str.substr(last_pos, str.find("\r\n",last_pos)-last_pos);
-        cout<< "curstr: "<< endl;
+        string curstr = str.substr(last_pos, str.find_first_of("\r\n",last_pos)-last_pos);
         v.push_back(curstr);
 		num++;
     }
-    vector<string>::iterator iter;
-    for(iter=v.begin(); iter!=v.end();iter++){
-        cout<<"split: " <<  *iter << endl;
-    }
+//    vector<string>::iterator iter;
+//    for(iter=v.begin(); iter!=v.end();iter++){
+//        cout<<"split:" <<  *iter << endl;
+//    }
 	return num;
 }
-size_t GentLevel::TokenCommand(char *command, token_t *tokens, const size_t max_tokens)
-{
-    char *s, *e;                                                                                   
-    size_t ntokens = 0;                                                                            
-    size_t len = strlen(command);                                                                  
-    unsigned int i = 0;                                                                            
-    assert(command != NULL && tokens != NULL && max_tokens > 1);                                   
-                                                                                                   
-    s = e = command;                                                                               
-    for (i = 0; i < len; i++) {                                                                    
-        if (*e == ' ') {                                                                           
-            if (s != e) {                                                                          
-                tokens[ntokens].value = s;                                                         
-                tokens[ntokens].length = e - s;                                                    
-                //cout <<"value: "<< tokens[ntokens].value << endl;
-                                                                                                   
-                ntokens++;                                                                         
-                *e = '\0';                                                                         
-                if (ntokens == max_tokens - 1) {                                                   
-                    e++;                                                                           
-                    s = e; /* so we don't add an extra token */                                    
-                    break;                                                                         
-                }                                                                                  
-            }                                                                                      
-            s = e + 1;                                                                             
-        }                                                                                          
-        e++;                                                                                       
-    }                                                                                              
-                                                                                                   
-    if (s != e) {                                                                                  
-        tokens[ntokens].value = s;                                                                 
-        tokens[ntokens].length = e - s;                                                            
-        ntokens++;                                                                                 
-    }                                                                                              
-    /*                                                                      
-     * If we scanned the whole string, the terminal value pointer is null,  
-     * otherwise it is the first unprocessed character.                     
-     */                                                                     
-    tokens[ntokens].value =  *e == '\0' ? NULL : e;                         
-    tokens[ntokens].length = 0;                                             
-    ntokens++;                                                              
-                                                                            
-    return ntokens;                                                         
-}
 
-int GentLevel::CommandWord() {
-   // int maxtoken = 10;                                                            
-   // token_t token[maxtoken];                                                      
-	
+
+int GentLevel::CommandWord() {	
 	vector<string> tokenList;
 	uint8_t clength = Split(commandstr, " ", tokenList);
 	LOG(GentLog::INFO, "tokenList clength: %d", clength);
@@ -127,31 +77,8 @@ int GentLevel::CommandWord() {
 	return -1;	
 }
 
-int GentLevel::ParseCommand() {
-    char *el, *cont;                                     
-                                                         
-    if (rbytes == 0)                                  
-        return 0;                                        
-    el = (char *)memchr(rbuf, '\n', rbytes);       
-    if (!el) {                                           
-        return 0;                                        
-    }                                                    
-    cont = el + 1;                                       
-    if ((el - rbuf) > 1 && *(el - 1) == '\r') {       
-        el--;                                            
-    }                                                    
-    *el = '\0';                                          
-    //cout <<"c->rcurr:" << c->rcurr << endl;            
-    //assert(cont <= (c->rcurr + c->rbytes));            
-                                                         
-    //process_command(c, c->rcurr);                      
-                                                         
-    rbytes -= (cont - rcurr);                      
-    rcurr = cont;                                     
-    return 1;                                            
-}                                                        
 
-int GentLevel::ParseCommand2(const string &str) {
+int GentLevel::ParseCommand(const string &str) {
 	if(str.size() == 0) return 0;
 	uint64_t pos = str.find_first_of("\n");
 	if(pos == string::npos || pos == 0) return 0;
@@ -168,16 +95,11 @@ int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
 		return 0;
 	}
 	string data = string(rbuf, size);
-	if(!ParseCommand2(data)) {
+	if(!ParseCommand(data)) {
 		outstr = "ERROR\r\n";
 		return 0;	
 	}
 	
-	//rbytes = blen;
-	//if(!ParseCommand()) {
-	//	outstr = "ERROR\r\n";
-	//	return 0;	
-	//}
 	int cword = CommandWord();
     if(cword < 0) {
         outstr = "CLIENT ERROR\r\n";
@@ -185,10 +107,6 @@ int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
     }
 	if(cword == 0) return cword;
 	return cword;
-//	int norbytes = cword - rbytes;
-//	return norbytes;		
-//	if(norbytes > 0) return norbytes; 	    
-//	return cword;	
 }
 void GentLevel::ProcessGet(string &outstr)
 {
@@ -197,9 +115,9 @@ void GentLevel::ProcessGet(string &outstr)
     {
         nr="NOT_FOUND\r\n";
     }
-    char retbuf[100];
-    sprintf(retbuf,"VALUE %s 0 %ld\r\n",keystr.c_str(),nr.size());
-    outstr = retbuf;
+    char retbuf[200]={0};
+    snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",keystr.c_str(), nr.size());
+	outstr = retbuf;
     outstr += nr+"\r\nEND\r\n";
 }
 
@@ -215,34 +133,20 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 			//NOT_STORED
 			LOG(GentLog::WARN, "commandtype::comm_set");
 			content += string(recont,len);
-			//cout << "content:  " << content << endl;
-			cout << "rlbytes: " << rlbytes << endl;
-			cout << "recont len: " << len << endl;
-			cout << "content len: " << content.size() << endl;
 			if(content.substr(rlbytes-2,2)!="\r\n") {
 				outstr = "CLIENT_ERROR bad data chunk\r\n";
-				 LOG(GentLog::WARN, "CLIENT_ERROR bad data chunk");
+				LOG(GentLog::WARN, "CLIENT_ERROR bad data chunk");
 			}else{
-				outstr = "STORED\r\n";
-			}
-		
-/*	
-			break;
-	
-			if (strncmp(content+rlbytes-2, "\r\n", 2) != 0) {
-				outstr = "CLIENT_ERROR bad data chunk\r\n";
-			}else{
-                string nr;
-                nr.assign(content,rlbytes-2);
-                if(!GentDb::Instance()->Put(keystr, nr))
-                {
+				string nr;                   
+ 				nr.assign(content.c_str(), rlbytes-2);
+				if(!GentDb::Instance()->Put(keystr, nr)) {
                     outstr = "NOT_STORED\r\n";
                 }else{
                     LOG(GentLog::WARN, "commandtype::comm_set stored");
                     outstr = "STORED\r\n";
                 }
+				//outstr = "STORED\r\n";
 			}
-*/
 			break;
 		case CommandType::COMM_QUIT:
 			break;

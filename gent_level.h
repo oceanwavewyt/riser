@@ -44,9 +44,9 @@ class GentLevel : public GentCommand
    
 //   char   *ritem;  /** when we read in an item's value, it goes here */
    uint64_t  rlbytes;
-   int 	  remains;	
+   uint32_t  remains;	
    
-   int 	  commandtype; 
+   uint8_t commandtype; 
    string keystr;
    string content;
    string commandstr;
@@ -55,8 +55,7 @@ public:
     ~GentLevel();
 private:
    size_t TokenCommand(char *command, token_t *tokens, const size_t max_tokens);
-   int ParseCommand();
-   int ParseCommand2(const string &str);
+   int ParseCommand(const string &str);
    uint8_t Split(const string &str, const string &delimit, vector<string> &v);
    int CommandWord();
    void AssignVal(token_t *tokens);

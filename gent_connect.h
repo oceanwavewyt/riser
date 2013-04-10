@@ -41,8 +41,8 @@ class GentConnect
 
 
 
-    int curstatus;
-	int remainsize;
+    uint8_t curstatus;
+	uint64_t remainsize;
 	uint64_t actualsize;
 public:
     struct event ev;

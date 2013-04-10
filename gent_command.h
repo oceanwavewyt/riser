@@ -17,9 +17,9 @@ class GentCommand
 protected:
     GentConnect *conn;
 public:
-    char *rbuf;
-    char *rcurr;
-	char *rcont;
+    //char *rbuf;
+    //char *rcurr;
+	//char *rcont;
     int rsize;
     int rbytes;
 public:

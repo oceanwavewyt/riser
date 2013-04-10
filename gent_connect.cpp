@@ -35,7 +35,6 @@ GentConnect::~GentConnect()
 
 void GentConnect::Init() {
     rsize = GentCommand::READ_BUFFER_SIZE;
-    cout << "rsize: " << rsize << endl;
 	rcurr = NULL;
     content = NULL;
 	actualsize = 0;
@@ -69,24 +68,20 @@ int GentConnect::TryRunning(string &outstr) {
                 if(readNum < 0) {
                     LOG(GentLog::WARN, "init read the number of byte less than zero");
                     outstr = "read error\r\n";
-                    //printf("read error num:%d\n",readNum);
                     Reset();
                     return readNum;
                 }else if(readNum == 0) {                                
                     return readNum;
                 }
-				//cout <<"rbtyes:" << rbytes << " return rbuf: "<< rbuf << endl;
                 remainsize = comm->Process(rbuf, rbytes, outstr);
                  if(!remainsize && outstr != "") {
-                    //
                     curstatus = Status::CONN_WRITE;
                 }
                 break;
             case Status::CONN_NREAD:
                 //OutString("ok\r\n"); 
-                LOG(GentLog::INFO, "start conn_nread remainsize:%d",remainsize);
+                //LOG(GentLog::INFO, "start conn_nread remainsize:%d",remainsize);
 				if(!content) {
-					LOG(GentLog::INFO, "conten malloc");
                     new_rbuf = (char *)malloc(remainsize);
                     memset(new_rbuf,0,remainsize);
                     rcont = content = new_rbuf;
@@ -145,13 +140,8 @@ int GentConnect::InitRead(int &rbytes) {
         }                                                                
                                                                          
         int avail = rsize - rbytes;
-		cout << "avail: " << avail << endl;
         res = read(fd, rbuf + rbytes, avail);                   
-        cout << "res: " << res << endl;
 		if (res > 0) {                                                   
-            //pthread_mutex_lock(&c->thread->stats.mutex);               
-            //c->thread->stats.bytes_read += res;                        
-            //pthread_mutex_unlock(&c->thread->stats.mutex);             
             gotdata = 1;                                                 
             rbytes += res;
             if (res == avail) {                                          
@@ -186,22 +176,7 @@ int GentConnect::NextRead() {
 		SetStatus(Status::CONN_DATA);
 		return 0;		
 	}
-	/* first check if we have leftovers in the conn_read buffer */   
-/*
-	if (rbytes > 0) {                                             
-		int tocopy = rbytes > remainsize?remainsize : rbytes;
-		LOG(GentLog::WARN, "tocopy: %d",tocopy);
-			memmove(rcont, rcurr, tocopy);
-		remainsize -= tocopy;                                        
-		rbytes -= tocopy;                                         
-		rcont += tocopy;
-        rcurr = rcont;
-		if (remainsize == 0) {                                       
-			SetStatus(Status::CONN_DATA);                                                   
-			return 0;
-		}                                                            
-	}
-*/                                                                
+                                                              
 	int res;
 	/*  now try reading from the socket */                           
 	res = read(fd, rcont, remainsize);
@@ -217,13 +192,7 @@ int GentConnect::NextRead() {
 	}                                                               
 	if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {   
         gevent->UpdateEvent(fd, this);
-    //		GentEvent::Instance()->UpdateEvent(fd, this);
-	//	if (!update_event(c, EV_READ | EV_PERSIST)) {               
-        //		conn_set_state(c, conn_closing);                        
-        // 		break;                                                  
-    	//	}
 		return -1;                                                            
-	
 	}
 	SetStatus(Status::CONN_CLOSE);                                                               
 	return 0;

@@ -94,7 +94,7 @@ int GentFrame::ServerSocket()  {
 
 int GentFrame::Run(int count) {
     int fd = ServerSocket();
-	if(fd == 0) {
+	if(fd <= 0) {
 		return -1;
 	}
 //	string ip="127.0.0.1";

@@ -103,7 +103,6 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
 }
 
 void GentEvent::Handle(const int fd, const short which, void *arg) {
-    LOG(GentLog::INFO, "GentEvent::Handle");
 	GentConnect *c = static_cast<GentConnect *>(arg);
     string outstr;
     int readNum = c->TryRunning(outstr);
