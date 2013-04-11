@@ -16,6 +16,7 @@ public:
 	static void Unstance();
 private:
 	std::map<string,string> conf_;
+	string noexist;
 public:
 	GentConfig();
 	~GentConfig();

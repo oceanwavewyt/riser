@@ -53,10 +53,14 @@ int GentFrame::Init()
 
 int GentFrame::Socket() {
 	int listenfd;
-	int flags;
+	int flags = 1;
 	listenfd = socket(AF_INET,SOCK_STREAM,0);
 	if(listenfd == -1) {
 		LOG(GentLog::ERROR, "socket create failed.");	
+		return -1;
+	}
+	if( setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &flags, sizeof(int)) == -1) {
+		LOG(GentLog::ERROR, "set socket option failed.");
 		return -1;
 	}
 	if ((flags = fcntl(listenfd, F_GETFL, 0)) < 0 ||

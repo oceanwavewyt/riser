@@ -10,6 +10,7 @@
 
 
 GentConfig::GentConfig() {
+	noexist = "";
 }
 
 
@@ -22,9 +23,15 @@ void GentConfig::set(string &key,string &val) {
 }
 
 string &GentConfig::operator[](const string &key) {
-    std::map<string,string>::const_iterator iter;
+	std::map<string,string>::iterator iter;
+	iter = conf_.find(key);
+	if(iter == conf_.end()) {
+		return noexist;
+	}
+	/*
     for (iter = conf_.begin(); iter != conf_.end(); iter++)
         std::cout << iter->first << " = " << iter->second << std::endl;
+	*/
 	return conf_[key];
 }
 

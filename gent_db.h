@@ -18,6 +18,7 @@ class GentDb : public GentWang
 private:
 	leveldb::DB* db;
     leveldb::Options options;
+	string pathname;
 public:
 	GentDb();
 	~GentDb();
@@ -26,6 +27,8 @@ public:
     bool Put(string &key, string &value);
     bool Get(string &key,string &value);
     void del();
+private:
+	bool GetPathname(string &);
 public:
 	static GentDb *Instance();
 	static void UnIntance();
