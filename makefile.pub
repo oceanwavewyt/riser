@@ -1,7 +1,7 @@
 CC:=g++
 CXX:=g++
 DEBUG=DEBUG
-OUTPUTNAME:=gentle
+OUTPUTNAME:=riser
 OUTPATH=output
 ROOT=./
 INCLUDES += -I$(ROOT) -I/usr/include/ -L/lib/
