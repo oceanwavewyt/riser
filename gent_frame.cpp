@@ -63,6 +63,14 @@ int GentFrame::Socket() {
 		LOG(GentLog::ERROR, "set socket option failed.");
 		return -1;
 	}
+    setsockopt(listenfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&flags, sizeof(flags));
+    
+    
+    struct linger so_linger={0,0};
+    setsockopt(listenfd, SOL_SOCKET, SO_LINGER, (void *)&so_linger, sizeof(so_linger));
+    setsockopt(listenfd, IPPROTO_TCP, TCP_NODELAY, (void *)&flags, sizeof(flags));
+
+    
 	if ((flags = fcntl(listenfd, F_GETFL, 0)) < 0 ||
 	        fcntl(listenfd, F_SETFL, flags | O_NONBLOCK) < 0) {
 		LOG(GentLog::ERROR, "setting nonblock failed.");	
@@ -73,7 +81,6 @@ int GentFrame::Socket() {
 }
 
 int GentFrame::ServerSocket()  {
-	struct sockaddr_in addr;
 	int fd;
 	int port = atoi(config["port"].c_str());
 	if((fd = Socket()) == -1) {

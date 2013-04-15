@@ -39,8 +39,8 @@ class GentConnect
     int rsize;
     int rbytes;
 
-
-
+    string outstr;
+    
     uint8_t curstatus;
 	uint64_t remainsize;
 	uint64_t actualsize;
@@ -48,6 +48,7 @@ public:
     struct event ev;
     GentEvent *gevent;
     int fd;
+    struct sockaddr request_addr;
 public:
     GentConnect(int);
     ~GentConnect();

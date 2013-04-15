@@ -123,6 +123,7 @@ void GentLevel::ProcessGet(string &outstr)
 
 void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 {
+    char buf[20]={0};
 	switch(commandtype)
 	{
 		case CommandType::COMM_GET:
@@ -143,7 +144,9 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
                     outstr = "NOT_STORED\r\n";
                 }else{
                     LOG(GentLog::WARN, "commandtype::comm_set stored");
-                    outstr = "STORED\r\n";
+                    sprintf(buf,"STORED\r\n");
+                    //outstr = "STORED\r\n";
+                    outstr.assign(buf,8);
                 }
 				//outstr = "STORED\r\n";
 			}

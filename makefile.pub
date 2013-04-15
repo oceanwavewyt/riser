@@ -3,8 +3,8 @@ CXX:=g++
 DEBUG=DEBUG
 OUTPUTNAME:=riser
 OUTPATH=output
-ROOT=./
-INCLUDES += -I$(ROOT) -I/usr/include/ -L/lib/
+ROOT=./include/
+INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
 
 LDFLAGS += -lpthread -levent -lleveldb
 CPPFLAGS += -fPIC -pg -Wall

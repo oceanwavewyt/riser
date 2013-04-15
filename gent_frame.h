@@ -19,6 +19,8 @@ class GentFrame
 private:
 	MODULE_MAP modules_;
 	static GentFrame *instance_;
+    
+    struct sockaddr_in addr;
 public:
 	GENT_MSG_CONNECT msg_;
     GentConfig config;

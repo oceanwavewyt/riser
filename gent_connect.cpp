@@ -10,6 +10,7 @@
 #include "gent_event.h"
 #include "gent_level.h"
 
+#include <errno.h>
 GentConnect::GentConnect(int sfd)
 {
     fd = sfd;
@@ -51,8 +52,7 @@ void GentConnect::Reset() {
     Init();
 }
 
-int GentConnect::TryRunning(string &outstr) {
-    outstr = "";
+int GentConnect::TryRunning(string &outstr2) {
     char *new_rbuf;
     int rbytes = 0;
     int readNum;
@@ -61,19 +61,22 @@ int GentConnect::TryRunning(string &outstr) {
 	  if(stop==1) break;
         switch(curstatus) {
             case Status::CONN_READ:
+                outstr = "";
                 readNum = InitRead(rbytes);
                 LOG(GentLog::INFO, "init read the number of byte is %d.", readNum);
                 if(readNum < 0) {
                     LOG(GentLog::WARN, "init read the number of byte less than zero");
-                    outstr = "read error\r\n";
+                    outstr2 = "read error\r\n";
                     Reset();
                     return readNum;
                 }else if(readNum == 0) {                                
                     return readNum;
                 }
                 remainsize = comm->Process(rbuf, rbytes, outstr);
+                LOG(GentLog::INFO, "curstatus: %d",curstatus);
                  if(!remainsize && outstr != "") {
-                    curstatus = Status::CONN_WRITE;
+                     curstatus = Status::CONN_WRITE;
+                     gevent->UpdateEvent(fd, this, eventWrite);
                 }
                 break;
             case Status::CONN_NREAD:
@@ -92,19 +95,21 @@ int GentConnect::TryRunning(string &outstr) {
             case Status::CONN_DATA:
                 outstr = "";
                 comm->Complete(outstr,content, actualsize);
-                curstatus = Status::CONN_WRITE;	
-                break;
+                curstatus = Status::CONN_WRITE;
+                gevent->UpdateEvent(fd, this, eventWrite);
+                
+                return 0;
             case Status::CONN_WRITE:
                 OutString(outstr);
-                curstatus = Status::CONN_WAIT;
                 break;
             case Status::CONN_WAIT:
 				LOG(GentLog::INFO, "the status of %d is connect wait", fd);
                 remainsize = 0;
                 Reset();
-                //GentEvent::Instance()->UpdateEvent(fd, this);
-                gevent->UpdateEvent(fd, this);
                 curstatus = Status::CONN_READ;
+                //GentEvent::Instance()->UpdateEvent(fd, this);
+                gevent->UpdateEvent(fd, this, eventRead);
+                
                 return 0;
             case Status::CONN_CLOSE:
                 return -1;		
@@ -148,21 +153,41 @@ int GentConnect::InitRead(int &rbytes) {
                 break;                                                   
             }                                                            
         }                                                                
-       if (res == 0) {                                      
+       if (res == 0) {
            return -3;                                       
        }                                                    
-       if (res == -1) {                                     
+       if (res == -1) {
+           cout << "err111111111: "<< errno << strerror(errno)<<endl;
            if (errno == EAGAIN || errno == EWOULDBLOCK) {   
                break;                                       
-           }                                                
-           return -1;                                       
+           }
+           return -1;
        }                                                    
    }                                                        
    return gotdata;                                          
 }
 
 void GentConnect::OutString(const string &str) {
-    write(fd, str.c_str(),str.size());
+    cout << str << endl;
+   /*
+    struct msghdr msg;
+    struct iovec iov[1];
+    bzero(&msg, sizeof(msg));
+    
+    msg.msg_name = &request_addr;
+    msg.msg_namelen = sizeof(request_addr);
+    char buf2[20]={0};
+    memcpy(buf2,str.c_str(),str.size());
+    iov[0].iov_base = buf2;
+    iov[0].iov_len = str.size();
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+    int a = sendmsg(fd,&msg,0);
+    */
+    //int a = write(fd, str.c_str(),str.size());
+    int a = send(fd, str.c_str(), str.size(), 0);
+    cout << "write: " << a << endl;
+    curstatus = Status::CONN_WAIT;
 }
 
 void GentConnect::SetStatus(int s) {
@@ -189,7 +214,7 @@ int GentConnect::NextRead() {
 	    return 0;
 	}                                                               
 	if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {   
-        gevent->UpdateEvent(fd, this);
+        gevent->UpdateEvent(fd, this, eventRead);
 		return -1;                                                            
 	}
 	SetStatus(Status::CONN_CLOSE);                                                               

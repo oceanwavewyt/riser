@@ -15,7 +15,8 @@
 class GentFrame;
 
 //typedef void (*handler)(const int fd, const short which, void *arg);
-
+static const int eventRead = EV_READ | EV_PERSIST;
+static const int eventWrite = EV_WRITE | EV_PERSIST;
 
 class GentEvent
 {
@@ -29,7 +30,7 @@ public:
 	GentEvent();
 	~GentEvent();
 	int AddEvent(GentConnect *,void (*)(const int, const short, void *));
-    int UpdateEvent(int fd,GentConnect *c);
+    int UpdateEvent(int fd,GentConnect *c, int);
 	//int AddEvent(string &, unsigned int);
 	void Loop();
 	int AcceptSocket(struct evhttp *http, int fd);

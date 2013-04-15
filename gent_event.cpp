@@ -38,17 +38,23 @@ GentEvent::~GentEvent() {
 
 int GentEvent::AddEvent(GentConnect *conn,void(*handle)(const int fd, const short which, void *arg)) {
 	LOG(GentLog::INFO, "create new connnect of %d,and init it", conn->fd);
-	event_set(&conn->ev, conn->fd, EV_READ | EV_PERSIST,handle,conn);
+	event_set(&conn->ev, conn->fd, eventRead, handle,conn);
 	event_base_set(main_base_, &conn->ev);
 	event_add(&conn->ev, 0);
 	return 0;
 } 
 
-int GentEvent::UpdateEvent(int fd,GentConnect *c) {
-    event_del(&c->ev);
-    event_set(&c->ev, fd, EV_READ | EV_PERSIST,GentEvent::Handle,c);
+int GentEvent::UpdateEvent(int fd,GentConnect *c, int state) {
+    if(event_del(&c->ev)==-1){
+        cout << "event_del failed" << endl;
+        return -1;
+    }
+    event_set(&c->ev, fd, state, GentEvent::Handle,c);
 	event_base_set(main_base_, &c->ev);
-	event_add(&c->ev, 0);
+	if(event_add(&c->ev, 0)==-1){
+        cout << "event_add failed" << endl;
+        return -1;
+    }
 	return 0;
 }
 
@@ -76,7 +82,7 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
 	socklen_t addrlen;
 	struct sockaddr_storage addr;
     addrlen = sizeof(addr);
-	if ((sfd = accept(fd, (struct sockaddr *)&addr, &addrlen)) == -1) {
+    if ((sfd = accept(fd, (struct sockaddr *)&addr, &addrlen)) == -1) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			/* these are transient, so don't log anything */
 			return;
@@ -95,7 +101,16 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
         close(sfd);
         return;
     }
+    
+    int nRecvBuf=32*1024;//设置为32K
+    setsockopt(sfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
+    //发送缓冲区
+    int nSendBuf=1*1024*1024;//设置为32K
+    setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
+    
+
     GentConnect *gconnect = new GentConnect(sfd);
+   // memcpy(&gconnect->request_addr,&addr,addrlen);
     GentFrame::Instance()->msg_.Push(gconnect);
     GentThread::Intance()->SendThread();
 	//GentEvent::Instance()->AddEvent(sfd,GentEvent::Handle);
