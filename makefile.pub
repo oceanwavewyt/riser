@@ -6,7 +6,7 @@ OUTPATH=output
 ROOT=./include/
 INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
 
-LDFLAGS += -lpthread -levent -lleveldb
+LDFLAGS += -lpthread -levent ./lib/libleveldb.a
 CPPFLAGS += -fPIC -pg -Wall
 
 objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
