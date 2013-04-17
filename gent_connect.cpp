@@ -157,7 +157,6 @@ int GentConnect::InitRead(int &rbytes) {
            return -3;                                       
        }                                                    
        if (res == -1) {
-           cout << "err111111111: "<< errno << strerror(errno)<<endl;
            if (errno == EAGAIN || errno == EWOULDBLOCK) {   
                break;                                       
            }
@@ -168,7 +167,6 @@ int GentConnect::InitRead(int &rbytes) {
 }
 
 void GentConnect::OutString(const string &str) {
-    cout << str << endl;
    /*
     struct msghdr msg;
     struct iovec iov[1];
@@ -185,8 +183,17 @@ void GentConnect::OutString(const string &str) {
     int a = sendmsg(fd,&msg,0);
     */
     //int a = write(fd, str.c_str(),str.size());
-    int a = send(fd, str.c_str(), str.size(), 0);
-    cout << "write: " << a << endl;
+    uint64_t length = str.size();
+	uint32_t curlen = 0;
+	char *curpos = const_cast<char *>(str.c_str());	
+	int slen;
+	while(length>0) {
+    	slen = send(fd, curpos+curlen, length, 0);
+		if(slen<0) break;
+		cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
+		length -= slen;
+		curlen += slen;
+	}
     curstatus = Status::CONN_WAIT;
 }
 

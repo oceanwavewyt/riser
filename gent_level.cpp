@@ -16,7 +16,7 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
     uint64_t pos,last_pos=0;
 	uint8_t num = 0;
     while((pos = str.find_first_of(delimit,last_pos)) != string::npos){
-        if(pos == last_pos){
+		if(pos == last_pos){
             last_pos++;
         }else{
             v.push_back(str.substr(last_pos, pos-last_pos));
@@ -24,15 +24,20 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
             last_pos = pos+1;
         }
     }
-    if(str.size()!=last_pos){
-        string curstr = str.substr(last_pos, str.find_first_of("\r\n",last_pos)-last_pos);
-        v.push_back(curstr);
+	size_t ter_pos = str.find_first_of("\r\n",last_pos);
+	if(ter_pos == string::npos) {
+		return 0;
+	}
+	
+    if(ter_pos>last_pos){
+        string curstr = str.substr(last_pos, ter_pos-last_pos);
+		v.push_back(curstr);
 		num++;
     }
-//    vector<string>::iterator iter;
-//    for(iter=v.begin(); iter!=v.end();iter++){
-//        cout<<"split:" <<  *iter << endl;
-//    }
+    vector<string>::iterator iter;
+    for(iter=v.begin(); iter!=v.end();iter++){
+        cout<<"split:" <<  *iter << endl;
+    }
 	return num;
 }
 
@@ -117,8 +122,8 @@ void GentLevel::ProcessGet(string &outstr)
     }
     char retbuf[200]={0};
     snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",keystr.c_str(), nr.size());
-	outstr = retbuf;
-    outstr += nr+"\r\nEND\r\n";
+    outstr = retbuf;
+	outstr += nr+"\r\nEND\r\n";
 }
 
 void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
