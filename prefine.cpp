@@ -19,6 +19,6 @@ void GentLog::write(int levels, const char *file, const int line, const char *fu
 	time(&now);	
 	tm = localtime(&now);
 	char str[LINEBUFSIZE];                                                 
-	snprintf(str, LINEBUFSIZE, "%s %02d:%02d:%02d [%ld] %s", levelname[levels], tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self(), buf);
+	snprintf(str, LINEBUFSIZE, "%s %02d:%02d:%02d [%lu] %s", levelname[levels], tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self()->__sig, buf);
 	fprintf(stdout, "%s\n", str);                                                                  	
 }

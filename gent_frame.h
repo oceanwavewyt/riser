@@ -32,10 +32,10 @@ public:
 	static void Unstance();
 private:
 	int Socket();
-	int ServerSocket();
+	int ServerSocket(int port=-1);
 public:
-    int Init();
-	int Run(int count=1);
+    int Init(const char *configfile="riser.conf");
+	int Run(int port);
 	int Register(int key, GentBasic *app);
 	void Destory();
 	int GetModule(GentBasic *&app, int cmd);

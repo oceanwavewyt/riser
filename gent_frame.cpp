@@ -36,9 +36,13 @@ GentFrame::~GentFrame() {
 	Destory();
 }
 
-int GentFrame::Init()
+int GentFrame::Init(const char *configfile)
 {
-    config.Parse("riser.conf");
+    if(access(configfile, 0) == -1) {
+        LOG(GentLog::ERROR, "%s not exist, start fail.", configfile);
+        return false;
+    }
+    config.Parse(string(configfile,strlen(configfile)));
     //config info
     string msg;
 	GentLevel *p;
@@ -80,9 +84,11 @@ int GentFrame::Socket() {
 	return listenfd;
 }
 
-int GentFrame::ServerSocket()  {
+int GentFrame::ServerSocket(int port)  {
 	int fd;
-	int port = atoi(config["port"].c_str());
+    if(port == -1) {
+        port = atoi(config["port"].c_str());
+    }
 	if((fd = Socket()) == -1) {
 		return -1;
 	}
@@ -104,23 +110,22 @@ int GentFrame::ServerSocket()  {
 	return fd;
 }
 
-int GentFrame::Run(int count) {
-    int fd = ServerSocket();
+int GentFrame::Run(int port) {
+    int fd = ServerSocket(port);
 	if(fd <= 0) {
 		return -1;
 	}
-//	string ip="127.0.0.1";
-//	unsigned int port=10;
 	GentConnect *conn = new GentConnect(fd);
     GentEvent *gevent = new GentEvent();
     conn->gevent = gevent;
     
 	gevent->AddEvent(conn,GentEvent::HandleMain);
-	GentThread::Intance()->init(count);
+	GentThread::Intance()->init(atoi(config["thread"].c_str()));
 	//启动线程
 //    std::cout << "start " << std::endl;
 	GentThread::Intance()->Start();
 	gevent->Loop();
+    return 0;
 }
 
 int GentFrame::Register(int key, GentBasic *app) {

@@ -11,6 +11,8 @@
 
 GentConfig::GentConfig() {
 	noexist = "";
+    conf_["port"] = "3535";
+    conf_["thread"] = "10";
 }
 
 
