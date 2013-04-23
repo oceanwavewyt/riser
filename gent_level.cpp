@@ -69,7 +69,6 @@ int GentLevel::CommandWord() {
 	}else if(clength == 2 && tokenList[0] == "del") {
 		LOG(GentLog::INFO, "the command is del and the key is %s", tokenList[1].c_str());
         commandtype = CommandType::COMM_DEL;
-        //AssignVal(token);
         keystr = tokenList[1];
         conn->SetStatus(Status::CONN_DATA);
         return 0; 
@@ -159,7 +158,11 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 		case CommandType::COMM_QUIT:
 			break;
 		case CommandType::COMM_DEL:
-            outstr = "STORED\r\n";
+			 if(!GentDb::Instance()->Del(keystr)) {
+     			outstr = "NOT_FOUND\r\n";
+ 			}else{
+     			outstr = "DELETED\r\n";
+ 			}
 			break;
 		default:
 			outstr = "ERROR\r\n";

@@ -47,6 +47,12 @@ bool GentDb::Put(string &key, string &value)
     return s.ok();
 }
 
+bool GentDb::Del(string &key)
+{
+	leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
+	return s.ok();
+}
+
 bool GentDb::GetPathname(string &err)
 {
 	GentConfig &config = GentFrame::Instance()->config;

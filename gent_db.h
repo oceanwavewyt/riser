@@ -26,7 +26,7 @@ public:
     bool Init(string &err);
     bool Put(string &key, string &value);
     bool Get(string &key,string &value);
-    void del();
+    bool Del(string &key);
 private:
 	bool GetPathname(string &);
 public:

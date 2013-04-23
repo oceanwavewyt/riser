@@ -1,10 +1,14 @@
-//
-//  riser.cpp
-//  riser
-//  
-//  Created by wyt on 13-1-20.
-//  Copyright (c) 2013年 wyt. All rights reserved.
-//
+/*
+ *  riser.cpp  
+ *  Created by oceanwavewyt on 13-1-20.
+ *  Copyright (c) 2012-2013, oceanwavewyt <oceanwavewyt at gmail dot com>
+ *  All rights reserved.
+ *  
+ *  This soft wrap a serice for leveldb store, and support multi-threading 
+ *  client access it by the memcache extension of php, and telnet. Currently,
+ *  only support put, get and del operation.
+ *
+ */
 
 #include "gent_util.h"
 #include "gent_frame.h"
@@ -74,7 +78,8 @@ int main(int argc, char **argv)
     
     }
     std::cout << "Hello, World!\n";
-    if(!GentFrame::Instance()->Init(configfile)){
+   /* initialize config file */
+	if(!GentFrame::Instance()->Init(configfile)){
         std::cout << "init fail!\n";
         return 1;
     }
