@@ -50,6 +50,8 @@ public:
 	static void write(int levels, const char *file, const int line, const char *func, const char *format, ...);
 };
 
+
+
 #define LOG(level, args...)  GentLog::write(level, __FILE__, __LINE__, __func__, args)
 
 #define REGISTER_COMMAND(p, LogicModule) \

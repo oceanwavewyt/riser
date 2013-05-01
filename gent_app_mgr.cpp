@@ -87,6 +87,20 @@ bool GentAppMgr::Init()
 	return true;
 }
 
+GentConnect *GentAppMgr::GetConnect(int sfd)
+{
+    size_t len = conn_mgr.size();
+    if(len > 0) {
+        AutoLock lock(&conn_lock);
+        GentConnect *c= conn_mgr[len-1];
+        c->Init(sfd);
+        conn_mgr.pop_back();
+        return c;
+    }
+    GentConnect *c = new GentConnect(sfd);
+    return c;
+}
+
 GentCommand *GentAppMgr::GetCommand(GentConnect *connect,int id)
 {
 	GentCommand *p = plus->Clone(connect);
@@ -100,4 +114,16 @@ void GentAppMgr::Destroy(int id)
 	if(iter != plus_mgr.end()){
 		delete plus_mgr[id];	
 	}
+}
+
+void GentAppMgr::RetConnect(GentConnect *c)
+{
+    assert(c!=NULL);
+    AutoLock lock(&conn_lock);
+    conn_mgr.push_back(c);
+}
+
+size_t GentAppMgr::GetConnCount()
+{
+    return conn_mgr.size();
 }

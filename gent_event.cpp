@@ -109,12 +109,10 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
     setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
     
 
-    GentConnect *gconnect = new GentConnect(sfd);
-   // memcpy(&gconnect->request_addr,&addr,addrlen);
+    //GentConnect *gconnect = new GentConnect(sfd);
+    GentConnect *gconnect = GentAppMgr::Instance()->GetConnect(sfd);
     GentFrame::Instance()->msg_.Push(gconnect);
     GentThread::Intance()->SendThread();
-	//GentEvent::Instance()->AddEvent(sfd,GentEvent::Handle);
-
 }
 
 void GentEvent::Handle(const int fd, const short which, void *arg) {
@@ -123,7 +121,7 @@ void GentEvent::Handle(const int fd, const short which, void *arg) {
     int readNum = c->TryRunning(outstr);
     if(readNum < 0) {
         event_del(&c->ev);
-        delete c;
+        GentAppMgr::Instance()->RetConnect(c);
         return;
     }    
     if(outstr != "") {

@@ -56,12 +56,14 @@ public:
     void OutString(const string &str);
     int TryRunning(string &str);
     void SetStatus(int);
+    void Destruct();
+    void Init(int sfd);
 private:
     int InitRead(int &rbytes);
 	void ResetConnect(); 
 	int NextRead();
-    void Init();
     void Reset();
+    void ReAllocation();
 };
 
 #endif

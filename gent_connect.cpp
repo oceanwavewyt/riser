@@ -13,17 +13,16 @@
 #include <errno.h>
 GentConnect::GentConnect(int sfd)
 {
-    fd = sfd;
-    clen = 0;
-    remainsize = 0;
-    //configure info
-    comm = GentAppMgr::Instance()->GetCommand(this, fd);
-    curstatus = Status::CONN_READ;
-	Init();
+	Init(sfd);
 }
 
 GentConnect::~GentConnect()
 {
+    Destruct();
+}
+void GentConnect::Destruct()
+{
+    if(!fd) return;
     close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);
     if(rbuf) {
@@ -31,8 +30,17 @@ GentConnect::~GentConnect()
     }
     GentAppMgr::Instance()->Destroy(fd);
 }
+void GentConnect::Init(int sfd) {
+    fd = sfd;
+    clen = 0;
+    remainsize = 0;
+    //configure info
+    comm = GentAppMgr::Instance()->GetCommand(this, fd);
+    ReAllocation();
+}
 
-void GentConnect::Init() {
+void GentConnect::ReAllocation() {
+    curstatus = Status::CONN_READ;
     rsize = GentCommand::READ_BUFFER_SIZE;
 	rcurr = NULL;
     content = NULL;
@@ -49,7 +57,7 @@ void GentConnect::Reset() {
     if(content) {
         free(content);
     }
-    Init();
+    ReAllocation();
 }
 
 int GentConnect::TryRunning(string &outstr2) {
