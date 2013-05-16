@@ -10,6 +10,7 @@
 #include "gent_app_mgr.h"
 #include "gent_thread.h"
 #include "gent_level.h"
+#include "gent_list.h"
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -42,6 +43,7 @@ int GentFrame::Init(const char *configfile)
         LOG(GentLog::ERROR, "%s not exist, start fail.", configfile);
         return false;
     }
+    GentList::Instance()->Save();
     config.Parse(string(configfile,strlen(configfile)));
     //config info
     string msg;

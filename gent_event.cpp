@@ -121,6 +121,7 @@ void GentEvent::Handle(const int fd, const short which, void *arg) {
     int readNum = c->TryRunning(outstr);
     if(readNum < 0) {
         event_del(&c->ev);
+        c->Destruct();
         GentAppMgr::Instance()->RetConnect(c);
         return;
     }    

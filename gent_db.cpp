@@ -79,8 +79,14 @@ bool GentDb::Init(string &err)
 		options.max_open_files = atoi(config["leveldb_max_open_files"].c_str());
 	}	
 	
-    options.write_buffer_size = 8*1024*1024;
-    options.target_file_size = 64;
+    options.write_buffer_size = WRITE_BUFFER_SIZE*1024*1024;
+    options.target_file_size = TARGET_FILE_SIZE;
+    if(config["leveldb_target_file_size_mb"] != "") {
+        int size = atoi(config["leveldb_target_file_size_mb"].c_str());
+        if(size > 2) {
+            options.target_file_size = size;
+        }
+    }
 	leveldb::Status status = leveldb::DB::Open(options, pathname , &db);
     if(status.ok())
     {

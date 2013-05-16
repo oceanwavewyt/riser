@@ -61,6 +61,7 @@ private:
 	GentCommand *plus;
     CONNPOOL conn_mgr;
     CommLock conn_lock;
+    size_t total_conn;
 public:
 	static GentAppMgr *Instance();
 	static void UnInstance();
@@ -73,6 +74,7 @@ public:
 	GentConnect *GetConnect(int sfd);
     void RetConnect(GentConnect *);
     size_t GetConnCount();
+    size_t GetTotalConnCount();
 	bool Init();
 	void SetPlugin(GentCommand *command);	
 	GentCommand *GetCommand(GentConnect *, int id);

@@ -32,15 +32,18 @@
 #include <map>
 #include <iostream>
 #include <vector>
+#include <list>
 #include "gent_app_mgr.h"
 
+typedef unsigned char byte;
 using namespace std;
 
 const uint32_t LOGBUFSIZE = 2048;
 const uint32_t LINEBUFSIZE = 4096;
 
+const int TARGET_FILE_SIZE = 64;
 
-
+const int WRITE_BUFFER_SIZE = 8;
 //LOG
 
 struct GentLog

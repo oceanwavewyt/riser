@@ -198,7 +198,7 @@ void GentConnect::OutString(const string &str) {
 	while(length>0) {
     	slen = send(fd, curpos+curlen, length, 0);
 		if(slen<0) break;
-		cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
+		//cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
 		length -= slen;
 		curlen += slen;
 	}

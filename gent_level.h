@@ -26,6 +26,7 @@ public:
  	 COMM_SET = 2,
  	 COMM_DEL = 3,
  	 COMM_QUIT = 4,
+     COMM_STATS = 5,
 	};
 
 };
@@ -60,6 +61,7 @@ private:
    int CommandWord();
    void AssignVal(token_t *tokens);
    void ProcessGet(string &);
+    void ProcessStats(string &);
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	
    void Complete(string &outstr, const char *, uint64_t);

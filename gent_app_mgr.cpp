@@ -24,6 +24,7 @@ void GentAppMgr::UnInstance() {
 
 GentAppMgr::GentAppMgr():def_num(10)
 {
+    total_conn = 0;
 }
 
 GentAppMgr::~GentAppMgr()
@@ -98,6 +99,7 @@ GentConnect *GentAppMgr::GetConnect(int sfd)
         return c;
     }
     GentConnect *c = new GentConnect(sfd);
+    total_conn++;
     return c;
 }
 
@@ -125,5 +127,10 @@ void GentAppMgr::RetConnect(GentConnect *c)
 
 size_t GentAppMgr::GetConnCount()
 {
-    return conn_mgr.size();
+    return total_conn - conn_mgr.size();
+}
+
+size_t GentAppMgr::GetTotalConnCount()
+{
+    return total_conn;
 }

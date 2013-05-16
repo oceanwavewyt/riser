@@ -34,10 +34,12 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
 		v.push_back(curstr);
 		num++;
     }
+    /*
     vector<string>::iterator iter;
     for(iter=v.begin(); iter!=v.end();iter++){
         cout<<"split:" <<  *iter << endl;
     }
+    */
 	return num;
 }
 
@@ -77,8 +79,13 @@ int GentLevel::CommandWord() {
         commandtype = CommandType::COMM_QUIT;
         conn->SetStatus(Status::CONN_CLOSE);
         return 0; 
-	}
-	return -1;	
+	}else if(clength == 1 && tokenList[0] == "stats") {
+        LOG(GentLog::INFO, "the command is stats");
+        commandtype = CommandType::COMM_STATS;
+        conn->SetStatus(Status::CONN_DATA);
+        return 0;
+    }
+	return -1;
 }
 
 
@@ -125,6 +132,14 @@ void GentLevel::ProcessGet(string &outstr)
 	outstr += nr+"\r\nEND\r\n";
 }
 
+void GentLevel::ProcessStats(string &outstr)
+{
+    char retbuf[200] = {0};
+    snprintf(retbuf,200,"total connect: %lu\r\ncurrent connect: %lu\r\n",
+             GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount());
+    outstr = retbuf;
+}
+
 void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 {
     char buf[20]={0};
@@ -164,6 +179,9 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
      			outstr = "DELETED\r\n";
  			}
 			break;
+        case CommandType::COMM_STATS:
+            ProcessStats(outstr);
+            break;
 		default:
 			outstr = "ERROR\r\n";
 			return;
