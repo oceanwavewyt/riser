@@ -20,6 +20,12 @@ GentList *GentList::Instance() {
 
 GentList::GentList(){
     cout << "haha gentlist init " <<endl;
+}
+
+GentList::~GentList(){
+}
+
+void GentList::Init() {
     HashInter *h1 = new SDBMHash();
     HashInter *h2 = new RSHash();
     HashInter *h3 = new JSHash();
@@ -32,15 +38,19 @@ GentList::GentList(){
     for(it=hashList.begin();it!=hashList.end();it++){
         (*it)->Init();
     }
+    mainHash = h1;
 }
 
-GentList::~GentList(){
+void GentList::Save(string &key){
+    char *key2 = const_cast<char *>(key.c_str());
+    mainHash->Set(key2);
 }
 
-void GentList::Save(){
-    
-}
-
-void GentList::Load(){
-
+void GentList::Load(string &key){
+    char *key2 = const_cast<char *>(key.c_str());
+    if(mainHash->Get(key2,-1)){
+    cout <<"bloom load key: true....." << endl;
+    }else{
+    cout <<"bloom load key: false....." << endl;
+    }
 }

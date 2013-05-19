@@ -13,6 +13,8 @@
 #define hashsize(n) ((uint64_t)1<<(n))
 #define hashmask(n) (hashsize(n)-1)
 
+const uint8_t posnum = 32;
+
 class HashInter
 {
 public:
@@ -20,17 +22,35 @@ public:
     ~HashInter(){}
 protected:
     HashInter *successor;
-    byte** tables;
+    byte* tables;
 public:
     virtual uint64_t Hash(char *) = 0;
-    void Set(uint64_t pos) {
-        
+    void Set(char *key) {
+        tables[Hash(key)] = 0x01;
+        cout << "key: " << key << "set Hash(key): " <<Hash(key) << endl;
+        if(tables[Hash(key)]) {
+            cout << "bloom set : true." << endl;
+        }else{
+            cout << "bloom set : false." << endl;
+        }
+        if(successor) {
+            successor->Set(key);
+        }
     }
-    void Get() {
-    
+    uint8_t Get(char *key, int parent) {
+        cout << "key: " << key << " get Hash(key): " <<Hash(key) << endl;
+        if(parent == -1) {
+            parent = tables[Hash(key)];
+        }else{
+            parent = parent & tables[Hash(key)];
+        }
+        if(successor) {
+            return successor->Get(key, parent);
+        }
+        return parent;
     }
     void Init() {
-        tables = (byte **)malloc(hashsize(16)*sizeof(byte *));
+        tables = (byte *)malloc(hashsize(posnum)*sizeof(byte));
     }
     void SetSuccessor(HashInter *s){
         successor = s;
@@ -54,7 +74,7 @@ public:
         {
             hash = (*str++) + (hash << 6) + (hash << 16) - hash;
         }
-        return (hash & 0x7FFFFFFF);
+        return (hash & 0x7FFFFFFF) & hashmask(posnum);
     }
 };
 
@@ -76,7 +96,7 @@ public:
             a *= b;
         }
         
-        return (hash & 0x7FFFFFFF);
+        return (hash & 0x7FFFFFFF) & hashmask(posnum);
     }
 
 };
@@ -100,7 +120,7 @@ public:
             hash ^= ((hash << 5) + (*str++) + (hash >> 2));
         }
         
-        return (hash & 0x7FFFFFFF);
+        return (hash & 0x7FFFFFFF)  & hashmask(posnum);
     }
 };
 
@@ -108,6 +128,7 @@ class GentList
 {
     static GentList *intance_;
     list<HashInter *> hashList;
+    HashInter *mainHash;
 public:
 	static GentList *Instance();
 	static void UnInstance();
@@ -115,8 +136,9 @@ public:
     GentList();
     ~GentList();
 public:
-    void Save();
-    void Load();
+    void Init();
+    void Save(string &k);
+    void Load(string &k);
 };
 
 #endif

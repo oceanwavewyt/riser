@@ -3,6 +3,7 @@
 #include "gent_util.h"
 #include "gent_level.h"
 #include "gent_db.h"
+#include "gent_list.h"
 
 GentLevel::GentLevel(GentConnect *c):GentCommand(c)
 {
@@ -148,6 +149,7 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 		case CommandType::COMM_GET:
 			//NOT_FOUND
             ProcessGet(outstr);
+            GentList::Instance()->Load(keystr);
 			break;	
 		case CommandType::COMM_SET:
 			//NOT_STORED
@@ -162,6 +164,7 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 				if(!GentDb::Instance()->Put(keystr, nr)) {
                     outstr = "NOT_STORED\r\n";
                 }else{
+                    GentList::Instance()->Save(keystr);
                     LOG(GentLog::WARN, "commandtype::comm_set stored");
                     sprintf(buf,"STORED\r\n");
                     //outstr = "STORED\r\n";

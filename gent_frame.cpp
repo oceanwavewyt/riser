@@ -43,7 +43,7 @@ int GentFrame::Init(const char *configfile)
         LOG(GentLog::ERROR, "%s not exist, start fail.", configfile);
         return false;
     }
-    GentList::Instance()->Save();
+    GentList::Instance()->Init();
     config.Parse(string(configfile,strlen(configfile)));
     //config info
     string msg;
