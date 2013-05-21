@@ -7,6 +7,8 @@
 //
 
 #include "gent_list.h"
+#include "gent_config.h"
+#include "gent_frame.h"
 //35996272   1344
 //2441328   1332
 GentList *GentList::intance_ = NULL;
@@ -26,14 +28,15 @@ GentList::~GentList(){
 }
 
 void GentList::Init() {
-    HashInter *h1 = new SDBMHash();
-    HashInter *h2 = new RSHash();
-    HashInter *h3 = new JSHash();
-    h1->SetSuccessor(h2);
-    h2->SetSuccessor(h3);
+   string path = GentFrame::Instance()->config["leveldb_db_path"];
+    HashInter *h1 = new SDBMHash(path);
+    //HashInter *h2 = new RSHash(path);
+    //HashInter *h3 = new JSHash(path);
+    //h1->SetSuccessor(h2);
+    //h2->SetSuccessor(h3);
     hashList.push_back(h1);
-    hashList.push_back(h2);
-    hashList.push_back(h3);
+    //hashList.push_back(h2);
+    //hashList.push_back(h3);
     list<HashInter *>::iterator it;
     for(it=hashList.begin();it!=hashList.end();it++){
         (*it)->Init();
