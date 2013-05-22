@@ -125,7 +125,7 @@ void GentLevel::ProcessGet(string &outstr)
     string nr="";
     if(!GentDb::Instance()->Get(keystr, nr))
     {
-        nr="NOT_FOUND\r\n";
+        outstr = "END\r\n";
     }
     char retbuf[200]={0};
     snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",keystr.c_str(), nr.size());
@@ -148,8 +148,11 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 	{
 		case CommandType::COMM_GET:
 			//NOT_FOUND
+            if(!GentList::Instance()->Load(keystr)) {
+				outstr += "END\r\n";
+				break;
+			}
             ProcessGet(outstr);
-            GentList::Instance()->Load(keystr);
 			break;	
 		case CommandType::COMM_SET:
 			//NOT_STORED

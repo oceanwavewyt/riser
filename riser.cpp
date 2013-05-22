@@ -6,7 +6,8 @@
  *  
  *  This soft wrap a serice for leveldb store, and support multi-threading 
  *  client access it by the memcache extension of php, and telnet. Currently,
- *  only support put, get and del operation.
+ *  only support put, get and del operation. additionally, it is support bloom 
+ *  filter algorithm for key.
  *
  */
 
