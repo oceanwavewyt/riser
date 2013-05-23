@@ -20,6 +20,7 @@ const uint8_t posnum = 16;
 class HashInter
 {
 	uint8_t posval[8];
+    CommLock hash_lock;
 public:
     HashInter();
     ~HashInter();

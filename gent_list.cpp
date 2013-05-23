@@ -13,6 +13,7 @@
 #include "gent_list.h"
 #include "gent_config.h"
 #include "gent_frame.h"
+#include "gent_app_mgr.h"
 //35996272   1344
 //2441328   1332
 GentList *GentList::intance_ = NULL;
@@ -43,6 +44,7 @@ uint8_t HashInter::Position(char *key,bool isget)
 
 void HashInter::Set(char *key) 
 {
+    AutoLock lock(&hash_lock);
 	Position(key,false);
     if(successor) {
     	successor->Set(key);
