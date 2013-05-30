@@ -16,25 +16,33 @@
 #define hashmask(n) ((hashsize(n+3))-1)
 
 const uint8_t posnum = 16;
+typedef struct hashTable
+{
+	byte table;
+	uint8_t rel_count[8];
+}hashTables;
 
 class HashInter
 {
 	uint8_t posval[8];
-    CommLock hash_lock;
+    uint8_t posvalrev[8];
+	CommLock hash_lock;
 public:
     HashInter();
     ~HashInter();
 private:
-    uint8_t Position(char *key,bool isget=true);
+    uint8_t Position(char *key,int isget=1);
 protected:
     HashInter *successor;
-    byte* tables;
+ //   byte* tables;
+	hashTables *tables;
     string filename;
     int fd;
 public:
     virtual uint64_t Hash(char *) = 0;
     void Set(char *key);
     int Get(char *key, int parent);    
+	void Del(char *key);
 	void Init();
     void SetSuccessor(HashInter *s);
 };
@@ -127,6 +135,7 @@ public:
     void Init();
     void Save(string &k);
     int Load(string &k);
+	void Clear(string &k);
 };
 
 #endif

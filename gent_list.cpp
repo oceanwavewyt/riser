@@ -22,8 +22,10 @@ GentList *GentList::intance_ = NULL;
 HashInter::HashInter()
 {
 	uint8_t a[8] = {0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80};
+	uint8_t b[8] = {0xFE,0xFD,0xFC,0xFB,0xEF,0xDF,0xCF,0xBF};
 	for(int i=0; i<8; i++) {
 			posval[i] = a[i];
+			posvalrev[i] = b[i];
 	}
 }
 HashInter:: ~HashInter()
@@ -31,25 +33,36 @@ HashInter:: ~HashInter()
         close(fd);
 }
 
-uint8_t HashInter::Position(char *key,bool isget) 
+uint8_t HashInter::Position(char *key,int isget) 
 {
 	uint64_t h = Hash(key);
 	uint64_t pos = h/8;
 	int off = h%8;
-	if(isget) {
-		return tables[pos] & posval[off];
+	if(isget == 1) {
+		return tables[pos].table & posval[off];
 	}
-	return tables[pos] = tables[pos] | posval[off];
+	if(isget == -1) {
+		tables[pos].table = tables[pos].table | posval[off];
+		tables[pos].rel_count[off]++;
+		return tables[pos].rel_count[off];
+	}
+	//del flag
+	if(tables[pos].rel_count[off] > 0){
+		tables[pos].rel_count[off]--;
+		if(tables[pos].rel_count[off] > 0) return 1;
+		return tables[pos].table = tables[pos].table & posvalrev[off];	
+	}	
+	return 1;
 }
 
 void HashInter::Set(char *key) 
 {
     AutoLock lock(&hash_lock);
-	Position(key,false);
+	Position(key, -1);
     if(successor) {
     	successor->Set(key);
     }
-    msync((void*)tables,hashsize(posnum)*sizeof(byte),MS_ASYNC);
+    msync((void*)tables,hashsize(posnum)*sizeof(hashTable),MS_ASYNC);
 }
 
 int HashInter::Get(char *key, int parent) 
@@ -65,18 +78,29 @@ int HashInter::Get(char *key, int parent)
 	}
 	return parent;
 }
+
+void HashInter::Del(char *key)
+{
+	AutoLock lock(&hash_lock);
+	Position(key, -2);                                               
+	if(successor) {                                                  
+    	successor->Del(key);                                         
+	}                                                                
+	msync((void*)tables,hashsize(posnum)*sizeof(hashTable),MS_ASYNC);	
+}
+
 void HashInter::Init() 
 {
 	if(access(filename.c_str(), 0) == -1) {
-		tables = (byte *)malloc(hashsize(posnum)*sizeof(byte));
-		memset(tables, 0, hashsize(posnum)*sizeof(byte));
+		tables = (hashTable *)malloc(hashsize(posnum)*sizeof(hashTable));
+		memset(tables, 0, hashsize(posnum)*sizeof(hashTable));
 
 		if ((fd = open(filename.c_str(), O_RDWR|O_CREAT,00777)) < 0){
 			LOG(GentLog::ERROR, "%s open fail.", filename.c_str());
 			free(tables);
 			exit(-1);
 		}
-		write(fd,tables, hashsize(posnum)*sizeof(byte));
+		write(fd,tables, hashsize(posnum)*sizeof(hashTable));
 		close(fd);
 		free(tables);
 	}
@@ -92,7 +116,7 @@ void HashInter::Init()
 		exit(-1);
 	}
 
-	if((tables = (byte *)mmap(NULL, sb.st_size, PROT_READ|PROT_WRITE,MAP_SHARED, fd, 0))
+	if((tables = (hashTable *)mmap(NULL, sb.st_size, PROT_READ|PROT_WRITE,MAP_SHARED, fd, 0))
 			== (void *)-1){
 		LOG(GentLog::ERROR, "mmap fail.");
 		exit(-1);
@@ -143,6 +167,11 @@ void GentList::Init() {
 void GentList::Save(string &key){
     char *key2 = const_cast<char *>(key.c_str());
     mainHash->Set(key2);
+}
+
+void GentList::Clear(string &key){
+    char *key2 = const_cast<char *>(key.c_str());
+    mainHash->Del(key2);
 }
 
 int GentList::Load(string &key){

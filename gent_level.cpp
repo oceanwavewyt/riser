@@ -120,6 +120,25 @@ int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
 	if(cword == 0) return cword;
 	return cword;
 }
+void GentLevel::ProcessDel(string &outstr)
+{
+	if(!GentList::Instance()->Load(keystr)) {
+		outstr = "NOT_FOUND\r\n";
+		return;
+	}
+	string nr = "";
+	if(!GentDb::Instance()->Get(keystr, nr)){
+		outstr = "NOT_FOUND\r\n";
+		return;                  
+	}
+	GentList::Instance()->Clear(keystr);			
+	if(!GentDb::Instance()->Del(keystr)) {
+		outstr = "NOT_FOUND\r\n";
+	}else{
+		outstr = "DELETED\r\n";
+	}
+}
+
 void GentLevel::ProcessGet(string &outstr)
 {
     string nr="";
@@ -179,11 +198,7 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 		case CommandType::COMM_QUIT:
 			break;
 		case CommandType::COMM_DEL:
-			 if(!GentDb::Instance()->Del(keystr)) {
-     			outstr = "NOT_FOUND\r\n";
- 			}else{
-     			outstr = "DELETED\r\n";
- 			}
+			ProcessDel(outstr); 
 			break;
         case CommandType::COMM_STATS:
             ProcessStats(outstr);
