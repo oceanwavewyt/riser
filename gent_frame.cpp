@@ -55,7 +55,6 @@ int GentFrame::Init(const char *configfile)
     {
         return false;
     }
-    GentList::Instance()->Init();
     return true;
 
 }

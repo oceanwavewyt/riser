@@ -1,19 +1,19 @@
 
 #include "prefine.h"
 #include "gent_util.h"
-#include "gent_level.h"
 #include "gent_db.h"
-#include "gent_list.h"
+#include "gent_queue.h"
+#include "gent_link.h"
 
-GentLevel::GentLevel(GentConnect *c):GentCommand(c)
+GentQueue::GentQueue(GentConnect *c):GentCommand(c)
 {
   keystr = "";
   remains = 0;
 }
-GentLevel::~GentLevel()
+GentQueue::~GentQueue()
 {}
 
-uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string> &v) {
+uint8_t GentQueue::Split(const string &str, const string &delimit, vector<string> &v) {
     uint64_t pos,last_pos=0;
 	uint8_t num = 0;
     while((pos = str.find_first_of(delimit,last_pos)) != string::npos){
@@ -45,20 +45,20 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
 }
 
 
-int GentLevel::CommandWord() {	
+int GentQueue::CommandWord() {	
 	vector<string> tokenList;
 	uint8_t clength = Split(commandstr, " ", tokenList);
 	LOG(GentLog::INFO, "tokenList clength: %d", clength);
 	if(clength == 2 && tokenList[0] == "get") {
 		LOG(GentLog::INFO, "tokenList get");
-		commandtype = CommandType::COMM_GET;
+		commandtype = CommandTypeQueue::COMM_GET;
         keystr = tokenList[1];
 		conn->SetStatus(Status::CONN_DATA);
 		return 0;
 	}else if(clength == 5 && tokenList[0] == "set") {
 	    LOG(GentLog::INFO, "the command is set and the key is %s", tokenList[1].c_str());
         keystr = tokenList[1];
-		commandtype = CommandType::COMM_SET;
+		commandtype = CommandTypeQueue::COMM_SET;
         conn->SetStatus(Status::CONN_NREAD);
         int vlen;                                                                 
         if(!GentUtil::SafeStrtol(tokenList[4].c_str(), (int32_t *)&vlen)) {
@@ -71,18 +71,18 @@ int GentLevel::CommandWord() {
         return rlbytes; 
 	}else if(clength == 2 && tokenList[0] == "del") {
 		LOG(GentLog::INFO, "the command is del and the key is %s", tokenList[1].c_str());
-        commandtype = CommandType::COMM_DEL;
+        commandtype = CommandTypeQueue::COMM_DEL;
         keystr = tokenList[1];
         conn->SetStatus(Status::CONN_DATA);
         return 0; 
 	}else if(clength == 1 && tokenList[0] == "quit") {
 		LOG(GentLog::INFO, "the command is quit");
-        commandtype = CommandType::COMM_QUIT;
+        commandtype = CommandTypeQueue::COMM_QUIT;
         conn->SetStatus(Status::CONN_CLOSE);
         return 0; 
 	}else if(clength == 1 && tokenList[0] == "stats") {
         LOG(GentLog::INFO, "the command is stats");
-        commandtype = CommandType::COMM_STATS;
+        commandtype = CommandTypeQueue::COMM_STATS;
         conn->SetStatus(Status::CONN_DATA);
         return 0;
     }
@@ -90,7 +90,7 @@ int GentLevel::CommandWord() {
 }
 
 
-int GentLevel::ParseCommand(const string &str) {
+int GentQueue::ParseCommand(const string &str) {
 	if(str.size() == 0) return 0;
 	uint64_t pos = str.find_first_of("\n");
 	if(pos == string::npos || pos == 0) return 0;
@@ -101,7 +101,7 @@ int GentLevel::ParseCommand(const string &str) {
 	return 1;
 }
 
-int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
+int GentQueue::Process(const char *rbuf, uint64_t size, string &outstr) {
 	if(size <=0 ) {	
 		outstr = "ERROR\r\n";
 		return 0;
@@ -120,26 +120,8 @@ int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
 	if(cword == 0) return cword;
 	return cword;
 }
-void GentLevel::ProcessDel(string &outstr)
-{
-	if(!GentList::Instance()->Load(keystr)) {
-		outstr = "NOT_FOUND\r\n";
-		return;
-	}
-	string nr = "";
-	if(!GentDb::Instance()->Get(keystr, nr)){
-		outstr = "NOT_FOUND\r\n";
-		return;                  
-	}
-	GentList::Instance()->Clear(keystr);			
-	if(!GentDb::Instance()->Del(keystr)) {
-		outstr = "NOT_FOUND\r\n";
-	}else{
-		outstr = "DELETED\r\n";
-	}
-}
 
-void GentLevel::ProcessGet(string &outstr)
+void GentQueue::ProcessGet(string &outstr)
 {
     string nr="";
     if(!GentDb::Instance()->Get(keystr, nr))
@@ -152,7 +134,7 @@ void GentLevel::ProcessGet(string &outstr)
 	outstr += nr+"\r\nEND\r\n";
 }
 
-void GentLevel::ProcessStats(string &outstr)
+void GentQueue::ProcessStats(string &outstr)
 {
     char retbuf[200] = {0};
     snprintf(retbuf,200,"total connect: %lu\r\ncurrent connect: %lu\r\n",
@@ -160,20 +142,16 @@ void GentLevel::ProcessStats(string &outstr)
     outstr = retbuf;
 }
 
-void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
+void GentQueue::Complete(string &outstr, const char *recont, uint64_t len)
 {
     char buf[20]={0};
 	switch(commandtype)
 	{
-		case CommandType::COMM_GET:
+		case CommandTypeQueue::COMM_GET:
 			//NOT_FOUND
-            if(!GentList::Instance()->Load(keystr)) {
-				outstr += "END\r\n";
-				break;
-			}
-            ProcessGet(outstr);
+           ProcessGet(outstr);
 			break;	
-		case CommandType::COMM_SET:
+		case CommandTypeQueue::COMM_SET:
 			//NOT_STORED
 			LOG(GentLog::WARN, "commandtype::comm_set");
 			content += string(recont,len);
@@ -186,7 +164,6 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 				if(!GentDb::Instance()->Put(keystr, nr)) {
                     outstr = "NOT_STORED\r\n";
                 }else{
-                    GentList::Instance()->Save(keystr);
                     LOG(GentLog::WARN, "commandtype::comm_set stored");
                     sprintf(buf,"STORED\r\n");
                     //outstr = "STORED\r\n";
@@ -195,12 +172,13 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 				//outstr = "STORED\r\n";
 			}
 			break;
-		case CommandType::COMM_QUIT:
+		case CommandTypeQueue::COMM_QUIT:
 			break;
-		case CommandType::COMM_DEL:
-			ProcessDel(outstr); 
+		case CommandTypeQueue::COMM_DEL:
+			//clear queue
+			outstr = "ERROR\r\n";
 			break;
-        case CommandType::COMM_STATS:
+        case CommandTypeQueue::COMM_STATS:
             ProcessStats(outstr);
             break;
 		default:
@@ -209,22 +187,22 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 	}		
 
 }
-GentCommand *GentLevel::Clone(GentConnect *connect)
+GentCommand *GentQueue::Clone(GentConnect *connect)
 {
-	return new GentLevel(connect);
+	return new GentQueue(connect);
 }
-bool GentLevel::Init(string &msg)
+bool GentQueue::Init(string &msg)
 {
    if(!GentDb::Instance()->Init(msg))
    {
        LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
        return false;
    }
-   GentList::Instance()->Init();
+   GentLink::Instance()->Init();
    return true;
 }
 
-void GentLevel::AssignVal(token_t *tokens)
+void GentQueue::AssignVal(token_q *tokens)
 {
     string tmp(tokens[1].value);
     keystr.assign(tmp,0,tmp.size());

@@ -14,6 +14,7 @@
 #include "gent_util.h"
 #include "gent_frame.h"
 #include "gent_config.h"
+#include "gent_link.h"
 
 void daemonize(void) {
     int fd;
