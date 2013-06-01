@@ -137,7 +137,6 @@ GentList *GentList::Instance() {
 }
 
 GentList::GentList(){
-    cout << "gentlist init " <<endl;
 }
 
 GentList::~GentList(){

@@ -28,7 +28,6 @@ void GentFrame::Unstance() {
 }
 
 GentFrame::GentFrame() {
-	LOG(GentLog::INFO, "gentframe init.");
 	msg_.Resize(100);
 }
 
@@ -40,11 +39,15 @@ GentFrame::~GentFrame() {
 int GentFrame::Init(const char *configfile)
 {
     if(access(configfile, 0) == -1) {
-        LOG(GentLog::ERROR, "%s not exist, start fail.", configfile);
+        cout << configfile << " not exist, start fail."<<endl;
         return false;
     }
     config.Parse(string(configfile,strlen(configfile)));
-    //config info
+	if(!GentLog::setfd(config["logfile"])) {
+		cout << " open " << config["logfile"] << " error."<<endl;
+		return false;
+	}
+	//config info
     string msg;
 	GentLevel *p;
 	REGISTER_COMMAND(p, GentLevel);
@@ -62,11 +65,11 @@ int GentFrame::Socket() {
 	int flags = 1;
 	listenfd = socket(AF_INET,SOCK_STREAM,0);
 	if(listenfd == -1) {
-		LOG(GentLog::ERROR, "socket create failed.");	
+		cout << "socket create failed." << endl;	
 		return -1;
 	}
 	if( setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &flags, sizeof(int)) == -1) {
-		LOG(GentLog::ERROR, "set socket option failed.");
+		cout << "set socket option failed." << endl;
 		return -1;
 	}
     setsockopt(listenfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&flags, sizeof(flags));
@@ -79,7 +82,7 @@ int GentFrame::Socket() {
     
 	if ((flags = fcntl(listenfd, F_GETFL, 0)) < 0 ||
 	        fcntl(listenfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-		LOG(GentLog::ERROR, "setting nonblock failed.");	
+		perror("setting nonblock failed.");	
 	    close(listenfd);
 	    return -1;
 	}
@@ -99,16 +102,16 @@ int GentFrame::ServerSocket(int port)  {
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	if(bind(fd,(struct sockaddr *)&addr,sizeof(addr)) == -1 ) {
-		LOG(GentLog::ERROR, "bind port %d failed.", port);	
+		cout << "bind port " <<port << " failed." << endl;	
 		close(fd);
 		return -1;
 	}
 	if(listen(fd,1024) == -1) {
-		LOG(GentLog::ERROR, "listen failed.");	
+		cout << "listen failed." << endl;	
 		close(fd);
 		return -1;
 	}
-	LOG(GentLog::INFO, "bind port %d success.",port);	
+	cout <<  "bind port " <<port <<" success." << endl;	
 	return fd;
 }
 
