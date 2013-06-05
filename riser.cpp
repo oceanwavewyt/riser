@@ -52,6 +52,8 @@ void usage() {
 
 int main(int argc, char **argv)
 {
+	GentLink::Instance()->Init();
+	return 1;
     int ch;
     bool deamon = false;
     int port = -1;
