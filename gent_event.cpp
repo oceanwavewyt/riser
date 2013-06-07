@@ -87,6 +87,7 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
 			/* these are transient, so don't log anything */
 			return;
 		} else if (errno == EMFILE) {
+			LOG(GentLog::ERROR,"Too many open connections");
 			return;
 		} else {
 			LOG(GentLog::WARN, "fd %d accept failed", fd);

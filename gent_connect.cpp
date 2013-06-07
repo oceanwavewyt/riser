@@ -23,12 +23,12 @@ GentConnect::~GentConnect()
 void GentConnect::Destruct()
 {
     if(!fd) return;
-    close(fd);
+    GentAppMgr::Instance()->Destroy(fd);
+	close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);
     if(rbuf) {
         free(rbuf);
     }
-    GentAppMgr::Instance()->Destroy(fd);
 }
 void GentConnect::Init(int sfd) {
     fd = sfd;
@@ -50,7 +50,7 @@ void GentConnect::ReAllocation() {
 }
 
 void GentConnect::Reset() {
-    comm->Reset();
+    //comm->Reset();
     if(rbuf) {
         free(rbuf);
     }

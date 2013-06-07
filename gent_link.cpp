@@ -24,40 +24,41 @@ GentLink *GentLink::Instance() {
 	return intance_;
 }
 
-GentLink::GentLink():pagehead(NULL) {
-	string filename = "pagehead.dat";
+GentLink::GentLink():head(NULL) {
+	string filename = "head.dat";
 	if(access(filename.c_str(),0) == -1) {
 		if ((hfd = open(filename.c_str(), O_RDWR|O_CREAT,00777)) < 0){
-		   cout << "open pagehead.dat error." << endl;                                        
+		   cout << "open head.dat error." << endl;                                        
    		   exit(-1);                                                
 		}
 		if(ftruncate(hfd,sizeof(pageinfo)) < 0)
 		{
-			cout << "ftruncate page.dat file failed." << endl;
+			cout << "ftruncate head.dat file failed." << endl;
 			exit(-1);
 		}
 		close(hfd);	                                                            
 	}
 	if ((hfd = open(filename.c_str(), O_RDWR, 00777)) < 0) {
-		cout << "open pagehead.dat error." << endl;
+		cout << "open head.dat error." << endl;
 		exit(-1);                              
 	}	
-	pagehead = (pageinfo *)mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);	
-	pagehead->pagesize = ((uint64_t)1<<(20));	
-	//msync((void*)pagehead,sizeof(pageinfo),MS_ASYNC);
-	cout << "pagesize: " << pagehead->pagesize << endl;
-	cout << "page: " << pagehead->page << endl;
-
-
-	string pagefile = "page.dat";
+	head = (pageinfo *)mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);	
+	head->pagesize = ((uint64_t)1<<(20));	
+	//msync((void*)head,sizeof(pageinfo),MS_ASYNC);
+	cout << "pagesize: " << head->pagesize << endl;
+	cout << "page: " << head->page << endl;
+	cout << "start offset: " << head->offset << endl;
+	head->page++;
+	exit(-1);
+	string pagefile = "queue.dat";
 	if(access(pagefile.c_str(),0) == -1) {                            
 	    if ((fd = open(pagefile.c_str(), O_RDWR|O_CREAT,00777)) < 0){
-       		cout << "open page.dat error." << endl;                    
+       		cout << "open queue.dat error." << endl;                    
        		exit(-1);                                                  
     	}                                                             
 	}else{
 		if ((fd = open(filename.c_str(), O_RDWR, 00777)) < 0) { 
-   			 cout << "open page.dat error." << endl;              
+   			 cout << "open queue.dat error." << endl;              
     		exit(-1);                                            
 		}                                                        
 	}
@@ -66,55 +67,66 @@ GentLink::GentLink():pagehead(NULL) {
 }
 
 GentLink::~GentLink(){
+   munmap(head, sizeof(pageinfo));
+   munmap(base, head->pagesize);
    close(fd);
    close(hfd);                                             
 }
 
 void GentLink::CreatePage() {
-	uint64_t start = pagehead->pagesize*pagehead->page;
-	if(ftruncate(fd, start + pagehead->pagesize) < 0) {
+	uint64_t start = head->pagesize*head->page;
+	if(ftruncate(fd, start + head->pagesize) < 0) {
 		cout << "create page failed1." << endl;
 		exit(-1);
 	}
-	pagehead->page++;	
-	void *ptr = mmap(NULL, pagehead->pagesize, PROT_READ|PROT_WRITE,MAP_SHARED, fd, start);	
+	head->page++;	
+	void *ptr = mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE,MAP_SHARED, fd, start);	
 	if (ptr == MAP_FAILED) {
 		cout << "create page failed2." << endl;
 		exit(-1);                 
 	}                                    
 	base = reinterpret_cast<char*>(ptr);
-	dest = base;
+	phead = reinterpret_cast<pagehead *>(base);		
+	dest = base + pageHeadLen*sizeof(pagehead);
 	//init current page offset
-	pagehead->offset = 0;
+	head->offset = 0;
+	offsetsize = pageHeadLen*sizeof(pagehead);
 }
 
 void GentLink::Init() {
-	if(!pagehead->page) {
+	if(!head->page) {
 		CreatePage();
 	}else{
-		uint32_t size = (pagehead->page-1)*pagehead->pagesize;
+		uint32_t size = (head->page-1)*head->pagesize;
 		cout << "size: " << size <<endl;
-		void *ptr = mmap(NULL, pagehead->pagesize, PROT_READ|PROT_WRITE,MAP_SHARED, fd, size);
+		void *ptr = mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE,MAP_SHARED, fd, size);
 		if (ptr == MAP_FAILED) {                                                               
     		cout << "create page failed3." << endl;                                            
     		exit(-1);                                                                          
 		}                                                                                      
-		base = reinterpret_cast<char*>(ptr);                                                   
-		dest = base + pagehead->offset;                                                                           
+		base = reinterpret_cast<char*>(ptr);
+		phead = reinterpret_cast<pagehead *>(base);                                                   
+		string nr = "";
+		ReadItem(head->offset, nr);
+		dest = base + phead[head->offset].pos + nr.size();	
+		//dest = base + head->offset;                                                                           
 	}
    	string name;
 	Createid("abc", name);	
 	cout << "name: " << name << endl;
 	struct item it;
-	it.id = pagehead->offset;
+	head->offset++;
+	it.id = head->offset;
 	it.len = name.size();
-	memcpy(dest, &it, sizeof(struct item));
+	phead[head->offset].pos = dest-base;
+	char *its = reinterpret_cast<char*>(&it);
+	memcpy(dest, its, sizeof(struct item));
 	dest += sizeof(struct item);
 	memcpy(dest, name.c_str(), name.size());	
 	dest += name.size();
-	pagehead->offset += sizeof(struct item)+name.size();
+	
 	//string path = GentFrame::Instance()->config["leveldb_db_path"];
-	cout << "offset: " << pagehead->offset << endl;
+	cout << "offset: " << head->offset << endl;
 }
 
 
@@ -127,3 +139,14 @@ void GentLink::Createid(const string &quekey, string &id) {
 	id = buf;
 }
 
+void GentLink::ReadItem(uint16_t id, string &str)
+{
+	if(id > pageHeadLen) return;
+	cout <<"ReadItem: "<<id<<endl;
+	char *t = base + phead[id].pos;
+	item *it = reinterpret_cast<item *>(t);
+	cout << "item: " << it->len << endl;
+	char *s = t + sizeof(item);
+	string ret(s, it->len);
+	str = ret;	
+}

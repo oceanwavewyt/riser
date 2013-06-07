@@ -12,11 +12,20 @@
 #include <sys/mman.h> 
 #include <sys/stat.h> 
 
+const uint16_t pageHeadLen = 12000;
+
+typedef struct pagehead
+{
+	uint16_t id;
+	uint32_t pos;
+}pagehead;
+
+
 typedef struct pageinfo
 {
 	uint16_t page;
-	//write offset the inner of page 
-	uint64_t offset;
+	//write offset id the inner of page 
+	uint16_t offset;
 	uint64_t pagesize;
 	uint16_t curpage;
 	uint16_t curid; 
@@ -24,18 +33,21 @@ typedef struct pageinfo
 
 typedef struct item
 {
-	uint64_t id;
+	uint16_t id;
 	uint8_t len;	
 }item;
 
 class GentLink
 {
     static GentLink *intance_;
-	pageinfo *pagehead;
+	pageinfo *head;
 	int fd;
 	int hfd;
 	char *base;
-	char *dest;	
+	pagehead *phead;
+	char *dest;
+	//page actal offset 
+	uint32_t offsetsize;	
 public:
 	static GentLink *Instance();
 	static void UnInstance();
@@ -47,6 +59,7 @@ public:
 private:
 	void CreatePage();
 	void Createid(const string &quekey,string &);
+	void ReadItem(uint16_t id, string &str);
 };
 
 #endif

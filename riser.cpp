@@ -15,6 +15,8 @@
 #include "gent_frame.h"
 #include "gent_config.h"
 #include "gent_link.h"
+#include <sys/resource.h>
+
 
 void daemonize(void) {
     int fd;
@@ -52,13 +54,12 @@ void usage() {
 
 int main(int argc, char **argv)
 {
-	GentLink::Instance()->Init();
-	return 1;
     int ch;
     bool deamon = false;
     int port = -1;
     char configfile[100] = "riser.conf";
-    while((ch = getopt(argc,argv,"c:vhdp:"))!= -1) {
+    struct rlimit rlim;
+	while((ch = getopt(argc,argv,"c:vhdp:"))!= -1) {
         switch (ch) {
             case 'c':
                 printf("option a:'%s'\n",optarg);
@@ -82,7 +83,18 @@ int main(int argc, char **argv)
     
     }
     std::cout << "Hello, World!\n";
-   /* initialize config file */
+   	
+	if(getrlimit(RLIMIT_NOFILE, &rlim) != 0) {
+		std::cout << "get rlimit failed\n";
+		return 1;
+	}
+	rlim.rlim_cur = 65535;
+	rlim.rlim_max = 65535;
+	if(setrlimit(RLIMIT_NOFILE, &rlim) != 0) {
+		std::cout << "Set rlimit failed, please try starting as root\n";
+		return 1;
+	}
+	/* initialize config file */
 	if(!GentFrame::Instance()->Init(configfile)){
         std::cout << "init fail!\n";
         return 1;

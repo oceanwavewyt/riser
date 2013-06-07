@@ -114,7 +114,8 @@ void GentAppMgr::Destroy(int id)
 {
 	PLUGIN::iterator iter = plus_mgr.find(id);
 	if(iter != plus_mgr.end()){
-		delete plus_mgr[id];	
+		if(plus_mgr[id]) 
+			delete plus_mgr[id];	
 	}
 }
 
