@@ -36,20 +36,27 @@ GentLink::GentLink():head(NULL) {
 			cout << "ftruncate head.dat file failed." << endl;
 			exit(-1);
 		}
-		close(hfd);	                                                            
+        void *h = mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);
+        head = reinterpret_cast<pageinfo*>(h);
+        head->pagesize = ((uint64_t)1<<(20));
+        head->offset = 0;
+        head->page = 0;
+        
+		//close(hfd);
 	}
-	if ((hfd = open(filename.c_str(), O_RDWR, 00777)) < 0) {
-		cout << "open head.dat error." << endl;
-		exit(-1);                              
-	}	
-	head = (pageinfo *)mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);	
-	head->pagesize = ((uint64_t)1<<(20));	
+    if(!head) {
+        if ((hfd = open(filename.c_str(), O_RDWR, 00777)) < 0) {
+            cout << "open head.dat error." << endl;
+            exit(-1);
+        }
+        void *h = mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);
+        head = reinterpret_cast<pageinfo*>(h);
+    }
 	//msync((void*)head,sizeof(pageinfo),MS_ASYNC);
 	cout << "pagesize: " << head->pagesize << endl;
 	cout << "page: " << head->page << endl;
 	cout << "start offset: " << head->offset << endl;
-	head->page++;
-	exit(-1);
+
 	string pagefile = "queue.dat";
 	if(access(pagefile.c_str(),0) == -1) {                            
 	    if ((fd = open(pagefile.c_str(), O_RDWR|O_CREAT,00777)) < 0){
@@ -86,11 +93,13 @@ void GentLink::CreatePage() {
 		exit(-1);                 
 	}                                    
 	base = reinterpret_cast<char*>(ptr);
-	phead = reinterpret_cast<pagehead *>(base);		
-	dest = base + pageHeadLen*sizeof(pagehead);
+	//phead = reinterpret_cast<pagehead *>(base);
+	//dest = base + pageHeadLen*sizeof(pagehead);
+    dest = base;
 	//init current page offset
 	head->offset = 0;
-	offsetsize = pageHeadLen*sizeof(pagehead);
+	//offsetsize = pageHeadLen*sizeof(pagehead);
+    offsetsize = 0;
 }
 
 void GentLink::Init() {
@@ -105,23 +114,25 @@ void GentLink::Init() {
     		exit(-1);                                                                          
 		}                                                                                      
 		base = reinterpret_cast<char*>(ptr);
-		phead = reinterpret_cast<pagehead *>(base);                                                   
+		//phead = reinterpret_cast<pagehead *>(base);
 		string nr = "";
 		ReadItem(head->offset, nr);
-		dest = base + phead[head->offset].pos + nr.size();	
-		//dest = base + head->offset;                                                                           
+        cout << "curitem: "<< nr << endl;
+		//dest = base + phead[head->offset].pos + nr.size();
+		dest = base + head->offset;                                                                           
 	}
    	string name;
 	Createid("abc", name);	
-	cout << "name: " << name << endl;
-	struct item it;
+	cout << "name: " << name <<"\n" << name.size() << endl;
+    //exit(1);
+	//struct item it;
 	head->offset++;
-	it.id = head->offset;
-	it.len = name.size();
-	phead[head->offset].pos = dest-base;
-	char *its = reinterpret_cast<char*>(&it);
-	memcpy(dest, its, sizeof(struct item));
-	dest += sizeof(struct item);
+	//it.id = head->offset;
+	//it.len = name.size();
+	//phead[head->offset].pos = dest-base;
+	//char *its = reinterpret_cast<char*>(&it);
+	//memcpy(dest, its, sizeof(struct item));
+	//dest += sizeof(struct item);
 	memcpy(dest, name.c_str(), name.size());	
 	dest += name.size();
 	
@@ -141,12 +152,13 @@ void GentLink::Createid(const string &quekey, string &id) {
 
 void GentLink::ReadItem(uint16_t id, string &str)
 {
-	if(id > pageHeadLen) return;
+	//if(id > pageHeadLen) return;
 	cout <<"ReadItem: "<<id<<endl;
-	char *t = base + phead[id].pos;
-	item *it = reinterpret_cast<item *>(t);
-	cout << "item: " << it->len << endl;
-	char *s = t + sizeof(item);
-	string ret(s, it->len);
+	//char *t = base + phead[id].pos;
+	//item *it = reinterpret_cast<item *>(t);
+	//cout << "item: " << it->len << endl;
+	//char *s = t + sizeof(item);
+	//string ret(s, it->len);
+    string ret(base + (id * 17),17);
 	str = ret;	
 }
