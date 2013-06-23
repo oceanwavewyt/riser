@@ -25,38 +25,7 @@ GentLink *GentLink::Instance() {
 }
 
 GentLink::GentLink():head(NULL) {
-	string filename = "head.dat";
-	if(access(filename.c_str(),0) == -1) {
-		if ((hfd = open(filename.c_str(), O_RDWR|O_CREAT,00777)) < 0){
-		   cout << "open head.dat error." << endl;                                        
-   		   exit(-1);                                                
-		}
-		if(ftruncate(hfd,sizeof(pageinfo)) < 0)
-		{
-			cout << "ftruncate head.dat file failed." << endl;
-			exit(-1);
-		}
-        void *h = mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);
-        head = reinterpret_cast<pageinfo*>(h);
-        head->pagesize = ((uint64_t)1<<(20));
-        head->offset = 0;
-        head->page = 0;
-        
-		//close(hfd);
-	}
-    if(!head) {
-        if ((hfd = open(filename.c_str(), O_RDWR, 00777)) < 0) {
-            cout << "open head.dat error." << endl;
-            exit(-1);
-        }
-        void *h = mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);
-        head = reinterpret_cast<pageinfo*>(h);
-    }
-	//msync((void*)head,sizeof(pageinfo),MS_ASYNC);
-	cout << "pagesize: " << head->pagesize << endl;
-	cout << "page: " << head->page << endl;
-	cout << "start offset: " << head->offset << endl;
-    
+    HeadFind();
 	string pagefile = "queue.dat";
 	if(access(pagefile.c_str(),0) == -1) {                            
 	    if ((fd = open(pagefile.c_str(), O_RDWR|O_CREAT,00777)) < 0){
@@ -64,17 +33,18 @@ GentLink::GentLink():head(NULL) {
        		exit(-1);                                                  
     	}                                                             
 	}else{
-		if ((fd = open(filename.c_str(), O_RDWR, 00777)) < 0) { 
+		if ((fd = open(pagefile.c_str(), O_RDWR, 00777)) < 0) {
    			 cout << "open queue.dat error." << endl;              
     		exit(-1);                                            
-		}                                                        
+		}
+        lseek(fd,0,SEEK_SET);
 	}
 
 }
 
 GentLink::~GentLink(){
-   //munmap(head, sizeof(pageinfo));
-   //munmap(base, head->pagesize);
+   munmap(head, sizeof(pageinfo));
+   munmap(base, head->pagesize);
    close(fd);
    close(hfd);                                             
 }
@@ -92,13 +62,12 @@ void GentLink::CreatePage() {
 		exit(-1);                 
 	}                                    
 	base = reinterpret_cast<char*>(ptr);
-	//phead = reinterpret_cast<pagehead *>(base);
-	//dest = base + pageHeadLen*sizeof(pagehead);
-    dest = base;
+	phead = reinterpret_cast<pagehead *>(base);
+	dest = base + pageHeadLen*sizeof(pagehead);
 	//init current page offset
 	head->offset = 0;
 	//offsetsize = pageHeadLen*sizeof(pagehead);
-    offsetsize = 0;
+    //offsetsize = 0;
 }
 
 void GentLink::Init() {
@@ -107,37 +76,36 @@ void GentLink::Init() {
 	}else{
 		uint32_t size = (head->page-1)*head->pagesize;
 		cout << "size: " << size <<endl;
-		void *ptr = mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE,MAP_SHARED, fd, size);
-		if (ptr == MAP_FAILED) {                                                               
+		base = (char *)mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+		if (base == MAP_FAILED) {
     		cout << "create page failed3." << endl;                                            
     		exit(-1);                                                                          
-		}                                                                                      
-		base = reinterpret_cast<char *>(ptr);
-		//phead = reinterpret_cast<pagehead *>(base);
-		string nr = "";
-		ReadItem(head->offset-1, nr);
-        cout << "curitem: "<< nr << endl;
-        exit(1);
-		//dest = base + phead[head->offset].pos + nr.size();
-		dest = base + head->offset;                                                                           
+		}
+        //base = reinterpret_cast<char *>(ptr);
+		phead = reinterpret_cast<pagehead *>(base);
+        //exit(1);
+
+		dest = base + phead[head->offset-1].start+phead[head->offset-1].len;
+        //foreach read
+        for(uint16_t i=0; i<head->offset;i++){
+            string nr="";
+            ReadItem(i,nr);
+            cout << "i: "<<i<< "\tval: "<< nr << endl;
+        }
+        
 	}
    	string name;
 	Createid("abc", name);	
 	cout << "name: " << name <<"\n" << name.size() << endl;
-    //exit(1);
-	//struct item it;
+    
+
+    phead[head->offset].len = name.size();
+    phead[head->offset].start = dest - base;
+
 	head->offset++;
-	//it.id = head->offset;
-	//it.len = name.size();
-	//phead[head->offset].pos = dest-base;
-	//char *its = reinterpret_cast<char*>(&it);
-	//memcpy(dest, its, sizeof(struct item));
-	//dest += sizeof(struct item);
+
 	memcpy(dest, name.c_str(), name.size());	
 	dest += name.size();
-	
-	//string path = GentFrame::Instance()->config["leveldb_db_path"];
-	cout << "offset: " << head->offset << endl;
 }
 
 
@@ -153,12 +121,35 @@ void GentLink::Createid(const string &quekey, string &id) {
 void GentLink::ReadItem(uint16_t id, string &str)
 {
 	//if(id > pageHeadLen) return;
-	cout <<"ReadItem: "<<id << " base: " << base <<endl;
-	//char *t = base + phead[id].pos;
-	//item *it = reinterpret_cast<item *>(t);
-	//cout << "item: " << it->len << endl;
-	//char *s = t + sizeof(item);
-	//string ret(s, it->len);
-    string ret(base + (id * 17),17);
-	str = ret;	
+    assert(id<pageHeadLen);
+    string ret(base+phead[id].start,phead[id].len);
+	str = ret;
+}
+
+void GentLink::HeadFind()
+{
+    string filename = "head.dat";
+	if(access(filename.c_str(),0) != -1) {
+        if ((hfd = open(filename.c_str(), O_RDWR, 00777)) < 0) {
+            cout << "open head.dat error." << endl;
+            exit(-1);
+        }
+        void *h = mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);
+        head = reinterpret_cast<pageinfo*>(h);
+	}else {
+        if ((hfd = open(filename.c_str(), O_RDWR|O_CREAT,00777)) < 0){
+            cout << "open head.dat error." << endl;
+            exit(-1);
+		}
+		if(ftruncate(hfd,sizeof(pageinfo)) < 0)
+		{
+			cout << "ftruncate head.dat file failed." << endl;
+			exit(-1);
+		}
+        void *h = mmap(NULL, sizeof(pageinfo), PROT_READ|PROT_WRITE,MAP_SHARED, hfd, 0);
+        head = reinterpret_cast<pageinfo*>(h);
+        head->pagesize = ((uint64_t)1<<(20));
+        head->offset = 0;
+        head->page = 0;
+    }
 }
