@@ -57,6 +57,7 @@ public:
     void Init();
 private:
     void HeadFind();
+	int  OpenFile(string &filename);
 	void CreatePage();
 	void Createid(const string &quekey,string &);
 	void ReadItem(uint16_t id, string &str);

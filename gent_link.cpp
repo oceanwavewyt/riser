@@ -126,6 +126,17 @@ void GentLink::ReadItem(uint16_t id, string &str)
 	str = ret;
 }
 
+int GentLink::OpenFile(string &filename)
+{
+	int f = O_RDWR;
+	if(access(filename.c_str(),0) == -1) {
+		f = f|O_CREAT;
+	}
+	int fid = open(filename.c_str(), f, 00777);
+	assert(fid>0);
+	return fd;
+}
+
 void GentLink::HeadFind()
 {
     string filename = "head.dat";
