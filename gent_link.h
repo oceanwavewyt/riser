@@ -12,7 +12,8 @@
 #include <sys/mman.h> 
 #include <sys/stat.h> 
 
-const uint16_t pageHeadLen = 12000;
+const uint32_t PAGESIZE = ((uint64_t)1<<(20))*64;
+const uint32_t PAGEHEADLEN = 12000 * 64;
 
 typedef struct pagehead
 {
@@ -20,13 +21,23 @@ typedef struct pagehead
     uint16_t len;
 }pagehead;
 
+struct pageact{
+	uint16_t pageid;
+	uint16_t active;
+};
+
 typedef struct pageinfo
 {
-	uint16_t page;
-	//write offset id the inner of page 
-	uint16_t offset;
 	uint64_t pagesize;
+	/*multi page*/
+	struct pageact act[1000];
+	/*current write page*/
+	uint16_t page;
+	/*write offset id the inner of page*/
+	uint16_t offset;
+	/*current read page*/
 	uint16_t curpage;
+	/*current read postion*/
 	uint16_t curid; 
 }pageinfo;
 
@@ -55,12 +66,15 @@ public:
     ~GentLink();
 public:
     void Init();
+	int Push(const string &str);
 private:
     void HeadFind();
 	int  OpenFile(string &filename);
 	void CreatePage();
-	void Createid(const string &quekey,string &);
+	void WriteItem(const string &data);
+	void GenerateId(const string &quekey,string &);
 	void ReadItem(uint16_t id, string &str);
+	void GetPageFile(uint16_t pageid, string &file);
 };
 
 #endif
