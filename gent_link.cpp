@@ -144,10 +144,10 @@ int GentLink::Pop(string &key)
 	if(key == ""){
 		LOG(GentLog::INFO, "read queue is null.");
 		cout << "read queue is null" << endl;
-	}else{
-		LOG(GentLog::INFO, "read queue %s.", key.c_str());
-		cout << "read queue: "<< key << endl;
+		return 0;
 	}
+	LOG(GentLog::INFO, "read queue %s.", key.c_str());
+	cout << "read queue: "<< key << endl;
 	return 1;
 }
 
