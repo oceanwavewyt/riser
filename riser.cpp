@@ -55,9 +55,16 @@ void usage() {
 int main(int argc, char **argv)
 {
 	/*
-	GentLink::Instance()->Init();
-	GentLink::Instance()->Push("");
-	return 1;
+	GentLinkMgr::Instance()->Init();	
+	GentLink *link = GentLinkMgr::Instance()->GetLink("abc");
+	if(!link) {
+		cout << "not exist abc. " << endl;
+		return 0;
+	}
+	link->Push("");
+	string key;
+	link->Pop(key);
+	return 1;	
 	*/
     int ch;
     bool deamon = false;

@@ -198,7 +198,7 @@ bool GentQueue::Init(string &msg)
        LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
        return false;
    }
-   GentLink::Instance()->Init();
+   //GentLinkMgr::Instance()->Init();
    return true;
 }
 

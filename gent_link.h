@@ -49,32 +49,45 @@ typedef struct item
 
 class GentLink
 {
-    static GentLink *intance_;
 	pageinfo *head;
 	int fd;
 	int hfd;
 	char *base;
+	char *rbase;
 	pagehead *phead;
 	char *dest;
 	//page actal offset 
-	uint32_t offsetsize;	
+	uint32_t offsetsize;
+	string name;	
 public:
-	static GentLink *Instance();
-	static void UnInstance();
-public:
-    GentLink();
+    GentLink(const string &name);
     ~GentLink();
 public:
     void Init();
 	int Push(const string &str);
+	int Pop(string &key);
 private:
     void HeadFind();
-	int  OpenFile(string &filename);
+	int  OpenFile(string &filename, bool create=true);
 	void CreatePage();
 	void WriteItem(const string &data);
 	void GenerateId(const string &quekey,string &);
-	void ReadItem(uint16_t id, string &str);
+	bool ReadItem(string &str);
 	void GetPageFile(uint16_t pageid, string &file);
 };
 
+
+class GentLinkMgr
+{
+    static GentLinkMgr *intance_;
+	std::map<string, GentLink *> links;
+public:
+	static GentLinkMgr *Instance();
+	static void UnInstance();
+public:
+	GentLinkMgr();
+	~GentLinkMgr();
+	GentLink *GetLink(const string &queueName);
+	void Init();
+};
 #endif

@@ -15,16 +15,35 @@
 #include "gent_frame.h"
 #include "gent_app_mgr.h"
 
-GentLink *GentLink::intance_ = NULL;
+GentLinkMgr *GentLinkMgr::intance_ = NULL;
 
-GentLink *GentLink::Instance() {
+GentLinkMgr *GentLinkMgr::Instance() {
 	if(intance_ == NULL) {
-		intance_ = new GentLink();
+		intance_ = new GentLinkMgr();
 	}
 	return intance_;
 }
 
-GentLink::GentLink():head(NULL) {
+GentLinkMgr::GentLinkMgr(){
+}
+GentLinkMgr::~GentLinkMgr(){
+}
+
+GentLink *GentLinkMgr::GetLink(const string &queueName)
+{
+	map<string,GentLink*>::iterator it = links.find(queueName);	
+	if(it == links.end()) return NULL;
+	return links[queueName];	
+}
+
+void GentLinkMgr::Init() {
+	string name = "abc";
+	links[name] = new GentLink(name);	
+	links[name]->Init();
+}
+
+
+GentLink::GentLink(const string &n):head(NULL),name(n) {
     HeadFind();
 	//string pagefile = "queue.dat";
 	//fd = OpenFile(pagefile);
@@ -59,6 +78,7 @@ void GentLink::CreatePage() {
 	dest = base + PAGEHEADLEN*sizeof(pagehead);
 	//init current page offset
 	head->offset = 0;
+	head->curpage = 1;
 	//offsetsize = pageHeadLen*sizeof(pagehead);
     //offsetsize = 0;
 }
@@ -81,12 +101,13 @@ void GentLink::Init() {
 
 		dest = base + phead[head->offset-1].start+phead[head->offset-1].len;
         //foreach read
+        /*
         for(uint16_t i=0; i<head->offset;i++) {
             string nr="";
             ReadItem(i,nr);
             cout << "i: "<<i<< "\tval: "<< nr << endl;
         }
-        
+        */
 	}
 }
 
@@ -96,10 +117,35 @@ int GentLink::Push(const string &str)
 		munmap(base, head->pagesize);
 		CreatePage();
 	}
-	string name;
-	GenerateId("abc", name);	
-	cout << "name: " << name <<"\n" << name.size() << endl;
-	WriteItem(name);
+	string curkey;
+	GenerateId(name, curkey);	
+	cout << "push key: " << curkey <<"\n" << curkey.size() << endl;
+	WriteItem(curkey);
+	return 1;
+}
+
+int GentLink::Pop(string &key)
+{
+	if(head->curpage == head->page) {
+		rbase = base;
+	}else{
+		assert(head->curpage<=head->page);
+		string filename;
+		GetPageFile(head->curpage, filename);	
+		int rfd = OpenFile(filename);
+		rbase = (char *)mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE, MAP_SHARED, rfd, 0); 
+		if (rbase == MAP_FAILED) {                                                           
+    		cout << "mmap read page failed." << endl;                                         
+    		exit(-1);                                                                       
+		}                                                                                   
+	}	
+	key = "";
+	ReadItem(key);
+	if(key == ""){
+		cout << "read queue is null" << endl;
+	}else{
+		cout << "read queue: "<< key << endl;
+	}
 	return 1;
 }
 
@@ -120,18 +166,30 @@ void GentLink::WriteItem(const string &data) {
 	dest += data.size();
 }
 
-void GentLink::ReadItem(uint16_t id, string &str)
+bool GentLink::ReadItem(string &str)
 {
 	//if(id > pageHeadLen) return;
-    assert(id<PAGEHEADLEN);
-    string ret(base+phead[id].start,phead[id].len);
+    //assert(id<PAGEHEADLEN);
+	assert(head->curid<PAGEHEADLEN);
+	if(head->curpage == head->page) {
+		if(head->curid == head->offset) return false;
+	}
+    string ret(rbase+phead[head->curid].start,phead[head->curid].len);
 	str = ret;
+	head->curid++;
+	/*in excess of PAGEHEADLEN*/
+	if(head->curpage != head->page && head->curid >= PAGEHEADLEN) {
+		head->curpage++;
+		head->curid = 0;
+	}
+	return true;
 }
 
-int GentLink::OpenFile(string &filename)
+int GentLink::OpenFile(string &filename, bool create)
 {
 	int f = O_RDWR;
 	if(access(filename.c_str(),0) == -1) {
+		assert(create);
 		f = f|O_CREAT;
 	}
 	int fid = open(filename.c_str(), f, 00777);
@@ -141,7 +199,8 @@ int GentLink::OpenFile(string &filename)
 
 void GentLink::HeadFind()
 {
-    string filename = "head.dat";
+	assert(name!="");
+    string filename = name+"_head.dat";
 	hfd = OpenFile(filename);
 	struct stat st;
 	if(stat(filename.c_str(), &st) == -1) {
@@ -166,6 +225,6 @@ void GentLink::HeadFind()
 void GentLink::GetPageFile(uint16_t pageid, string &file)
 {
 	char buf[100]={0};
-	snprintf(buf, 100, "queue_%u.dat",pageid);
+	snprintf(buf, 100, "%s_queue_%u.dat",name.c_str(), pageid);
 	file = buf;
 }
