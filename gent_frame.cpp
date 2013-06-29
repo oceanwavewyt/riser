@@ -9,8 +9,10 @@
 #include "gent_frame.h"
 #include "gent_app_mgr.h"
 #include "gent_thread.h"
+#include "gent_queue.h"
 #include "gent_level.h"
 #include "gent_list.h"
+
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -49,11 +51,20 @@ int GentFrame::Init(const char *configfile)
 	}
 	//config info
     string msg;
-	GentLevel *p;
-	REGISTER_COMMAND(p, GentLevel);
-	if(!p->Init(msg))
-    {
-        return false;
+    if(config["type"] == "" || config["type"] == "leveldb"){
+        GentLevel *p;
+        REGISTER_COMMAND(p, GentLevel);
+        if(!p->Init(msg))
+        {
+            return false;
+        }
+    }else if(config["type"] == "queue"){
+        GentQueue *p;
+        REGISTER_COMMAND(p, GentQueue);
+        if(!p->Init(msg))
+        {
+            return false;
+        }
     }
     return true;
 

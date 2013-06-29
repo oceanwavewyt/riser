@@ -100,12 +100,14 @@ int main(int argc, char **argv)
 		std::cout << "get rlimit failed\n";
 		return 1;
 	}
+    /*
 	rlim.rlim_cur = 65535;
 	rlim.rlim_max = 65535;
 	if(setrlimit(RLIMIT_NOFILE, &rlim) != 0) {
 		std::cout << "Set rlimit failed, please try starting as root\n";
 		return 1;
 	}
+     */
 	/* initialize config file */
 	if(!GentFrame::Instance()->Init(configfile)){
         std::cout << "init fail!\n";

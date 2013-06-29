@@ -6,8 +6,8 @@
 //  Copyright (c) 2013年 wyt. All rights reserved.
 //
 
-#ifndef riser_gent_event_h
-#define riser_gent_event_h
+#ifndef riser_gent_level_h
+#define riser_gent_level_h
 
 #include "gent_command.h"
 #include "gent_connect.h"

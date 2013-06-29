@@ -123,8 +123,20 @@ int GentQueue::Process(const char *rbuf, uint64_t size, string &outstr) {
 
 void GentQueue::ProcessGet(string &outstr)
 {
+    
+    GentLink *link = GentLinkMgr::Instance()->GetLink(keystr);
+    if(!link) {
+        outstr = "END\r\n";
+        return;
+    }
+    string curkey;
+    if(!link->Pop(curkey)){
+        outstr = "END\r\n";
+        return;
+    }
+    
     string nr="";
-    if(!GentDb::Instance()->Get(keystr, nr))
+    if(!GentDb::Instance()->Get(curkey, nr))
     {
         outstr = "END\r\n";
     }
@@ -142,9 +154,30 @@ void GentQueue::ProcessStats(string &outstr)
     outstr = retbuf;
 }
 
+void GentQueue::ProcessSet(string &outstr, const string &cont)
+{
+    GentLink *link = GentLinkMgr::Instance()->GetLink(keystr);
+    if(!link) {
+        outstr = "END\r\n";
+        return;
+    }
+    string curkey;
+    link->GenerateId(curkey);
+    string nr;
+    nr.assign(cont.c_str(), rlbytes-2);
+    if(!GentDb::Instance()->Put(curkey, nr)) {
+        outstr = "NOT_STORED\r\n";
+    }else{
+        LOG(GentLog::WARN, "commandtype::comm_set stored");
+        char buf[20]={0};
+        sprintf(buf,"STORED\r\n");
+        outstr.assign(buf,8);
+        link->Push(curkey);
+    }
+}
+
 void GentQueue::Complete(string &outstr, const char *recont, uint64_t len)
 {
-    char buf[20]={0};
 	switch(commandtype)
 	{
 		case CommandTypeQueue::COMM_GET:
@@ -159,17 +192,7 @@ void GentQueue::Complete(string &outstr, const char *recont, uint64_t len)
 				outstr = "CLIENT_ERROR bad data chunk\r\n";
 				LOG(GentLog::WARN, "CLIENT_ERROR bad data chunk");
 			}else{
-				string nr;                   
- 				nr.assign(content.c_str(), rlbytes-2);
-				if(!GentDb::Instance()->Put(keystr, nr)) {
-                    outstr = "NOT_STORED\r\n";
-                }else{
-                    LOG(GentLog::WARN, "commandtype::comm_set stored");
-                    sprintf(buf,"STORED\r\n");
-                    //outstr = "STORED\r\n";
-                    outstr.assign(buf,8);
-                }
-				//outstr = "STORED\r\n";
+                ProcessSet(outstr, content);
 			}
 			break;
 		case CommandTypeQueue::COMM_QUIT:
@@ -198,7 +221,7 @@ bool GentQueue::Init(string &msg)
        LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
        return false;
    }
-   //GentLinkMgr::Instance()->Init();
+   GentLinkMgr::Instance()->Init();
    return true;
 }
 

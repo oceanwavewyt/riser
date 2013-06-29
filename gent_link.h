@@ -64,6 +64,7 @@ public:
     ~GentLink();
 public:
     void Init();
+    void GenerateId(string &);
 	int Push(const string &str);
 	int Pop(string &key);
 private:
@@ -71,7 +72,6 @@ private:
 	int  OpenFile(string &filename, bool create=true);
 	void CreatePage();
 	void WriteItem(const string &data);
-	void GenerateId(const string &quekey,string &);
 	bool ReadItem(string &str);
 	void GetPageFile(uint16_t pageid, string &file);
 };

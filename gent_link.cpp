@@ -109,14 +109,12 @@ void GentLink::Init() {
 	}
 }
 
-int GentLink::Push(const string &str)
+int GentLink::Push(const string &curkey)
 {
 	if(head->offset >= PAGEHEADLEN) {
 		munmap(base, head->pagesize);
 		CreatePage();
-	}
-	string curkey;
-	GenerateId(name, curkey);	
+	}	
 	cout << "push key: " << curkey <<"\n" << curkey.size() << endl;
 	LOG(GentLog::INFO, "push item %s", curkey.c_str());
 	WriteItem(curkey);
@@ -151,12 +149,12 @@ int GentLink::Pop(string &key)
 	return 1;
 }
 
-void GentLink::GenerateId(const string &quekey, string &id) {
+void GentLink::GenerateId(string &id) {
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
     long t = tv.tv_sec * 1000 + tv.tv_usec / 1000;
 	char buf[100];
-	sprintf(buf,"%s_%ld", quekey.c_str(), t);
+	sprintf(buf,"%s_%ld", name.c_str(), t);
 	id = buf;
 }
 

@@ -6,8 +6,8 @@
 //  Copyright (c) 2013年 wyt. All rights reserved.
 //
 
-#ifndef riser_gent_event_h
-#define riser_gent_event_h
+#ifndef riser_gent_queue_h
+#define riser_gent_queue_h
 
 #include "gent_command.h"
 #include "gent_connect.h"
@@ -51,6 +51,7 @@ private:
    int CommandWord();
    void AssignVal(token_q *tokens);
    void ProcessGet(string &);
+    void ProcessSet(string &outstr, const string &cont);
    void ProcessStats(string &);
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	
