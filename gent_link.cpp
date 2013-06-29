@@ -62,7 +62,7 @@ void GentLink::CreatePage() {
 	GetPageFile(pid, pageFile);
 	fd = OpenFile(pageFile);
 	if(ftruncate(fd, head->pagesize) < 0) {
-    	cout << "create page failed1." << endl;    
+		LOG(GentLog::ERROR, "ftruncate page failed.");
 		exit(-1);                                  
 	}
 	head->act[head->page].pageid = pid;
@@ -71,6 +71,7 @@ void GentLink::CreatePage() {
 	void *ptr = mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE,MAP_SHARED, fd, 0);	
 	if (ptr == MAP_FAILED) {
 		cout << "create page failed2." << endl;
+		LOG(GentLog::ERROR, "mmap page failed.");
 		exit(-1);                 
 	}                                    
 	base = reinterpret_cast<char*>(ptr);
@@ -79,8 +80,6 @@ void GentLink::CreatePage() {
 	//init current page offset
 	head->offset = 0;
 	head->curpage = 1;
-	//offsetsize = pageHeadLen*sizeof(pagehead);
-    //offsetsize = 0;
 }
 
 void GentLink::Init() {
@@ -92,12 +91,11 @@ void GentLink::Init() {
 		fd = OpenFile(filename);
 		base = (char *)mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 		if (base == MAP_FAILED) {
-    		cout << "create page failed3." << endl;                                            
+    		cout << "create page failed3." << endl;
+			LOG(GentLog::ERROR, "mmap page failed.");                                            
     		exit(-1);                                                                          
 		}
-        //base = reinterpret_cast<char *>(ptr);
 		phead = reinterpret_cast<pagehead *>(base);
-        //exit(1);
 
 		dest = base + phead[head->offset-1].start+phead[head->offset-1].len;
         //foreach read
@@ -120,6 +118,7 @@ int GentLink::Push(const string &str)
 	string curkey;
 	GenerateId(name, curkey);	
 	cout << "push key: " << curkey <<"\n" << curkey.size() << endl;
+	LOG(GentLog::INFO, "push item %s", curkey.c_str());
 	WriteItem(curkey);
 	return 1;
 }
@@ -135,15 +134,18 @@ int GentLink::Pop(string &key)
 		int rfd = OpenFile(filename);
 		rbase = (char *)mmap(NULL, head->pagesize, PROT_READ|PROT_WRITE, MAP_SHARED, rfd, 0); 
 		if (rbase == MAP_FAILED) {                                                           
-    		cout << "mmap read page failed." << endl;                                         
+    		cout << "mmap read page failed." << endl;
+			LOG(GentLog::ERROR, "mmap read page failed.");                                         
     		exit(-1);                                                                       
 		}                                                                                   
 	}	
 	key = "";
 	ReadItem(key);
 	if(key == ""){
+		LOG(GentLog::INFO, "read queue is null.");
 		cout << "read queue is null" << endl;
 	}else{
+		LOG(GentLog::INFO, "read queue %s.", key.c_str());
 		cout << "read queue: "<< key << endl;
 	}
 	return 1;
@@ -205,10 +207,12 @@ void GentLink::HeadFind()
 	struct stat st;
 	if(stat(filename.c_str(), &st) == -1) {
 		cout << "stat head.dat error." << endl;
+		LOG(GentLog::ERROR, "stat head.dat failed.");
 		exit(-1);                              
 	}
 	if(!st.st_size) {
-		if(ftruncate(hfd,sizeof(pageinfo)) < 0) {                                                     
+		if(ftruncate(hfd,sizeof(pageinfo)) < 0) {
+			LOG(GentLog::ERROR, "ftruncate head.dat failed.");                                                     
 	    	cout << "ftruncate head.dat file failed." << endl;
     		exit(-1);                                         
 		}                                                     
