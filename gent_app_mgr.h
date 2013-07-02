@@ -16,40 +16,7 @@ typedef std::map<int,GentCommand*> PLUGIN;
 typedef std::vector<GentConnect *> CONNPOOL;
 
 
-class CommLock
-{
-private:
-    pthread_mutex_t _lock;
-public:
-    CommLock()
-	{
-		pthread_mutex_init(&_lock,NULL);
-	}
-	~CommLock(){}
-	void Lock()
-	{
-		pthread_mutex_lock(&_lock);
-	}
-	void UnLock()
-	{
-		pthread_mutex_unlock(&_lock);
-	}
-};
 
-class AutoLock{
-	CommLock* _lock;
-public:
-	AutoLock(CommLock * lock)
-	{
-		_lock = lock;
-		_lock->Lock();
-	}
-    
-    ~AutoLock()
-	{
-		_lock->UnLock();
-	}
-};
 
 class GentAppMgr
 {

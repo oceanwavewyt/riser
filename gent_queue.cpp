@@ -4,6 +4,8 @@
 #include "gent_db.h"
 #include "gent_queue.h"
 #include "gent_link.h"
+#include "gent_frame.h"
+#include "gent_app_mgr.h"
 
 GentQueue::GentQueue(GentConnect *c):GentCommand(c)
 {

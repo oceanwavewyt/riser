@@ -9,7 +9,7 @@
 #include "gent_connect.h"
 #include "gent_event.h"
 #include "gent_level.h"
-
+#include "gent_app_mgr.h"
 #include <errno.h>
 GentConnect::GentConnect(int sfd)
 {

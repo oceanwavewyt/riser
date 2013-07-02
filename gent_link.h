@@ -58,7 +58,8 @@ class GentLink
 	char *dest;
 	//page actal offset 
 	uint32_t offsetsize;
-	string name;	
+	string name;
+	CommLock link_lock;	
 public:
     GentLink(const string &name);
     ~GentLink();

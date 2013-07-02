@@ -23,7 +23,8 @@ void GentUtil::AssignVal(const char *str, string &outstr, int len) {
 }
 
 string GentUtil::LTrim(const string& str) {
-    return str.substr(str.find_first_not_of(" \n\r\t"));
+	uint64_t s = str.find_first_not_of(" \n\r\t");
+	return str.substr(s);
 }
 
 string GentUtil::RTrim(const string& str) {
@@ -34,3 +35,23 @@ string GentUtil::Trim(const string& str) {
     return LTrim(RTrim(str));
 }
 
+bool GentUtil::Split(const string &str, const string &delimit, vector<string> &v) {
+	uint64_t rpos, pos = 0;
+	string s;
+	while((rpos = str.find_first_of(delimit, pos)) != string::npos) {
+		if(rpos == pos) {
+			pos++;
+		}else{
+			s = Trim(str.substr(pos, rpos-pos));
+			if(s != "") { 
+				v.push_back(s);
+			}
+			pos = rpos+1;
+		}
+	}
+	s = Trim(str.substr(pos));
+	if(s != "") { 
+		v.push_back(s);
+	}		
+	return true;
+}

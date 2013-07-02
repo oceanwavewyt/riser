@@ -10,6 +10,7 @@
 #include "gent_msg.h"
 #include "gent_thread.h"
 #include "gent_level.h"
+#include "gent_app_mgr.h"
 
 #define xisspace(c) isspace((unsigned char)c)
 

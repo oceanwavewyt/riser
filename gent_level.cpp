@@ -4,6 +4,7 @@
 #include "gent_level.h"
 #include "gent_db.h"
 #include "gent_list.h"
+#include "gent_app_mgr.h"
 
 GentLevel::GentLevel(GentConnect *c):GentCommand(c)
 {

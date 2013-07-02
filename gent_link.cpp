@@ -14,6 +14,7 @@
 #include "gent_config.h"
 #include "gent_frame.h"
 #include "gent_app_mgr.h"
+#include "gent_util.h"
 
 GentLinkMgr *GentLinkMgr::intance_ = NULL;
 
@@ -37,9 +38,22 @@ GentLink *GentLinkMgr::GetLink(const string &queueName)
 }
 
 void GentLinkMgr::Init() {
-	string name = "abc";
-	links[name] = new GentLink(name);	
-	links[name]->Init();
+	vector<string> que;
+   	string queueNames = GentFrame::Instance()->config["queue_name"]; 
+   	if(queueNames == "") {
+		cout << "please set queue_name in riser.conf."<< endl;
+		exit(1);
+	}
+	GentUtil::Split(queueNames, ",", que);
+	if(que.size() == 0) {
+		cout << "no queue exists." <<endl;
+		exit(1);
+	}
+	vector<string>::iterator it;
+	for(it=que.begin(); it!=que.end();it++) {
+		links[*it] = new GentLink(*it);	
+		links[*it]->Init();
+	}
 }
 
 
@@ -111,6 +125,7 @@ void GentLink::Init() {
 
 int GentLink::Push(const string &curkey)
 {
+	AutoLock lock(&link_lock);
 	if(head->offset >= PAGEHEADLEN) {
 		munmap(base, head->pagesize);
 		CreatePage();
@@ -123,6 +138,7 @@ int GentLink::Push(const string &curkey)
 
 int GentLink::Pop(string &key)
 {
+	AutoLock lock(&link_lock);
 	if(head->curpage == head->page) {
 		rbase = base;
 	}else{
