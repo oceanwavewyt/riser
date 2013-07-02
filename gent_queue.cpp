@@ -164,7 +164,7 @@ void GentQueue::ProcessSet(string &outstr, const string &cont)
         return;
     }
     string curkey;
-    link->GenerateId(curkey);
+    link->Push(curkey);
     string nr;
     nr.assign(cont.c_str(), rlbytes-2);
     if(!GentDb::Instance()->Put(curkey, nr)) {
@@ -174,7 +174,6 @@ void GentQueue::ProcessSet(string &outstr, const string &cont)
         char buf[20]={0};
         sprintf(buf,"STORED\r\n");
         outstr.assign(buf,8);
-        link->Push(curkey);
     }
 }
 

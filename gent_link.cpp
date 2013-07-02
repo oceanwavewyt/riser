@@ -123,13 +123,14 @@ void GentLink::Init() {
 	}
 }
 
-int GentLink::Push(const string &curkey)
+int GentLink::Push(string &curkey)
 {
 	AutoLock lock(&link_lock);
 	if(head->offset >= PAGEHEADLEN) {
 		munmap(base, head->pagesize);
 		CreatePage();
-	}	
+	}
+	GenerateId(curkey);	
 	cout << "push key: " << curkey <<"\n" << curkey.size() << endl;
 	LOG(GentLog::INFO, "push item %s", curkey.c_str());
 	WriteItem(curkey);
