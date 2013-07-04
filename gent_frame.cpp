@@ -12,6 +12,7 @@
 #include "gent_queue.h"
 #include "gent_level.h"
 #include "gent_list.h"
+#include "gent_filter.h"
 
 
 GentFrame *GentFrame::instance_ = NULL;
@@ -65,7 +66,14 @@ int GentFrame::Init(const char *configfile)
         {
             return false;
         }
-    }
+    }else if(config["type"] == "filter") {
+		GentFilter *p;
+		REGISTER_COMMAND(p, GentFilter);
+		if(!p->Init(msg))              
+		{                              
+    		return false;              
+		}                              
+	}
     return true;
 
 }
