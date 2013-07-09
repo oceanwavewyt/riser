@@ -23,11 +23,8 @@ typedef struct queue_t {
     struct queue_t *next;
 } queue_t;
 
-typedef struct {
-    int length;
-    queue_t *head_ex; //exist head
-    queue_t *head_noex;
-} nodestats_t;		
+
+typedef std::map<int, std::vector<int> > nodestats_t;
 
 class GentFind
 {
@@ -64,13 +61,14 @@ private:
 	node *NodeSet(int base,int check,int account,const char *name,short is_word);
 	long GetEncode(const char *key, int base_val, int is_asc);
 	void DelExQueue(int index);
-	void AddExQueue(int index);
+	void AddExQueue(int index, int childid);
+    void AddExQueue(int index, std::vector<int> &vt);
 	void IncreMemary(int cur_len);
 	int  GetChildCount(int parent_key);
-	void GetChild(int parent_index,int ret[]);
+	void GetChild(int parent_index,std::vector<int> &ret);
 	void SetChildCheck(int parent_index,int val);
-	int GetBaseValue(int parent_index,int child_count,const char *key,int is_asc,int child[]);
-	int MoveNode(int child_count,int child[],int real_base,int is_asc,int index);
+	int GetBaseValue(int parent_index/*,int child_count*/,const char *key,int is_asc,std::vector<int> &child);
+	int MoveNode(int child_count,std::vector<int> &child,int real_base,int is_asc,int index, int parent_index);
 	long NodesConflict(long encode_t, const char *name,int index,int is_asc);
 };
 #endif

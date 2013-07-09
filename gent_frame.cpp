@@ -51,6 +51,7 @@ int GentFrame::Init(const char *configfile)
 		return false;
 	}
 	//config info
+    cout << "type: "<< config["type"] << endl;
     string msg;
     if(config["type"] == "" || config["type"] == "leveldb"){
         GentLevel *p;

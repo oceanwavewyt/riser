@@ -90,30 +90,34 @@ node *GentFindMgr::NodeSet(int base,int check,int account,const char *name,short
 	return it;                                                                         
 }                                                                                      
 
-void GentFindMgr::AddExQueue(int index) {
-	int is_exist = 0;
-	queue_t *q = nodestats.head_ex;
-	do{
-		if(!q) break;
-		if(q->index == index) {
-			is_exist = 1;
-			break;
-		}
-		q = q->next;
-	}while (q);
-	if(is_exist == 0) {
-		q = (queue_t *)Gcalloc(1,sizeof(queue_t));
-		q->next = nodestats.head_ex;
-		q->index = index;
-		nodestats.head_ex = q;
-	}
-	//q = nodestats.head_ex;
-	//do{
-	//  printf("%d\n",q->index);
-	//}while (q = q->next);
+void GentFindMgr::AddExQueue(int index, int childIndex) {
+    nodestats_t::iterator it;
+    it = nodestats.find(index);
+    if(it == nodestats.end()) {
+        std::vector<int> v;
+        v.push_back(childIndex);
+        nodestats[index] = v;
+    }else {
+        nodestats[index].push_back(childIndex);
+    }
 }
 
-void GentFindMgr::DelExQueue(int index) {                                                
+void GentFindMgr::AddExQueue(int index, std::vector<int> &vt) {
+    if(vt.size()==0) return;
+    nodestats[index] = vt;
+}
+
+void GentFindMgr::DelExQueue(int index) {
+    nodestats_t::iterator it;
+    it = nodestats.find(index);
+    if(it == nodestats.end()) return;
+    nodestats.erase(it);
+    /*
+    for(size_t k =0; k<nodestats[index].size();k++){
+        cout << "del: "<< nodestats[index][k] << endl;
+    }
+    */
+    /*
     queue_t *q = nodestats.head_ex;                                                  
     queue_t *pre_q = 0;                                                              
     do{                                                                              
@@ -131,7 +135,8 @@ void GentFindMgr::DelExQueue(int index) {
             }                                                                        
             break;                                                                   
         }                                                                            
-    }while (q);                                                                      
+    }while (q); 
+    */
 }                                                                                    
                                                                                      
 long GentFindMgr::GetEncode(const char *key, int base_val, int is_asc)                    
@@ -148,38 +153,39 @@ void GentFindMgr::Init() {
 	cout << "GentFindMgr::Init" << endl;
 	nodestable = (node**)Gmalloc(length*sizeof(node *));
 	memset(nodestable,0,length*sizeof(node *));   
-	nodestable[0] = NodeSet(1,1,0,"",0);       
-	AddExQueue(0);                            
-	nodestats.head_ex = NULL;                   
+	nodestable[0] = NodeSet(1,1,0,"",0);
+    AddExQueue(0, 1);
+	//nodestats.head_ex = NULL;
+    
+    setlocale(LC_ALL, "zh_CN.UTF-8");
+    char *fileKeyName="./key.txt";
+	FILE *fp;
+	int bufsize=120;
+	if((fp=fopen(fileKeyName,"r"))==NULL){
+		printf("%s file no exit\n",fileKeyName);
+		exit(0);
+	}
+	char *oneLine=(char *)malloc(sizeof(char)*bufsize);
+	while(fgets(oneLine,bufsize,fp)!=NULL){
+		printf("%s\n",oneLine);
+        //oneLine[strlen(oneLine)]='\0';
+
+        string iterm(oneLine, strlen(oneLine));
+        iterm = GentUtil::Trim(iterm);
+        char abc[120]={0};
+        memcpy(abc,iterm.c_str(),iterm.size());
+        cout << "abc: "<< abc <<endl;
+        wchar_t tmp[bufsize];
+		size_t wc_len = Charwchar(abc,tmp);
+        //cout << "len: "<< wc_len <<endl;
+		ItemCreate(tmp,wc_len);
+        //break;
+	}
+	fclose(fp);
+    exit(1);
 }
 
-int GentFindMgr::NodesAdd(char *name,int index,int is_asc) {                
-	long encode_t = GetEncode(name,nodestable[index]->base,is_asc);   
-	if(length <= encode_t ){                                           
-		//分配内存                                                     
-		IncreMemary(encode_t);                                        
-		//给节点赋值                                                   
-		nodestable[encode_t] = NodeSet(1,index,0,name,0);             
-		AddExQueue(encode_t);                                        
-		//display();                                                     
-		return encode_t;                                               
-	}                                                                  
-	node *p = nodestable[encode_t];                                    
-	if(p == 0) {                                                       
-		nodestable[encode_t] = NodeSet(1,index,0,name,0);             
-		AddExQueue(encode_t);                                        
-		//display();                                                     
-		return encode_t;                                               
-	}                                                                  
-
-	//该节点是重复的节点，不需要处理                                   
-	if(p->check == index && p->base != 0) return encode_t;             
-	//conflict occur                                                   
-	//printf("index:%d,index_base:%d\n",index,nodestable[index]->base);
-	encode_t = NodesConflict(encode_t, name, index, is_asc);          
-//	display();                                                         
-	return encode_t;                                                   
-}                                                                      
+                                                                     
 
 //分配内存                                               
 void  GentFindMgr::IncreMemary(int cur_len)                   
@@ -189,38 +195,49 @@ void  GentFindMgr::IncreMemary(int cur_len)
 	p = memcpy(p,nodestable, sizeof(node *)*length);     
 	Gfree(nodestable);                                 
 	nodestable = (node **)p;                                      
-	length = last;                                       
+	length = last;                                     
 }                                                        
 
 //获得孩子的数目                                         
-int GentFindMgr::GetChildCount(int parent_key) {             
-	int ret = 0;                                         
-	int i;                                               
-	queue_t *q = nodestats.head_ex;                      
-	do{                                                  
-		i = q->index;                                    
-		if(nodestable[i]->check == parent_key) {         
-			ret++;                                       
-		}
-		q = q->next;                                                
-	}while(q);                                 
-	return ret;                                          
+int GentFindMgr::GetChildCount(int parent_key) {
+    nodestats_t::iterator it;
+    it = nodestats.find(parent_key);
+    if(it == nodestats.end()) {
+        return 0;
+    }
+    return nodestats[parent_key].size();
 }                                                        
 
-void GentFindMgr::GetChild(int parent_index,int ret[]) {      
-	int i;                                               
-	int j = 0;                                           
-	queue_t *q = nodestats.head_ex;                      
-	do{                                                  
-		i = q->index;                                    
-		if(nodestable[i]->check == parent_index) {       
-			ret[j++] = i;                                
-		}                                                
-		q = q->next;
-	}while(q);                                 
+void GentFindMgr::GetChild(int parent_index, std::vector<int> &ret) {
+	nodestats_t::iterator it;
+    it = nodestats.find(parent_index);
+    if(it == nodestats.end()) {
+        return;
+    }
+    ret = nodestats[parent_index];
+    /*
+    for(size_t k =0; k<nodestats[parent_index].size();k++){
+        ret.push_back(nodestats[parent_index][k]);
+    }
+     */
 }                                                        
 
-void GentFindMgr::SetChildCheck(int parent_index,int val) { 
+/**
+ *@parent_index old node index
+ *@new_index new node index
+ */
+void GentFindMgr::SetChildCheck(int parent_index,int new_index) {
+    //find parent_index node's child
+    nodestats_t::iterator it;
+    it = nodestats.find(parent_index);
+    if(it == nodestats.end()) {
+        return;
+    }
+    for(size_t j=0; j<nodestats[parent_index].size();j++) {
+        nodestable[nodestats[parent_index][j]]->check = new_index;
+    }
+    
+    /*
     int i;                                              
     queue_t *q = nodestats.head_ex;                     
     do{                                                 
@@ -229,22 +246,29 @@ void GentFindMgr::SetChildCheck(int parent_index,int val) {
             nodestable[i]->check = val;                 
         }
 		q = q->next;                                               
-    }while(q);                                
+    }while(q);
+    */
 }                                                       
 
-int GentFindMgr::GetBaseValue(int parent_index,int child_count,const char *key,int is_asc,int child[]) {                                                   int cur_base = nodestable[parent_index]->base;                                                 
+int GentFindMgr::GetBaseValue(int parent_index,const char *key,
+                              int is_asc,std::vector<int> &child) {
+    int cur_base = nodestable[parent_index]->base;
     int tmp_base = cur_base+1;                                                                     
-    //找出child节点                                                                                
-	GetChild(parent_index,child);                                                                 
-	int j=0;                                                                                       
+    //找出child节点
+	GetChild(parent_index,child);
+    //std::vector<int>::iterator it;
+	size_t j=0;
 	int is_find=0;                                                                                 
 	while(!is_find) {                                                                              
-		int is_able = 1;                                                                           
-		for(j=0; j<child_count; j++) {                                                             
-			int pos_index = child[j] - cur_base + tmp_base;                                        
+		int is_able = 1;
+        //for(it=child.begin();it!=child.end();it++){
+        for(j=0; j<child.size(); j++) {
+            //cout << "GetBaseValue child :" <<child[j] << endl;
+            //cout << "GetBaseValue check: " << nodestable[child[j]]->check << endl;
+			int pos_index = child[j] - cur_base + tmp_base;
 			//分配内存                                                                             
 			if(length < pos_index){                                                                
-				IncreMemary(pos_index);                                                           
+				IncreMemary(pos_index);
 			}else if(nodestable[pos_index] != 0){                                                  
 				//表示该节点不可以存放                                                             
 				is_able = 0;                                                                       
@@ -264,71 +288,115 @@ int GentFindMgr::GetBaseValue(int parent_index,int child_count,const char *key,i
 	return tmp_base;                                                                               
 }                                                                                                  
 
-int GentFindMgr::MoveNode(int child_count,int child[],int real_base,int is_asc,int index) {                                       
-    int i;                                                                                                                   
-    int ret = index;                                                                                                         
-	for(i=0; i<child_count; i++){                                                                                            
-		int pindex = nodestable[child[i]]->check;                                                                            
-		int tmp_index = child[i] - nodestable[pindex]->base + real_base;                                                     
+int GentFindMgr::MoveNode(int child_count,std::vector<int> &child,int real_base,int is_asc,
+                          int index,int parent_index) {
+    int ret = index;
+    std::vector<int> new_child;
+    size_t childCount = child.size();
+	for(size_t i=0; i<childCount; i++){
 		int new_index = GetEncode(nodestable[child[i]]->name,real_base,is_asc);                                             
-		printf("tmp_index:%d,new_index:%d,base:%d\n",tmp_index,new_index,nodestable[child[i]]->base);                      
-		nodestable[new_index] = NodeSet(nodestable[child[i]]->base,nodestable[child[i]]->check,                             
+        nodestable[new_index] = NodeSet(nodestable[child[i]]->base,nodestable[child[i]]->check,                             
 				nodestable[child[i]]->child_count,nodestable[child[i]]->name,                    
 				nodestable[child[i]]->is_word);                                                  
 		//可能是移动父节点                                                                                                   
 		if(child[i] == index) {                                                                                              
 			ret = new_index;                                                                                                 
-		}                                                                                                                    
+		}
+        new_child.push_back(new_index);
 		//改变new_index的孩子节点的check值                                                                                   
-		SetChildCheck(child[i],new_index);                                                                                 
-		AddExQueue(new_index);                                                                                             
-		DelExQueue(child[i]);                                                                                              
+		SetChildCheck(child[i],new_index);
+        //取得节点的孩子index把赋值给新的节点
+        std::vector<int> vt;
+        GetChild(child[i], vt);
+		AddExQueue(new_index,vt);
+        //删除老的节点
+		DelExQueue(child[i]);
 		node *p = nodestable[child[i]];                                                                                      
 		nodestable[child[i]] = NULL;                                                                                         
 		Gfree(p);                                                                                                          
-	}                                                                                                                        
+	}
+    AddExQueue(parent_index, new_child);
 	return ret;                                                                                                              
 }                                                                                                                            
 
-long GentFindMgr::NodesConflict(long encode_t, const char *name,int index,int is_asc) {                                                
+long GentFindMgr::NodesConflict(long encode_t, const char *name,int index,int is_asc) {
     //寻找节点,冲突发生                                                                                                           
-    //检查t节点的check值，（查看t有多少个兄弟节点）                                                                               
+    //检查t节点的check值，（查看t有多少个兄弟节点）
+    //此时encode_t是新节点和index还未建立真正的父子关系
 	int tcount = GetChildCount(nodestable[encode_t]->check);                                                                    
 	//查看index节点的孩子数目                                                                                                     
 	int icount = GetChildCount(index);                                                                                          
 	//包括需要插入的节点                                                                                                          
 	icount++;                                                                                                                     
-	//printf("check:%d,tcount:%d , icount:%d\n",nodestable[encode_t]->check,tcount,icount);                                       
-	//改变child小的那个base值,且 新的节点                                                                                         
+	//printf("check:%d,tcount:%d , icount:%d\n",nodestable[encode_t]->check,tcount,icount);
+    
+	//改变child小的那个base值,且 新的节点
 	if(tcount<=icount && encode_t != index){                                                                                      
 		//让出encode_t节点,为了不使用改变index(父节点)，所以不能有encode_t == index （与父节点冲突）                              
-		int child[tcount];                                                                                                        
+        std::vector<int> child;
+        
 		//寻找数组dArray[dArray[t].check]的base值，所有孩子当中check[］=0,base[]=0，使当前t节点为可用   (dArray[t].check 为父节点)
-		int real_base = GetBaseValue(nodestable[encode_t]->check,tcount,NULL,is_asc,child);                                     
+        //cout << "nodestable[encode_t]->check:" << nodestable[encode_t]->check << endl;
+		int real_base = GetBaseValue(nodestable[encode_t]->check,NULL,is_asc,child);                                     
 		//get_child(nodestable[encode_t]->check,tcount);                                                                          
 		//把子节点的数据挪到新的位置, dArray[childArr[i]]为老的节点                                                               
 		//printf("index2:%d,index_base2:%d\n",index,nodestable[index]->base);                                                     
 		//特殊情况：孩子节点当中正好有index节点，哈哈哈 => 需要改变index的值                                                      
 
-		index = MoveNode(tcount,child,real_base,is_asc,index);                                                                   
-		//int b = (nodestable[index] == 0)?1:nodestable[index]->base;                                                             
+		index = MoveNode(tcount,child,real_base,is_asc,index, nodestable[encode_t]->check);
+        AddExQueue(index,encode_t);                                                           
 		nodestable[encode_t] = NodeSet(nodestable[index]->base,index,0,name,0);                                                  
 	}else{                                                                                                                        
-		//改变index的base值.来达到index的子节点(包括当前需要插入的节点)，同时把新的插入节点(不是t)                                
-		//t的值是index新的base值加encode的值                                                                                      
-		icount=icount-1;                                                                                                          
-		int child[icount];                                                                                                        
-		int real_base = GetBaseValue(index,icount,name,is_asc,child);                                                           
+		//改变index的base值.来达到index的子节点(包括当前需要插入的节点)，同时把新的插入节点(不是t)
+		//t的值是index新的base值加encode的值
+		icount=icount-1;
+		//int child[icount];
+        std::vector<int> child;
+		int real_base = GetBaseValue(index/*,icount*/,name,is_asc,child);
 		//改变t的值                                                                                                               
 		encode_t = GetEncode(name,real_base,is_asc);                                                                             
 		//printf("index: %d , base: %d\n",index,realBase);                                                                        
 		//get_child(index,icount);                                                                                                
 		//把字节点的数据挪到新的位置, dArray[childArr[i]]为老的节点                                                               
-		index = MoveNode(icount,child,real_base,is_asc,index);                                                                   
+		index = MoveNode(icount,child,real_base,is_asc,index, index);
+        //new_child.push_back(encode_t);
+        //DelExQueue(index);
+        AddExQueue(index,encode_t);
 		nodestable[encode_t] = NodeSet(nodestable[index]->base,index,0,name,0);                                                  
 	}                                                                                                                             
-	AddExQueue(encode_t);                                                                                                       
 	return encode_t;                                                                                                              
+}
+
+int GentFindMgr::NodesAdd(char *name,int index,int is_asc) {
+	long encode_t = GetEncode(name,nodestable[index]->base,is_asc);
+	if(length <= encode_t ){
+		//分配内存
+		IncreMemary(encode_t);
+		//给节点赋值
+		nodestable[encode_t] = NodeSet(1,index,0,name,0);
+		AddExQueue(index, encode_t);
+        //for(size_t k=0; k<nodestats[index].size(); k++){
+         //   cout << "nodestats[index][k]: "<< nodestats[index][k] << endl;
+        //}
+		//display();
+		return encode_t;
+	}
+	node *p = nodestable[encode_t];
+	if(p == 0) {
+		nodestable[encode_t] = NodeSet(1,index,0,name,0);
+		AddExQueue(index, encode_t);
+		//display();
+		return encode_t;
+	}
+    
+	//该节点是重复的节点，不需要处理
+	if(p->check == index && p->base != 0) return encode_t;
+    
+	//conflict occur
+	//printf("index:%d,index_base:%d\n",index,nodestable[index]->base);
+	encode_t = NodesConflict(encode_t, name, index, is_asc);
+    //	display();
+	return encode_t;
 }
 
 void GentFindMgr::ItemCreate(wchar_t *name,size_t name_len)
@@ -336,20 +404,35 @@ void GentFindMgr::ItemCreate(wchar_t *name,size_t name_len)
 	wprintf(L"%s\n",name);
 	size_t len = name_len;
 	size_t i;
+    std::vector<int> c;
 	int parent = 0;
+    c.push_back(0);
 	for(i=0; i<len; i++) {
 		nodestable[parent]->child_count++;
 		if(name[i] < 128) {
 			char buff[2];
 			Wcstombs(buff,2,&name[i]);
+            cout<< buff << endl;
 			if(strcmp(buff,"\n") == 0 || strcmp(buff," ") == 0) break;
 			parent=NodesAdd(buff,parent,1);
 		}else{
 			char buff[4];
 			Wcstombs(buff, 4, &name[i]);
+            cout<< buff << endl;
 			parent=NodesAdd(buff,parent,0);
 		}
+         c.push_back(parent);
 	}
+    /*
+    for(size_t j=0;j<c.size(); j++){
+        cout << "parent:" << nodestable[c[j]]->name << "\t" << c[j] << endl;
+        cout << "child:" << nodestats[c[j]].size() << endl;
+        for(size_t k=0;k<nodestats[c[j]].size(); k++) {
+            int a = nodestats[c[j]][k];
+            cout << "cj: "<<a << endl;
+        }
+    }
+    */
 
 	nodestable[parent]->is_word = 1;                                   
 
