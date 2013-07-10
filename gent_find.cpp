@@ -174,7 +174,6 @@ void GentFindMgr::Init() {
         iterm = GentUtil::Trim(iterm);
         char abc[120]={0};
         memcpy(abc,iterm.c_str(),iterm.size());
-        cout << "abc: "<< abc <<endl;
         wchar_t tmp[bufsize];
 		size_t wc_len = Charwchar(abc,tmp);
         //cout << "len: "<< wc_len <<endl;
@@ -263,9 +262,7 @@ int GentFindMgr::GetBaseValue(int parent_index,const char *key,
 		int is_able = 1;
         //for(it=child.begin();it!=child.end();it++){
         for(j=0; j<child.size(); j++) {
-            //cout << "GetBaseValue child :" <<child[j] << endl;
-            //cout << "GetBaseValue check: " << nodestable[child[j]]->check << endl;
-			int pos_index = child[j] - cur_base + tmp_base;
+            int pos_index = child[j] - cur_base + tmp_base;
 			//分配内存                                                                             
 			if(length < pos_index){                                                                
 				IncreMemary(pos_index);
@@ -336,7 +333,6 @@ long GentFindMgr::NodesConflict(long encode_t, const char *name,int index,int is
         std::vector<int> child;
         
 		//寻找数组dArray[dArray[t].check]的base值，所有孩子当中check[］=0,base[]=0，使当前t节点为可用   (dArray[t].check 为父节点)
-        //cout << "nodestable[encode_t]->check:" << nodestable[encode_t]->check << endl;
 		int real_base = GetBaseValue(nodestable[encode_t]->check,NULL,is_asc,child);                                     
 		//get_child(nodestable[encode_t]->check,tcount);                                                                          
 		//把子节点的数据挪到新的位置, dArray[childArr[i]]为老的节点                                                               
@@ -375,9 +371,6 @@ int GentFindMgr::NodesAdd(char *name,int index,int is_asc) {
 		//给节点赋值
 		nodestable[encode_t] = NodeSet(1,index,0,name,0);
 		AddExQueue(index, encode_t);
-        //for(size_t k=0; k<nodestats[index].size(); k++){
-         //   cout << "nodestats[index][k]: "<< nodestats[index][k] << endl;
-        //}
 		//display();
 		return encode_t;
 	}
@@ -412,13 +405,13 @@ void GentFindMgr::ItemCreate(wchar_t *name,size_t name_len)
 		if(name[i] < 128) {
 			char buff[2];
 			Wcstombs(buff,2,&name[i]);
-            cout<< buff << endl;
+            //cout<< buff << endl;
 			if(strcmp(buff,"\n") == 0 || strcmp(buff," ") == 0) break;
 			parent=NodesAdd(buff,parent,1);
 		}else{
 			char buff[4];
 			Wcstombs(buff, 4, &name[i]);
-            cout<< buff << endl;
+           // cout<< buff << endl;
 			parent=NodesAdd(buff,parent,0);
 		}
          c.push_back(parent);
