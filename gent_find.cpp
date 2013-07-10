@@ -430,6 +430,18 @@ void GentFindMgr::ItemCreate(wchar_t *name,size_t name_len)
 	nodestable[parent]->is_word = 1;                                   
 
 }
+
+int GentFindMgr::ItemSearch(char *name,int base_index,int is_asc) {
+	if(nodestable[base_index] == 0) return -1;
+	int index = GetEncode(name, nodestable[base_index]->base, is_asc);
+	if(length < index) return -1;
+	if(nodestable[index] == 0) return -1;
+	if(nodestable[index]->check != base_index){
+		return -1;
+	}
+	return index;
+}
+
 GentFind::GentFind() {
 
 }
@@ -440,5 +452,6 @@ GentFind::~GentFind(){
 
 void GentFind::Search(const string &str, std::vector<string> &v) {
 	cout << "GentFind::Search "<< str << endl;
+    
 
 }

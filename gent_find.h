@@ -49,6 +49,7 @@ public:
 	~GentFindMgr();
 	void Init();
 	void ItemCreate(wchar_t *,size_t);
+    int ItemSearch(char *name,int base_index,int is_asc);
 private:
 	int NodesAdd(char *name,int index,int is_asc);
 	void *Gmalloc(size_t size);
