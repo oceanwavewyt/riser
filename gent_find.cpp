@@ -31,7 +31,7 @@ GentFindMgr::GentFindMgr():nodestable(0),
 GentFindMgr::~GentFindMgr(){
 }
 
-void *GentFindMgr::Gmalloc(size_t size) {    
+void *GentFindUtil::Gmalloc(size_t size) {    
 	void *p;
 	p = malloc(size);             
 	if(!p) {
@@ -42,7 +42,7 @@ void *GentFindMgr::Gmalloc(size_t size) {
 	return p;
 }   
 
-void *GentFindMgr::Gcalloc(size_t size,int len) {
+void *GentFindUtil::Gcalloc(size_t size,int len) {
     void *p;
     p = calloc(size,len);
     if(!p) {
@@ -52,13 +52,13 @@ void *GentFindMgr::Gcalloc(size_t size,int len) {
     return p;
 }
 
-void GentFindMgr::Gfree(void *p) {
+void GentFindUtil::Gfree(void *p) {
     if(p) {
         free(p);
     }
 }
 
-int GentFindMgr::Charwchar(char *str,wchar_t *out) {
+int GentFindUtil::Charwchar(char *str,wchar_t *out) {
 	int ret = mbstowcs(out,str,strlen(str));
 	if(ret == -1) {
 		printf("charwchar failed \n");  
@@ -66,11 +66,11 @@ int GentFindMgr::Charwchar(char *str,wchar_t *out) {
 	return ret;
 }   
 
-size_t GentFindMgr::Len(wchar_t *str) {
+size_t GentFindUtil::Len(wchar_t *str) {
 	return wcslen(str);
 }   
 
-size_t GentFindMgr::Wcstombs(char *buf,int buf_size,wchar_t *str) {
+size_t GentFindUtil::Wcstombs(char *buf,int buf_size,wchar_t *str) {
 	size_t ntotal = wcstombs(buf,str,buf_size);
 	if(ntotal == 0) {
 		printf("wcstombs failed \n");                           
@@ -81,7 +81,7 @@ size_t GentFindMgr::Wcstombs(char *buf,int buf_size,wchar_t *str) {
 
 
 node *GentFindMgr::NodeSet(int base,int check,int account,const char *name,short is_word) { 
-	node *it = (node *)Gcalloc(1,sizeof(node));                                      
+	node *it = (node *)GentFindUtil::Gcalloc(1,sizeof(node));                                      
 	it->base = base;                                                                   
 	it->check = check;                                                                 
 	it->child_count = account;                                                         
@@ -151,18 +151,18 @@ long GentFindMgr::GetEncode(const char *key, int base_val, int is_asc)
 
 void GentFindMgr::Init() {
 	cout << "GentFindMgr::Init" << endl;
-	nodestable = (node**)Gmalloc(length*sizeof(node *));
+	nodestable = (node**)GentFindUtil::Gmalloc(length*sizeof(node *));
 	memset(nodestable,0,length*sizeof(node *));   
 	nodestable[0] = NodeSet(1,1,0,"",0);
     AddExQueue(0, 1);
 	//nodestats.head_ex = NULL;
     
     setlocale(LC_ALL, "zh_CN.UTF-8");
-    char *fileKeyName="./key.txt";
+    std::string fileKeyName="./key.txt";
 	FILE *fp;
 	int bufsize=120;
-	if((fp=fopen(fileKeyName,"r"))==NULL){
-		printf("%s file no exit\n",fileKeyName);
+	if((fp=fopen(fileKeyName.c_str(),"r"))==NULL){
+		printf("%s file no exit\n",fileKeyName.c_str());
 		exit(0);
 	}
 	char *oneLine=(char *)malloc(sizeof(char)*bufsize);
@@ -175,7 +175,7 @@ void GentFindMgr::Init() {
         char abc[120]={0};
         memcpy(abc,iterm.c_str(),iterm.size());
         wchar_t tmp[bufsize];
-		size_t wc_len = Charwchar(abc,tmp);
+		size_t wc_len = GentFindUtil::Charwchar(abc,tmp);
         //cout << "len: "<< wc_len <<endl;
 		ItemCreate(tmp,wc_len);
         //break;
@@ -190,9 +190,9 @@ void GentFindMgr::Init() {
 void  GentFindMgr::IncreMemary(int cur_len)                   
 {                                                        
 	int last = cur_len*2;                                
-	void *p = Gmalloc(last*sizeof(node *));            
+	void *p = GentFindUtil::Gmalloc(last*sizeof(node *));            
 	p = memcpy(p,nodestable, sizeof(node *)*length);     
-	Gfree(nodestable);                                 
+	GentFindUtil::Gfree(nodestable);                                 
 	nodestable = (node **)p;                                      
 	length = last;                                     
 }                                                        
@@ -310,7 +310,7 @@ int GentFindMgr::MoveNode(int child_count,std::vector<int> &child,int real_base,
 		DelExQueue(child[i]);
 		node *p = nodestable[child[i]];                                                                                      
 		nodestable[child[i]] = NULL;                                                                                         
-		Gfree(p);                                                                                                          
+		GentFindUtil::Gfree(p);                                                                                                          
 	}
     AddExQueue(parent_index, new_child);
 	return ret;                                                                                                              
@@ -404,13 +404,13 @@ void GentFindMgr::ItemCreate(wchar_t *name,size_t name_len)
 		nodestable[parent]->child_count++;
 		if(name[i] < 128) {
 			char buff[2];
-			Wcstombs(buff,2,&name[i]);
+			GentFindUtil::Wcstombs(buff,2,&name[i]);
             //cout<< buff << endl;
 			if(strcmp(buff,"\n") == 0 || strcmp(buff," ") == 0) break;
 			parent=NodesAdd(buff,parent,1);
 		}else{
 			char buff[4];
-			Wcstombs(buff, 4, &name[i]);
+			GentFindUtil::Wcstombs(buff, 4, &name[i]);
            // cout<< buff << endl;
 			parent=NodesAdd(buff,parent,0);
 		}

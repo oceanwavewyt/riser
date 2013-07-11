@@ -35,6 +35,17 @@ public:
 	void Search(const string &str, std::vector<string> &v);	
 
 };
+
+class GentFindUtil
+{
+public:
+	static void *Gmalloc(size_t size);
+	static void *Gcalloc(size_t size, int len);
+	static void Gfree(void *p);
+	static int Charwchar(char *str,wchar_t *out);
+	static size_t Wcstombs(char *buf,int buf_size,wchar_t *str); 	
+	static size_t Len(wchar_t *str);	
+};
 class GentFindMgr
 {
 	node **nodestable;
@@ -52,13 +63,6 @@ public:
     int ItemSearch(char *name,int base_index,int is_asc);
 private:
 	int NodesAdd(char *name,int index,int is_asc);
-	void *Gmalloc(size_t size);
-	void *Gcalloc(size_t size, int len);
-	void Gfree(void *p);
-	int Charwchar(char *str,wchar_t *out);
-	size_t Wcstombs(char *buf,int buf_size,wchar_t *str); 	
-	size_t Len(wchar_t *str);	
-
 	node *NodeSet(int base,int check,int account,const char *name,short is_word);
 	long GetEncode(const char *key, int base_val, int is_asc);
 	void DelExQueue(int index);
