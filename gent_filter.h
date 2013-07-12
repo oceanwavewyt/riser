@@ -51,7 +51,7 @@ private:
    int CommandWord();
    void AssignVal(token_f *tokens);
    void ProcessGet(string &);
-    void ProcessSet(string &outstr, const string &cont);
+    void ProcessSet(string &outstr, string &cont);
    void ProcessStats(string &);
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	

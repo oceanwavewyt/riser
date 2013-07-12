@@ -24,16 +24,42 @@ typedef struct queue_t {
 } queue_t;
 
 
+typedef struct item_sts {
+	char name[4];
+	struct item_sts *next;
+} item_st;
+typedef struct {
+	item_st *head;
+	item_st *tail;
+} stack;
+
+typedef struct item_rets {
+	char *key;
+	struct item_rets *next;
+} item_ret;
+
+typedef struct {
+	item_ret *head;
+	item_ret *tail;
+} ret;
+
+
 typedef std::map<int, std::vector<int> > nodestats_t;
 
 class GentFind
 {
+	stack *stack_s;
+	ret *ret_s;
 public:
 	GentFind();
 	~GentFind();
 public:
-	void Search(const string &str, std::vector<string> &v);	
-
+	int Search(string &str, std::vector<string> &v);	
+private:
+	void stack_init();
+	void stack_free();	
+	void stack_push(char *name,int len);
+	void stack_pop();
 };
 
 class GentFindUtil
@@ -61,6 +87,7 @@ public:
 	void Init();
 	void ItemCreate(wchar_t *,size_t);
     int ItemSearch(char *name,int base_index,int is_asc);
+	short ItemAttr(int index,const string &field);
 private:
 	int NodesAdd(char *name,int index,int is_asc);
 	node *NodeSet(int base,int check,int account,const char *name,short is_word);

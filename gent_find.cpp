@@ -442,6 +442,15 @@ int GentFindMgr::ItemSearch(char *name,int base_index,int is_asc) {
 	return index;
 }
 
+short GentFindMgr::ItemAttr(int index,const string &field) {
+	if(field == "child_count"){
+	   return nodestable[index]->child_count;
+	}else if(field == "is_word") {
+		return nodestable[index]->is_word;
+	}
+	return -1;
+}
+
 GentFind::GentFind() {
 
 }
@@ -450,8 +459,142 @@ GentFind::~GentFind(){
                                         
 }
 
-void GentFind::Search(const string &str, std::vector<string> &v) {
+void GentFind::stack_init() {
+	stack_s = (stack *)GentFindUtil::Gmalloc(sizeof(stack));
+	stack_s->head = NULL;
+	stack_s->tail = NULL;
+	ret_s = (ret *)GentFindUtil::Gmalloc(sizeof(ret));
+	ret_s->head = NULL;
+	ret_s->tail = NULL;
+}
+
+void GentFind::stack_free() {
+	item_st *it = stack_s->head;
+	item_st *its;
+	while(it) {
+		its = it->next;
+		GentFindUtil::Gfree(it);
+		it = its;
+	}
+	stack_s->head = NULL;
+	stack_s->tail = NULL;
+}
+
+void GentFind::stack_push(char *name,int len) {
+	item_st *it = (item_st *)GentFindUtil::Gmalloc(sizeof(item_st));
+	memcpy(it->name,name,len);
+	if(stack_s->head == NULL) {
+		stack_s->head = it;
+		stack_s->tail = it;
+	}else {
+		stack_s->tail->next = it;
+		stack_s->tail = it;
+	}
+}
+
+void GentFind::stack_pop() {
+	item_ret *ret_it = (item_ret *)GentFindUtil::Gmalloc(sizeof(item_ret));
+	char *buf = (char *)GentFindUtil::Gmalloc(50);
+	item_st *it = stack_s->head;
+	strcpy(buf,"");
+	while(it) {
+		strcat(buf,it->name);
+		it = it->next;
+	}
+	ret_it->key = buf;
+	if(ret_s->head == NULL) {
+		ret_s->head = ret_it;
+		ret_s->tail = ret_it;
+	}else {
+		ret_s->tail->next = ret_it;
+		ret_s->tail = ret_it;
+	}
+	stack_free();
+}
+
+
+int GentFind::Search(string &str, std::vector<string> &v) {
 	cout << "GentFind::Search "<< str << endl;
-    
+   	wchar_t *buff = (wchar_t *)GentFindUtil::Gmalloc(sizeof(wchar_t)*str.size()+1);
+	char *str2 = const_cast<char *>(str.c_str());
+	size_t wc_len = GentFindUtil::Charwchar(str2,buff);
+	if(wc_len == -1) {
+		GentFindUtil::Gfree(buff);
+		return -1;
+	}
+	stack_init(); 
+	size_t i = 0;
+	int index = 0;
+	int tindex;
+	int pos = 0;
+	int rsize = 0;
+	while(i < wc_len){
+		char c[4];
+		int len;
+		if(*(buff+i) < 128) {
+			GentFindUtil::Wcstombs(c,2,buff+i);
+			if(strcmp(c," ") == 0){
+				printf("kong\n");
+				if(stack_s->head != NULL && GentFindMgr::Instance()->ItemAttr(index,"is_word") == 1){
+					stack_pop();
+					pos = 0;
+				}
+				i++;
+				continue;
+			}
+			tindex = GentFindMgr::Instance()->ItemSearch(c,index,1);
+			len = 2;
+		}else {
+			GentFindUtil::Wcstombs(c, 4, buff+i);
+			tindex = GentFindMgr::Instance()->ItemSearch(c,index,0);
+			len = 4;
+		}	
+		if(tindex == -1){
+			//没有找到，检查上一个节点是否为最后一个节点
+			if(stack_s->head != NULL && GentFindMgr::Instance()->ItemAttr(index,"is_word") == 0) {
+				//表示上个节点不是个词组，回溯到节点的下一个字位置
+				i = pos + 1;
+				pos = 0;
+				stack_free();
+			}else if(stack_s->head != NULL && GentFindMgr::Instance()->ItemAttr(index,"is_word") == 1) {
+				//上一次是一个词组，把词组保存
+				stack_pop();
+				//i的值不用加
+
+				pos = 0;
+			} else {
+				i++;
+			}
+			//从开始寻找
+			index = 0;
+		}else {
+			if(index == 0) {
+				//记住当前位置
+				pos = i;
+			}
+			//压栈
+			stack_push(c,len);
+			i++;
+			index = tindex;
+		}
+		if(tindex != -1) {
+			if(stack_s->head != NULL && GentFindMgr::Instance()->ItemAttr(index,"is_word") == 1){
+				stack_pop();
+			}
+		}
+	
+		item_ret *ret_it = ret_s->head;
+		while(ret_it) {
+			printf("%s\n",ret_it->key);
+			rsize += strlen(ret_it->key);
+			//strcat(ret, ret_it->key);
+			//strcat(ret, "\n");
+			rsize++;
+			ret_it = ret_it->next;
+		}
+		free(buff);
+		return rsize;
+
+	}
 
 }

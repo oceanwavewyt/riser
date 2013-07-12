@@ -158,7 +158,7 @@ void GentFilter::ProcessStats(string &outstr)
     outstr = retbuf;
 }
 
-void GentFilter::ProcessSet(string &outstr, const string &cont)
+void GentFilter::ProcessSet(string &outstr, string &cont)
 {
    vector<string> v;
    GentFind gfind;
