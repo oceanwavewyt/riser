@@ -15,6 +15,7 @@
 #include "gent_frame.h"
 #include "gent_app_mgr.h"
 #include "gent_util.h"
+#include <fstream>
 
 GentFindMgr *GentFindMgr::intance_ = NULL;
 
@@ -181,6 +182,20 @@ void GentFindMgr::Init() {
         //break;
 	}
 	fclose(fp);
+
+	string str="";
+	GentFind f;
+	std::ifstream fin("data.txt", ios::in);
+	char c[1024];
+	while(!fin.eof()){
+		fin.read(c,1024);
+		string c2(c);
+		str+=c2;
+	}
+	fin.close();
+	vector<string> v;
+	f.Search(str, v);	
+
     exit(1);
 }
 
