@@ -54,7 +54,8 @@ public:
 	GentFind();
 	~GentFind();
 public:
-	int Search(string &str, std::vector<string> &v);	
+	int Search(string &str, std::vector<string> &v);
+	void RemoveChar(string &str);
 private:
 	void stack_init();
 	void stack_free();	
