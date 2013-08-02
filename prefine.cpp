@@ -7,6 +7,7 @@
 #include "prefine.h"
 static const char *levelname[] = {"INFO","WARN", "ERROR", "FATAL"};
 FILE *GentLog::logfd = stdout;
+int GentLog::runLevel = GentLog::ERROR;
 
 int GentLog::setfd(string &filename)
 {
@@ -19,6 +20,7 @@ int GentLog::setfd(string &filename)
 
 void GentLog::write(int levels, const char *file, const int line, const char *func, const char *format, ...)
 {
+	if(levels < GentLog::runLevel) return;
 	char buf[LOGBUFSIZE];                  
 	va_list ap;
 	va_start(ap, format);

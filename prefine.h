@@ -49,6 +49,7 @@ struct GentLog
 {
 public:
 	enum logLevel {INFO=0,WARN=1,ERROR=2,FATAL=3};
+	static int runLevel;
 	static FILE *logfd;
 	static int setfd(string &filename);
 	static void write(int levels, const char *file, const int line, const char *func, const char *format, ...);
