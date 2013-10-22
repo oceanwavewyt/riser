@@ -53,12 +53,23 @@ bool GentDb::Del(string &key)
 	return s.ok();
 }
 
-uint64_t GentDb::Count() 
+uint64_t GentDb::Count(const string &pre) 
 {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	uint64_t num=0;
+	bool first = false;
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
-		num++;
+		if(pre != "") {
+			string curkey(it->key().ToString());
+			if(curkey.substr(0, pre.size())!=pre){
+				if(first) break; 
+				continue;
+			}
+			first = true;
+			num++;
+		}else{
+			num++;
+		}
 	}
 	delete it;
 	return num;

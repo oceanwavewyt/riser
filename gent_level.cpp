@@ -81,9 +81,16 @@ int GentLevel::CommandWord() {
         commandtype = CommandType::COMM_QUIT;
         conn->SetStatus(Status::CONN_CLOSE);
         return 0; 
+	}else if(clength ==2 && tokenList[0] == "stats") {
+		LOG(GentLog::INFO, "the command is stats");
+		commandtype = CommandType::COMM_STATS;
+		keystr = tokenList[1];
+		conn->SetStatus(Status::CONN_DATA);  
+		return 0; 
 	}else if(clength == 1 && tokenList[0] == "stats") {
         LOG(GentLog::INFO, "the command is stats");
         commandtype = CommandType::COMM_STATS;
+		keystr = "";
         conn->SetStatus(Status::CONN_DATA);
         return 0;
     }
@@ -156,7 +163,7 @@ void GentLevel::ProcessGet(string &outstr)
 void GentLevel::ProcessStats(string &outstr)
 {
     char retbuf[200] = {0};
-	uint64_t num = GentDb::Instance()->Count();
+	uint64_t num = GentDb::Instance()->Count(keystr);
     snprintf(retbuf,200,"total connect: %lu\r\ncurrent connect: %lu\r\nitem nums: %lu\r\n",
              GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount(), num);
     outstr = retbuf;
