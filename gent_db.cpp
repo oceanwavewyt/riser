@@ -53,6 +53,17 @@ bool GentDb::Del(string &key)
 	return s.ok();
 }
 
+uint64_t GentDb::Count() 
+{
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	uint64_t num=0;
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		num++;
+	}
+	delete it;
+	return num;
+}
+
 bool GentDb::GetPathname(string &err)
 {
 	GentConfig &config = GentFrame::Instance()->config;

@@ -156,8 +156,9 @@ void GentLevel::ProcessGet(string &outstr)
 void GentLevel::ProcessStats(string &outstr)
 {
     char retbuf[200] = {0};
-    snprintf(retbuf,200,"total connect: %lu\r\ncurrent connect: %lu\r\n",
-             GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount());
+	uint64_t num = GentDb::Instance()->Count();
+    snprintf(retbuf,200,"total connect: %lu\r\ncurrent connect: %lu\r\nitem nums: %lu\r\n",
+             GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount(), num);
     outstr = retbuf;
 }
 

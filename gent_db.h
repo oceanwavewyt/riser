@@ -27,6 +27,7 @@ public:
     bool Put(string &key, string &value);
     bool Get(string &key,string &value);
     bool Del(string &key);
+	uint64_t Count();
 private:
 	bool GetPathname(string &);
 public:
