@@ -28,6 +28,7 @@ public:
     bool Get(string &key,string &value);
     bool Del(string &key);
 	uint64_t Count(const string &pre="");
+	uint64_t TotalSize();
 private:
 	bool GetPathname(string &);
 public:

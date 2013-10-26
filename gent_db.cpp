@@ -53,6 +53,28 @@ bool GentDb::Del(string &key)
 	return s.ok();
 }
 
+uint64_t GentDb::TotalSize() {
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	leveldb::Range ranges[1];
+	it->SeekToFirst();
+	if(!it->Valid()) {
+		delete it;
+		return 0;
+	}
+	std::string first = it->key().ToString();
+	it->SeekToLast();
+	if(!it->Valid()) {
+		delete it;
+		return 0;
+	}
+	std::string end = it->key().ToString();
+	ranges[0] = leveldb::Range(first, end);
+	uint64_t sizes[1];
+	db->GetApproximateSizes(ranges, 1, sizes);
+	delete it;
+	return sizes[0];
+}
+
 uint64_t GentDb::Count(const string &pre) 
 {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
