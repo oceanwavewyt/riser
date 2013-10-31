@@ -9,6 +9,7 @@
 #ifndef riser_gent_db_h
 #define riser_gent_db_h
 #include <leveldb/db.h>
+#include <leveldb/cache.h>
 #include "prefine.h"
 #include "gent_command.h"
 

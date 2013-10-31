@@ -32,6 +32,7 @@ GentDb::GentDb()
 GentDb::~GentDb()
 {
     if(db) delete db;
+	if(options.block_cache) delete options.block_cache;
 }
 
 bool GentDb::Get(string &key, string &value)
@@ -131,6 +132,20 @@ bool GentDb::Init(string &err)
             options.target_file_size = size;
         }
     }
+	if(config["leveldb_block_cache_size_mb"] != "") {
+		int size = atoi(config["leveldb_block_cache_size_mb"].c_str());
+		if(size > 8) {
+			options.block_cache = leveldb::NewLRUCache(size * 1048576);
+		} 
+	}
+
+	if(config["leveldb_block_size_kb"] != "") {
+		int size = atoi(config["leveldb_block_size_kb"].c_str());
+		if(size < 1) {
+			options.block_size = size * 1024;
+		} 
+	}
+
 	leveldb::Status status = leveldb::DB::Open(options, pathname , &db);
     if(status.ok())
     {
