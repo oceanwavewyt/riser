@@ -183,7 +183,6 @@ void GentLevel::ProcessMultiGet(string &outstr)
     vector<string>::iterator iter;
     for(iter=keys.begin(); iter!=keys.end(); iter++)
     {
-        cout << *iter << endl;
         string nr="";
         if(!GentDb::Instance()->Get(*iter, nr))
         {
