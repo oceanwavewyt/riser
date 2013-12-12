@@ -51,6 +51,10 @@ class GentLevel : public GentCommand
    string keystr;
    string content;
    string commandstr;
+   /*the command length of get is max_tokens*/
+   int max_tokens;
+    /*store multi key for get*/
+   vector<string> keys;
 public:
     GentLevel(GentConnect *c=NULL);
     ~GentLevel();
@@ -61,6 +65,7 @@ private:
    int CommandWord();
    void AssignVal(token_t *tokens);
    void ProcessGet(string &);
+   void ProcessMultiGet(string &);
    void ProcessDel(string &); 
    void ProcessStats(string &);
 public:

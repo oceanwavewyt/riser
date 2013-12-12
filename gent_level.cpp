@@ -10,6 +10,7 @@ GentLevel::GentLevel(GentConnect *c):GentCommand(c)
 {
   keystr = "";
   remains = 0;
+  max_tokens = 8;
 }
 GentLevel::~GentLevel()
 {}
@@ -56,7 +57,20 @@ int GentLevel::CommandWord() {
         keystr = tokenList[1];
 		conn->SetStatus(Status::CONN_DATA);
 		return 0;
-	}else if(clength == 5 && tokenList[0] == "set") {
+	}else if(clength > 2  && tokenList[0] == "get") {
+        if(clength > max_tokens) {
+            return -1;
+        }
+        keystr = "";
+        keys.clear();
+        for(vector<string>::size_type i=1; i!=tokenList.size(); i++) {
+            keys.push_back(tokenList[i]);
+        }
+        LOG(GentLog::INFO, "tokenList multi get");
+		commandtype = CommandType::COMM_GET;
+		conn->SetStatus(Status::CONN_DATA);
+        return 0;
+    }else if(clength == 5 && tokenList[0] == "set") {
 	    LOG(GentLog::INFO, "the command is set and the key is %s", tokenList[1].c_str());
         keystr = tokenList[1];
 		commandtype = CommandType::COMM_SET;
@@ -149,6 +163,10 @@ void GentLevel::ProcessDel(string &outstr)
 
 void GentLevel::ProcessGet(string &outstr)
 {
+    if(keystr == "") {
+        ProcessMultiGet(outstr);
+        return;
+    }
     string nr="";
     if(!GentDb::Instance()->Get(keystr, nr))
     {
@@ -158,6 +176,25 @@ void GentLevel::ProcessGet(string &outstr)
     snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",keystr.c_str(), nr.size());
     outstr = retbuf;
 	outstr += nr+"\r\nEND\r\n";
+}
+
+void GentLevel::ProcessMultiGet(string &outstr)
+{
+    vector<string>::iterator iter;
+    for(iter=keys.begin(); iter!=keys.end(); iter++)
+    {
+        cout << *iter << endl;
+        string nr="";
+        if(!GentDb::Instance()->Get(*iter, nr))
+        {
+            continue;
+        }
+        char retbuf[200]={0};
+        snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",(*iter).c_str(), nr.size());
+        outstr += retbuf;
+        outstr += nr+"\r\n";
+    }
+    outstr += "END\r\n";
 }
 
 void GentLevel::ProcessStats(string &outstr)
@@ -177,10 +214,10 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 	{
 		case CommandType::COMM_GET:
 			//NOT_FOUND
-            if(!GentList::Instance()->Load(keystr)) {
-				outstr += "END\r\n";
-				break;
-			}
+            //if(keystr!="" && !GentList::Instance()->Load(keystr)) {
+			//	outstr += "END\r\n";
+			//	break;
+			//}
             ProcessGet(outstr);
 			break;	
 		case CommandType::COMM_SET:
