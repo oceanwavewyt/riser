@@ -573,13 +573,13 @@ int GentFind::Search(string &str, std::vector<string> &v) {
 	//cout << "GentFind::Search "<< str << endl;
    	wchar_t *buff = (wchar_t *)GentFindUtil::Gmalloc(sizeof(wchar_t)*str.size()+1);
 	char *str2 = const_cast<char *>(str.c_str());
-	size_t wc_len = GentFindUtil::Charwchar(str2,buff);
+	int wc_len = GentFindUtil::Charwchar(str2,buff);
 	if(wc_len == -1) {
 		GentFindUtil::Gfree(buff);
 		return -1;
 	}
 	stack_init(); 
-	size_t i = 0;
+	int i = 0;
 	int index = 0;
 	int tindex;
 	int pos = 0;
