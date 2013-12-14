@@ -34,6 +34,8 @@ void GentConnect::Init(int sfd) {
     fd = sfd;
     clen = 0;
     remainsize = 0;
+	sendsize = 0;
+	cursendsize = 0;
     //configure info
     comm = GentAppMgr::Instance()->GetCommand(this, fd);
     ReAllocation();
@@ -175,32 +177,22 @@ int GentConnect::InitRead(int &rbytes) {
 }
 
 void GentConnect::OutString(const string &str) {
-   /*
-    struct msghdr msg;
-    struct iovec iov[1];
-    bzero(&msg, sizeof(msg));
-    
-    msg.msg_name = &request_addr;
-    msg.msg_namelen = sizeof(request_addr);
-    char buf2[20]={0};
-    memcpy(buf2,str.c_str(),str.size());
-    iov[0].iov_base = buf2;
-    iov[0].iov_len = str.size();
-    msg.msg_iov = iov;
-    msg.msg_iovlen = 1;
-    int a = sendmsg(fd,&msg,0);
-    */
-    //int a = write(fd, str.c_str(),str.size());
-    uint64_t length = str.size();
-	uint32_t curlen = 0;
+    if(sendsize <= 0) {
+		sendsize = str.size();
+		cursendsize = 0;
+	}
 	char *curpos = const_cast<char *>(str.c_str());	
 	int slen;
-	while(length>0) {
-    	slen = send(fd, curpos+curlen, length, 0);
+	while(sendsize>0) {
+    	slen = send(fd, curpos+cursendsize, sendsize, 0);
+		if (slen == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+			gevent->UpdateEvent(fd, this, eventWrite);
+			return;	
+		}
 		if(slen<0) break;
 		//cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
-		length -= slen;
-		curlen += slen;
+		sendsize -= slen;
+		cursendsize += slen;
 	}
     curstatus = Status::CONN_WAIT;
 }

@@ -41,7 +41,9 @@ class GentConnect
     int rbytes;
 
     string outstr;
-    
+
+	uint64_t sendsize;
+	uint64_t cursendsize;    
     uint8_t curstatus;
 	uint64_t remainsize;
 	uint64_t actualsize;

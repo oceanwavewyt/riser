@@ -10,7 +10,7 @@ GentLevel::GentLevel(GentConnect *c):GentCommand(c)
 {
   keystr = "";
   remains = 0;
-  max_tokens = 8;
+  max_tokens = 1000;
 }
 GentLevel::~GentLevel()
 {}
