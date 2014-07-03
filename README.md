@@ -26,7 +26,10 @@ usage see --help
   extension of php.
 
 ### Build:
-    make
+    ./install.sh
+
+### config file
+    riser.conf
 
 ### Author:
     oceanwavewyt,  oceanwavewyt@gmail.com
