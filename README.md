@@ -30,6 +30,9 @@ usage see --help
 
 ### config file
     riser.conf
+    
+### client
+     memcache's method:  set(key, value), get(key), get(array), delete(key), close()
 
 ### Author:
     oceanwavewyt,  oceanwavewyt@gmail.com
