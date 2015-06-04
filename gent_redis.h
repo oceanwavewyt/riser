@@ -17,6 +17,7 @@ static const string REDIS_ERROR="-ERR";
 class GentRedis: public GentCommand
 {
 	string keystr;
+	vector<string> keyvec;
 	string content;
 	uint8_t commandtype;
 	uint64_t  rlbytes;
@@ -33,12 +34,13 @@ private:
 	int Split(const string &str, const string &delimit, vector<string> &v);
 	uint64_t GetLength(string &str);
 	int ParseCommand(const string &str);
-	const string &Info(const string &msg, const string &);
+	string Info(const string &msg, const string &);
     void ProcessGet(string &);
     void ProcessSet(string &outstr, const char *recont, uint64_t len);
 	void ProcessMultiGet(string &);
     void ProcessDel(string &); 
     void ProcessStats(string &);
     void ProcessKeys(string &);
+	void ProcessExists(string &outstr);
 };
 #endif

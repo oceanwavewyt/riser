@@ -11,9 +11,9 @@
 #include "gent_thread.h"
 #include "gent_queue.h"
 #include "gent_level.h"
+#include "gent_redis.h"
 #include "gent_list.h"
 #include "gent_filter.h"
-
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -54,9 +54,11 @@ int GentFrame::Init(const char *configfile)
     cout << "type: "<< config["type"] << endl;
     string msg;
     if(config["type"] == "" || config["type"] == "leveldb"){
-        GentLevel *p;
-        REGISTER_COMMAND(p, GentLevel);
-        if(!p->Init(msg))
+        //GentLevel *p;
+        //REGISTER_COMMAND(p, GentLevel);
+        GentRedis *p;
+        REGISTER_COMMAND(p, GentRedis);
+		if(!p->Init(msg))
         {
             return false;
         }

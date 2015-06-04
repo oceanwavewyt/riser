@@ -98,6 +98,34 @@ uint64_t GentDb::Count(const string &pre)
 	return num;
 }
 
+uint64_t GentDb::Keys(vector<string> &outvec, const string &pre) 
+{
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	uint64_t num=0;
+	bool first = true;
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		if(pre != "*") {
+			string curkey(it->key().ToString());
+			if(curkey.substr(0, pre.size())!=pre) {
+				if(first == false) {
+					break;
+				}else{
+					continue;
+				}
+			}
+			outvec.push_back(curkey);
+			cout << "item: "<<curkey <<endl; 
+			num++;
+			first = false;
+		}else{
+			outvec.push_back(it->key().ToString());
+			num++;
+		}
+	}
+	delete it;
+	return num;
+}
+
 bool GentDb::GetPathname(string &err)
 {
 	GentConfig &config = GentFrame::Instance()->config;

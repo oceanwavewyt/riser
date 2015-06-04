@@ -8,6 +8,7 @@
 #include "gentle.h"
 #include "prefine.h"
 
+
 GentAppMgr *GentAppMgr::intance_ = NULL;
 
 GentAppMgr *GentAppMgr::Instance() {

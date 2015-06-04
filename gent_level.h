@@ -17,20 +17,6 @@ typedef struct token_s {
     size_t length;
 } token_t;
 
-class CommandType
-{
-public:
-	enum ct
-	{
-	 COMM_GET = 1,
- 	 COMM_SET = 2,
- 	 COMM_DEL = 3,
- 	 COMM_QUIT = 4,
-     COMM_STATS = 5,
-	};
-
-};
-
 
 class GentLevel : public GentCommand
 {
@@ -55,6 +41,8 @@ class GentLevel : public GentCommand
    int max_tokens;
     /*store multi key for get*/
    vector<string> keys;
+   /*command token*/
+   vector<string> tokenList;
 public:
     GentLevel(GentConnect *c=NULL);
     ~GentLevel();
@@ -68,6 +56,7 @@ private:
    void ProcessMultiGet(string &);
    void ProcessDel(string &); 
    void ProcessStats(string &);
+   void ProcessReplication(string &outstr);
 public:
    int Process(const char *rbuf, uint64_t size, string &outstr);	
    void Complete(string &outstr, const char *, uint64_t);

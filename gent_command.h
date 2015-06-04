@@ -12,6 +12,24 @@
 //#include "gent_connect.h"
 class GentConnect;
 
+class CommandType
+{
+public:
+	enum ct
+	{
+	 COMM_GET = 1,
+ 	 COMM_SET = 2,
+ 	 COMM_DEL = 3,
+ 	 COMM_QUIT = 4,
+     COMM_STATS = 5,
+	 COMM_REP = 6,
+	 COMM_KEYS = 7,
+	 COMM_MGET = 8,
+	 COMM_EXISTS = 9,
+	};
+
+};
+
 class GentCommand
 {
 protected:

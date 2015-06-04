@@ -16,7 +16,7 @@
 #include "gent_config.h"
 #include "gent_link.h"
 #include <sys/resource.h>
-
+#include <queue.h>
 
 void daemonize(void) {
     int fd;

@@ -48,7 +48,8 @@ uint8_t GentLevel::Split(const string &str, const string &delimit, vector<string
 
 
 int GentLevel::CommandWord() {	
-	vector<string> tokenList;
+	//vector<string> tokenList;
+	tokenList.clear();
 	uint8_t clength = Split(commandstr, " ", tokenList);
 	LOG(GentLog::INFO, "tokenList clength: %d", clength);
 	if(clength == 2 && tokenList[0] == "get") {
