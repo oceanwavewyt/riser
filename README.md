@@ -22,7 +22,7 @@ usage see --help
   and del operation. You can config riser.conf 
   file for the riser server, i.e host and port 
   and so on. After starting the riser server, 
-  you can access by telnet or the memcache 
+  you can access by telnet or the memcache,redis  
   extension of php.
 
 ### Build:
@@ -32,6 +32,7 @@ usage see --help
     riser.conf
     
 ### client
+     redis's method: set(key, value),get(key),mget(array),delete(key),keys,exists(key),close()
      memcache's method:  set(key, value), get(key), get(array), delete(key), close()
 
 ### Author:
