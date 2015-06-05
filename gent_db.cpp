@@ -173,7 +173,7 @@ bool GentDb::Init(string &err)
 			options.block_size = size * 1024;
 		} 
 	}
-
+	options.filter_policy = leveldb::NewBloomFilterPolicy(10);
 	leveldb::Status status = leveldb::DB::Open(options, pathname , &db);
     if(status.ok())
     {

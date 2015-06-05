@@ -10,6 +10,7 @@
 #define riser_gent_db_h
 #include <leveldb/db.h>
 #include <leveldb/cache.h>
+#include <leveldb/filter_policy.h>
 #include "prefine.h"
 #include "gent_command.h"
 
