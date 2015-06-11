@@ -41,7 +41,7 @@ void GentThread::init(int thread_count) {
 //		cout <<"GentThread::init:  " <<  i << endl;
 		int fd[2];
 		if(pipe(fd)) {
-			cout << "[GentThread] init pipe failed" << endl;
+			INFO(GentLog::ERROR,"thread initialize failed");
 			exit(1);
 		}
 		threads_[i].id = i;
@@ -103,7 +103,7 @@ void GentThread::Start() {
 		ret = pthread_create(&pid,&attr,GentThread::Work,&threads_[i]);
 		//ret = pthread_create(&pid,&attr,GentThread::Handle2,&threads_[i]);
 		if(ret != 0) {
-			cout << "[GentThread] Start pthread create failed." << endl;
+			INFO(GentLog::ERROR,"thread create failed");
 			exit(0);
 		}
 

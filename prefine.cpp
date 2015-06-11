@@ -40,3 +40,8 @@ void GentLog::write(int levels, const char *file, const int line, const char *fu
 	fprintf(logfd, "%s\n", str);                                                                  	
 	fflush(logfd);
 }
+
+void GentLog::console(int level, const string &str)
+{
+	cout << levelname[level] << " "<<str<<endl;
+}

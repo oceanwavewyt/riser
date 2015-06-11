@@ -42,16 +42,16 @@ GentFrame::~GentFrame() {
 int GentFrame::Init(const char *configfile)
 {
     if(access(configfile, 0) == -1) {
-        cout << configfile << " not exist, start fail."<<endl;
-        return false;
+        string str(configfile);
+		INFO(GentLog::ERROR,str+" not exist, start fail");
+		return false;
     }
     config.Parse(string(configfile,strlen(configfile)));
 	if(!GentLog::setfd(config["logfile"])) {
-		cout << " open " << config["logfile"] << " error."<<endl;
+		INFO(GentLog::ERROR,"open "+config["logfile"]+" error");
 		return false;
 	}
 	//config info
-    cout << "type: "<< config["type"] << endl;
     string msg;
     if(config["type"] == "" || config["type"] == "leveldb"){
         //GentLevel *p;
@@ -60,6 +60,7 @@ int GentFrame::Init(const char *configfile)
         REGISTER_COMMAND(p, GentRedis);
 		if(!p->Init(msg))
         {
+			INFO(GentLog::ERROR, "database initialize failed");
             return false;
         }
     }else if(config["type"] == "queue"){
@@ -86,11 +87,11 @@ int GentFrame::Socket() {
 	int flags = 1;
 	listenfd = socket(AF_INET,SOCK_STREAM,0);
 	if(listenfd == -1) {
-		cout << "socket create failed." << endl;	
+		cout << "ERROR socket create failed." << endl;	
 		return -1;
 	}
 	if( setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &flags, sizeof(int)) == -1) {
-		cout << "set socket option failed." << endl;
+		cout << "ERROR set socket option failed." << endl;
 		return -1;
 	}
     setsockopt(listenfd, SOL_SOCKET, SO_KEEPALIVE, (void *)&flags, sizeof(flags));
@@ -122,17 +123,20 @@ int GentFrame::ServerSocket(int port)  {
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
 	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	char str[50]={0};
 	if(bind(fd,(struct sockaddr *)&addr,sizeof(addr)) == -1 ) {
-		cout << "bind port " <<port << " failed." << endl;	
+		sprintf(str, "bind port %d failed",port);
+		INFO(GentLog::ERROR, str);
 		close(fd);
 		return -1;
 	}
 	if(listen(fd,1024) == -1) {
-		cout << "listen failed." << endl;	
+		INFO(GentLog::ERROR, "listen failed.");	
 		close(fd);
 		return -1;
 	}
-	cout <<  "bind port " <<port <<" success." << endl;	
+	sprintf(str, "bind port %d sucess",port);
+	INFO(GentLog::INFO, str);
 	return fd;
 }
 
@@ -150,6 +154,7 @@ int GentFrame::Run(int port) {
 	//启动线程
 //    std::cout << "start " << std::endl;
 	GentThread::Intance()->Start();
+	INFO(GentLog::INFO,"start successful");	
 	gevent->Loop();
     return 0;
 }

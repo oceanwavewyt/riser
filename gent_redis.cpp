@@ -5,94 +5,247 @@
 #include "gent_list.h"
 #include "gent_app_mgr.h"
 
+std::map<string, GentSubCommand*> GentRedis::commands;
+
 GentRedis::GentRedis(GentConnect *c):GentCommand(c)
 {
   keystr = "";
   rlbytes = 0;
+  c = NULL;
 }
 GentRedis::~GentRedis(){}
+
+void GentRedis::SetCommands()
+{
+	GentProcessGet *g=new GentProcessGet();	
+	commands["get"] = g;
+	commands["GET"] = g;
+	GentProcessSet *s=new GentProcessSet();	
+	commands["set"] = s;
+	commands["SET"] = s;
+	GentProcessMget *m=new GentProcessMget();	
+	commands["mset"] = m;
+	commands["MSET"] = m;
+	GentProcessDel *del=new GentProcessDel();	
+	commands["del"] = del;
+	commands["DEL"] = del;
+	GentProcessQuit *quit=new GentProcessQuit();	
+	commands["quit"] = quit;
+	commands["QUIT"] = quit;
+	GentProcessKeys *keys=new GentProcessKeys();	
+	commands["keys"] = keys;
+	commands["KEYS"] = keys;
+	GentProcessExists *e=new GentProcessExists();	
+	commands["exists"] = e;
+	commands["EXISTS"] = e;
+	GentProcessPing *p=new GentProcessPing();	
+	commands["ping"] = p;
+	commands["PING"] = p;
+}
+
+int GentProcessGet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 5) return -1; 
+	redis->conn->SetStatus(Status::CONN_DATA);
+	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	return 0;
+}
+
+void GentProcessGet::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	string nr="";
+    if(!GentDb::Instance()->Get(redis->keystr, nr))
+    {
+        outstr = "$-1\r\n";
+    }
+    char retbuf[50]={0};
+    snprintf(retbuf,50, "$%ld\r\n",nr.size());
+    outstr = retbuf;
+	outstr += nr+"\r\n";
+}
+
+int GentProcessSet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	redis->conn->SetStatus(Status::CONN_NREAD);
+	if(num < 5) return -1;	
+	string keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	redis->keystr = keystr;
+	//redis->SetKey(keystr);
+	if(keystr.size()>=250) return -3;
+	size_t pos = 0;
+	int i = 5;
+	while(i>=0) {
+		pos = data.find_first_of("\r\n", pos);
+		if(pos == string::npos) return -1;
+		pos+=2;
+		i--;
+	}
+	uint64_t rlbytes = GetLength(tokenList[5]);
+	string content = data.substr(pos);
+	redis->rlbytes = rlbytes;
+	if(rlbytes<content.length()) {
+		content = data.substr(pos, rlbytes);
+		redis->content = content;
+		return 0;
+	}
+	redis->content = content;
+	return rlbytes-content.length();
+}
+
+void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	LOG(GentLog::WARN, "commandtype::comm_set");
+	redis->content += string(recont,len);
+	string nr;                   
+	nr.assign(redis->content.c_str(), redis->rlbytes);
+	if(!GentDb::Instance()->Put(redis->keystr, nr)) {
+		outstr = redis->Info("NOT_STORED",REDIS_ERROR);
+	}else{
+		//GentList::Instance()->Save(keystr);
+		LOG(GentLog::WARN, "commandtype::comm_set stored");
+		outstr=REDIS_INFO+"\r\n";
+	}
+}
+
+int GentProcessMget::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	int fieldNum = GetLength(tokenList[0]);
+	int len = fieldNum*2 + 1;
+	if(num < 5 || num != len) return -1;
+	redis->keyvec.clear();
+	redis->conn->SetStatus(Status::CONN_DATA);
+	for(int i=1; i<fieldNum; i++) {
+		int lenKey = i*2+1;
+		redis->keyvec.push_back(tokenList[lenKey+1].substr(0,GetLength(tokenList[lenKey])));
+	}	
+	return 0;
+}
+
+void GentProcessMget::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	vector<string>::iterator iter;
+	outstr = "";
+	int num = 0;
+    for(iter=redis->keyvec.begin(); iter!=redis->keyvec.end(); iter++)
+    {
+        string nr="";
+        if(!GentDb::Instance()->Get(*iter, nr))
+        {
+            continue;
+        }
+		num++;
+        char retbuf[20]={0};
+        snprintf(retbuf,20, "$%ld\r\n", nr.size());
+        outstr += retbuf;
+        outstr += nr+"\r\n";
+    }
+	char ret[20]={0};
+	snprintf(ret,20,"*%d\r\n",num);
+	outstr = ret + outstr;
+}
+
+int GentProcessDel::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 5) return -1; 
+	redis->conn->SetStatus(Status::CONN_DATA);
+	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	return 0;
+}
+
+void GentProcessDel::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	string keystr = redis->keystr;
+	if(!GentList::Instance()->Load(keystr)) {
+		outstr = ":0\r\n";
+		return;
+	}
+	string nr = "";
+	if(!GentDb::Instance()->Get(keystr, nr)){
+		outstr = ":0\r\n";
+		return;                  
+	}
+	GentList::Instance()->Clear(keystr);			
+	if(!GentDb::Instance()->Del(keystr)) {
+		outstr = ":0\r\n";
+	}else{
+		outstr = ":1\r\n";
+	}
+}
+
+int GentProcessQuit::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	redis->conn->SetStatus(Status::CONN_CLOSE);	
+	return 0;
+}
+
+void GentProcessQuit::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	return;
+}
+
+int GentProcessKeys::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 5) return -2;
+	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	redis->conn->SetStatus(Status::CONN_DATA);
+	return 0;
+}
+
+void GentProcessKeys::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	vector<string> outvec;
+	vector<string>::iterator it;
+	GentDb::Instance()->Keys(outvec, redis->keystr);
+	char ret[20]={0};
+	snprintf(ret,20,"*%ld\r\n",outvec.size());
+	outstr = ret;	
+	for(it=outvec.begin();it!=outvec.end();it++) {
+		char s[260]={0};
+		snprintf(s,260,"$%ld\r\n%s\r\n",(*it).size(),(*it).c_str());
+		outstr+=string(s);
+	}
+}
+
+int GentProcessExists::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 5) return -1; 
+	redis->conn->SetStatus(Status::CONN_DATA);
+	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	return 0;
+}
+
+void GentProcessExists::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	string nr="";
+    if(!GentDb::Instance()->Get(redis->keystr, nr))
+    {
+        outstr = ":0\r\n";
+    }else{
+		outstr = ":1\r\n";
+	}
+}
+
+int GentProcessPing::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	redis->conn->SetStatus(Status::CONN_DATA);
+	return 0;
+}
+
+void GentProcessPing::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	outstr="+PONG\r\n";	
+}
 
 int GentRedis::ParseCommand(const string &data)
 {
 	vector<string> tokenList;
 	int num = Split(data, "\r\n",	tokenList);
 	if(num < 3) return -1;
-	int fieldNum = GetLength(tokenList[0]);
-	int len = fieldNum*2 + 1; 
-	//if(num != len) {
-	//	cout << "string format Error" <<endl;
-	//	return -1;
-	//}	
-	if(tokenList[2] == "SET" || tokenList[2] == "set") {
-		conn->SetStatus(Status::CONN_NREAD);
-		if(num < 5) return -1;	
-		keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
-		if(keystr.size()>=250) return -3;
-		int pos = 0;
-		int i = 5;
-		while(i>=0) {
-			pos = data.find_first_of("\r\n", pos);
-			if(pos == string::npos) return -1;
-			pos+=2;
-			i--;
-		}
-		rlbytes = GetLength(tokenList[5]);
-		content = data.substr(pos);
-		commandtype = CommandType::COMM_SET;
-		if(rlbytes<content.length()) {
-			content = data.substr(pos, rlbytes);
-			return 0;
-		}
-		return rlbytes-content.length();			
-	}else if(tokenList[2] == "get" || tokenList[2] == "GET") {
-		if(num != 5) return -1; 
-		conn->SetStatus(Status::CONN_DATA);
-		commandtype = CommandType::COMM_GET;	
-		keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
-		return 0;
-	}else if(tokenList[2] == "mget" || tokenList[2] == "MGET") {
-		if(num < 5 || num != len) return -1;
-		keyvec.clear();	
-		conn->SetStatus(Status::CONN_DATA);
-		commandtype = CommandType::COMM_MGET;
-		for(int i=1; i<fieldNum; i++) {
-			int lenKey = i*2+1;
-			keyvec.push_back(tokenList[lenKey+1].substr(0,GetLength(tokenList[lenKey])));
-		}	
-		return 0;		
-	}else if(tokenList[2] == "del" || tokenList[2] == "DEL") {
-		if(num != 5) return -1; 
-		conn->SetStatus(Status::CONN_DATA);
-		commandtype = CommandType::COMM_DEL;
-		keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
-		return 0;
-	}else if(tokenList[2] == "quit" || tokenList[2] == "QUIT") {
-		conn->SetStatus(Status::CONN_CLOSE);
-		return 0;
-	}else if(tokenList[2] == "stats" || tokenList[2] == "STATS") {
-		keystr = "";
-		if(num == 5) {
-			keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
-		}
-		commandtype = CommandType::COMM_STATS;
-		conn->SetStatus(Status::CONN_DATA);
-		return 0;
-	}else if(tokenList[2] == "keys" || tokenList[2] == "KEYS") {
-		cout << "num: " << num <<endl;
-		if(num != 5) return -2;
-		keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
-		commandtype = CommandType::COMM_KEYS;
-		conn->SetStatus(Status::CONN_DATA);
-		return 0;
-	}else if(tokenList[2] == "exists" || tokenList[2] == "EXISTS") {
-		if(num != 5) return -1; 
-		conn->SetStatus(Status::CONN_DATA);
-		commandtype = CommandType::COMM_EXISTS;	
-		keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
-		return 0;
-	}
-	return -1;
-
+	std::map<string, GentSubCommand*>::iterator it=commands.find(tokenList[2]);
+	c = NULL;	
+	if(it == commands.end()) return -1;
+	c = (*it).second;
+	return c->Parser(num, tokenList, data, this);
 }
 
 int GentRedis::Process(const char *rbuf, size_t size, string &outstr) 
@@ -230,6 +383,11 @@ void GentRedis::ProcessStats(string &outstr)
     outstr = retbuf;
 }
 
+void GentRedis::ProcessPing(string &outstr)
+{
+	outstr="+PONG\r\n";
+}
+
 void GentRedis::ProcessKeys(string &outstr)
 {
 	vector<string> outvec;
@@ -247,41 +405,12 @@ void GentRedis::ProcessKeys(string &outstr)
 
 void GentRedis::Complete(string &outstr, const char *recont, uint64_t len)
 {
-	switch(commandtype)
-	{
-		case CommandType::COMM_GET:
-			//NOT_FOUND
-            //if(keystr!="" && !GentList::Instance()->Load(keystr)) {
-			//	outstr += "END\r\n";
-			//	break;
-			//}
-            ProcessGet(outstr);
-			break;	
-		case CommandType::COMM_SET:
-			ProcessSet(outstr, recont, len);	
-			break;
-		case CommandType::COMM_QUIT:
-			break;
-		case CommandType::COMM_DEL:
-			ProcessDel(outstr); 
-			break;
-        case CommandType::COMM_STATS:
-            ProcessStats(outstr);
-            break;
-		case CommandType::COMM_KEYS:
-			ProcessKeys(outstr);
-			break;
-		case CommandType::COMM_MGET:
-			ProcessMultiGet(outstr);
-			break;
-		case CommandType::COMM_EXISTS:
-			ProcessExists(outstr);
-			break;
-		default:
-			outstr = Info("command",REDIS_ERROR);
-			return;
-	}		
-
+	if(c == NULL) {
+		outstr = Info("command",REDIS_ERROR);
+		return;
+	}
+	c->Complete(outstr, recont, len, this);
+	return;
 }
 GentCommand *GentRedis::Clone(GentConnect *connect)
 {
@@ -294,6 +423,7 @@ bool GentRedis::Init(string &msg)
        LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
        return false;
    }
+   GentRedis::SetCommands();
    GentList::Instance()->Init();
    return true;
 }

@@ -26,6 +26,7 @@ public:
 	 COMM_KEYS = 7,
 	 COMM_MGET = 8,
 	 COMM_EXISTS = 9,
+	 COMM_PING = 10,
 	};
 
 };

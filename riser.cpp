@@ -94,7 +94,6 @@ int main(int argc, char **argv)
         }
     
     }
-    std::cout << "Hello, World!\n";
    	
 	if(getrlimit(RLIMIT_NOFILE, &rlim) != 0) {
 		std::cout << "get rlimit failed\n";

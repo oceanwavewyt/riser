@@ -53,6 +53,7 @@ public:
 	static FILE *logfd;
 	static int setfd(string &filename);
 	static void write(int levels, const char *file, const int line, const char *func, const char *format, ...);
+	static void console(int level, const string &);
 };
 
 class CommLock
@@ -91,6 +92,7 @@ public:
 };
 
 #define LOG(level, args...)  GentLog::write(level, __FILE__, __LINE__, __func__, args)
+#define INFO(level,str) GentLog::console(level,str)
 
 #define REGISTER_COMMAND(p, LogicModule) \
 			p = new LogicModule(); \
