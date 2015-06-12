@@ -4,6 +4,7 @@
 #include "gent_db.h"
 #include "gent_list.h"
 #include "gent_app_mgr.h"
+#include "gent_frame.h"
 
 std::map<string, GentSubCommand*> GentRedis::commands;
 
@@ -24,8 +25,8 @@ void GentRedis::SetCommands()
 	commands["set"] = s;
 	commands["SET"] = s;
 	GentProcessMget *m=new GentProcessMget();	
-	commands["mset"] = m;
-	commands["MSET"] = m;
+	commands["mget"] = m;
+	commands["MGET"] = m;
 	GentProcessDel *del=new GentProcessDel();	
 	commands["del"] = del;
 	commands["DEL"] = del;
@@ -41,6 +42,9 @@ void GentRedis::SetCommands()
 	GentProcessPing *p=new GentProcessPing();	
 	commands["ping"] = p;
 	commands["PING"] = p;
+	GentProcessInfo *info=new GentProcessInfo();	
+	commands["info"] = info;
+	commands["INFO"] = info;
 }
 
 int GentProcessGet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
@@ -98,6 +102,7 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 	redis->content += string(recont,len);
 	string nr;                   
 	nr.assign(redis->content.c_str(), redis->rlbytes);
+	redis->content = "";
 	if(!GentDb::Instance()->Put(redis->keystr, nr)) {
 		outstr = redis->Info("NOT_STORED",REDIS_ERROR);
 	}else{
@@ -170,6 +175,42 @@ void GentProcessDel::Complete(string &outstr,const char *recont, uint64_t len, G
 	}else{
 		outstr = ":1\r\n";
 	}
+}
+
+int GentProcessInfo::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	redis->conn->SetStatus(Status::CONN_DATA);
+	return 0;
+}
+
+void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	char retbuf[200] = {0};
+    uint64_t totals = GentDb::Instance()->TotalSize(); 
+	char hmen[64]={0};
+	GentUtil::BytesToHuman(hmen, totals);
+	snprintf(retbuf,200,"# Server\r\n"
+			"process_id: %ld\r\n"
+			"port: %d\r\n"
+			"config_file: %s\r\n"
+			"\r\n# Clients\r\n"
+			"total_connect: %lu\r\n"
+			"current_connect: %lu\r\n"
+			"\r\n# Disk\r\n"
+			"disk_use: %lu\r\n"
+			"disk_use_human: %s\r\n",
+             (long) getpid(),
+			 GentFrame::Instance()->s->port,
+			 GentFrame::Instance()->s->configfile,
+			 GentAppMgr::Instance()->GetTotalConnCount(),
+			 GentAppMgr::Instance()->GetConnCount(),
+			 totals,
+			 hmen);
+	outstr = retbuf;
+    char c[50]={0};
+	snprintf(c,50,"$%lu\r\n",outstr.size()-2);
+	outstr = c+outstr;
+	return;
 }
 
 int GentProcessQuit::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
@@ -290,88 +331,7 @@ string GentRedis::Info(const string &msg, const string &type)
 	return type+" "+msg+"\r\n";	
 }
 
-void GentRedis::ProcessDel(string &outstr)
-{
-	if(!GentList::Instance()->Load(keystr)) {
-		outstr = ":0\r\n";
-		return;
-	}
-	string nr = "";
-	if(!GentDb::Instance()->Get(keystr, nr)){
-		outstr = ":0\r\n";
-		return;                  
-	}
-	GentList::Instance()->Clear(keystr);			
-	if(!GentDb::Instance()->Del(keystr)) {
-		outstr = ":0\r\n";
-	}else{
-		outstr = ":1\r\n";
-	}
-}
 
-void GentRedis::ProcessSet(string &outstr, const char *recont, uint64_t len)
-{
-	LOG(GentLog::WARN, "commandtype::comm_set");
-	content += string(recont,len);
-	string nr;                   
-	nr.assign(content.c_str(), rlbytes);
-	if(!GentDb::Instance()->Put(keystr, nr)) {
-		outstr = Info("NOT_STORED",REDIS_ERROR);
-	}else{
-		//GentList::Instance()->Save(keystr);
-		LOG(GentLog::WARN, "commandtype::comm_set stored");
-		outstr=REDIS_INFO+"\r\n";
-	}
-
-}
-
-void GentRedis::ProcessGet(string &outstr)
-{
-    string nr="";
-    if(!GentDb::Instance()->Get(keystr, nr))
-    {
-        outstr = "$-1\r\n";
-    }
-    char retbuf[50]={0};
-    snprintf(retbuf,50, "$%ld\r\n",nr.size());
-    outstr = retbuf;
-	outstr += nr+"\r\n";
-}
-
-void GentRedis::ProcessExists(string &outstr)
-{
-    string nr="";
-    if(!GentDb::Instance()->Get(keystr, nr))
-    {
-        outstr = ":0\r\n";
-    }else{
-		outstr = ":1\r\n";
-	}
-}
-
-
-void GentRedis::ProcessMultiGet(string &outstr)
-{
-    vector<string>::iterator iter;
-	outstr = "";
-	int num = 0;
-    for(iter=keyvec.begin(); iter!=keyvec.end(); iter++)
-    {
-        string nr="";
-        if(!GentDb::Instance()->Get(*iter, nr))
-        {
-            continue;
-        }
-		num++;
-        char retbuf[20]={0};
-        snprintf(retbuf,20, "$%ld\r\n", nr.size());
-        outstr += retbuf;
-        outstr += nr+"\r\n";
-    }
-	char ret[20]={0};
-	snprintf(ret,20,"*%d\r\n",num);
-	outstr = ret + outstr;
-}
 
 void GentRedis::ProcessStats(string &outstr)
 {
@@ -381,26 +341,6 @@ void GentRedis::ProcessStats(string &outstr)
 	snprintf(retbuf,200,"total_connect: %lu\r\ncurrent_connect: %lu\r\nitem_nums: %lu\r\ntotal_size: %lu\r\n",
              GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount(), num, totals);
     outstr = retbuf;
-}
-
-void GentRedis::ProcessPing(string &outstr)
-{
-	outstr="+PONG\r\n";
-}
-
-void GentRedis::ProcessKeys(string &outstr)
-{
-	vector<string> outvec;
-	vector<string>::iterator it;
-	GentDb::Instance()->Keys(outvec, keystr);
-	char ret[20]={0};
-	snprintf(ret,20,"*%ld\r\n",outvec.size());
-	outstr = ret;	
-	for(it=outvec.begin();it!=outvec.end();it++) {
-		char s[260]={0};
-		snprintf(s,260,"$%ld\r\n%s\r\n",(*it).size(),(*it).c_str());
-		outstr+=string(s);
-	}
 }
 
 void GentRedis::Complete(string &outstr, const char *recont, uint64_t len)

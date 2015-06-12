@@ -39,7 +39,7 @@ GentFrame::~GentFrame() {
 	Destory();
 }
 
-int GentFrame::Init(const char *configfile)
+int GentFrame::Init(struct riserserver *server, const char *configfile)
 {
     if(access(configfile, 0) == -1) {
         string str(configfile);
@@ -51,6 +51,7 @@ int GentFrame::Init(const char *configfile)
 		INFO(GentLog::ERROR,"open "+config["logfile"]+" error");
 		return false;
 	}
+	s = server;
 	//config info
     string msg;
     if(config["type"] == "" || config["type"] == "leveldb"){
@@ -116,6 +117,7 @@ int GentFrame::ServerSocket(int port)  {
     if(port == -1) {
         port = atoi(config["port"].c_str());
     }
+	s->port = port;
 	if((fd = Socket()) == -1) {
 		return -1;
 	}

@@ -100,6 +100,16 @@ public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
 };
+class GentProcessInfo : public GentSubCommand
+{
+public:
+	GentProcessInfo(){};
+	~GentProcessInfo(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+};
+
 
 class GentRedis: public GentCommand
 {
@@ -111,6 +121,7 @@ class GentRedis: public GentCommand
 	friend class GentProcessExists;
 	friend class GentProcessQuit;
 	friend class GentProcessPing;
+	friend class GentProcessInfo;
 	static std::map<string, GentSubCommand*> commands;
 private:	
 	string keystr;
@@ -133,13 +144,6 @@ private:
 	uint64_t GetLength(string &str);
 	int ParseCommand(const string &str);
 	string Info(const string &msg, const string &);
-    void ProcessGet(string &);
-    void ProcessSet(string &outstr, const char *recont, uint64_t len);
-	void ProcessMultiGet(string &);
-    void ProcessDel(string &); 
     void ProcessStats(string &);
-    void ProcessKeys(string &);
-	void ProcessExists(string &outstr);
-	void ProcessPing(string &outstr);
 };
 #endif

@@ -91,6 +91,12 @@ public:
 	}
 };
 
+struct riserserver
+{
+	int port;
+	char *configfile;
+};
+
 #define LOG(level, args...)  GentLog::write(level, __FILE__, __LINE__, __func__, args)
 #define INFO(level,str) GentLog::console(level,str)
 

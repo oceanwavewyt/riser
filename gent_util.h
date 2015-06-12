@@ -14,4 +14,5 @@ public:
     static string RTrim(const string& str);
     static string Trim(const string& str);
 	static bool Split(const string &str, const string &delimit, vector<string> &v);
+	static void BytesToHuman(char *s, unsigned long long n);
 };

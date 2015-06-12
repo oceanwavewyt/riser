@@ -24,6 +24,7 @@ private:
 public:
 	GENT_MSG_CONNECT msg_;
     GentConfig config;
+	struct riserserver *s;
 public:
 	GentFrame();
 	~GentFrame();
@@ -34,7 +35,7 @@ private:
 	int Socket();
 	int ServerSocket(int port=-1);
 public:
-    int Init(const char *configfile="riser.conf");
+    int Init(struct riserserver *s, const char *configfile="riser.conf");
 	int Run(int port);
 	int Register(int key, GentBasic *app);
 	void Destory();

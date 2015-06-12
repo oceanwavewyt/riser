@@ -54,18 +54,6 @@ void usage() {
 
 int main(int argc, char **argv)
 {
-	/*
-	GentLinkMgr::Instance()->Init();	
-	GentLink *link = GentLinkMgr::Instance()->GetLink("abc");
-	if(!link) {
-		cout << "not exist abc. " << endl;
-		return 0;
-	}
-	link->Push("");
-	string key;
-	link->Pop(key);
-	return 1;	
-	*/
     int ch;
     bool deamon = false;
     int port = -1;
@@ -107,8 +95,10 @@ int main(int argc, char **argv)
 		return 1;
 	}
      */
+	struct riserserver server;
+	server.configfile = configfile;
 	/* initialize config file */
-	if(!GentFrame::Instance()->Init(configfile)){
+	if(!GentFrame::Instance()->Init(&server, configfile)){
         std::cout << "init fail!\n";
         return 1;
     }
