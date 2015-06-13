@@ -103,11 +103,13 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 	string nr;                   
 	nr.assign(redis->content.c_str(), redis->rlbytes);
 	redis->content = "";
+    outstr=REDIS_INFO+"\r\n";
+    return;
 	if(!GentDb::Instance()->Put(redis->keystr, nr)) {
 		outstr = redis->Info("NOT_STORED",REDIS_ERROR);
 	}else{
 		//GentList::Instance()->Save(keystr);
-		LOG(GentLog::WARN, "commandtype::comm_set stored");
+		LOG(GentLog::WARN, "it is sucess for %s stored",redis->keystr.c_str());
 		outstr=REDIS_INFO+"\r\n";
 	}
 }
@@ -279,9 +281,11 @@ void GentProcessPing::Complete(string &outstr,const char *recont, uint64_t len, 
 
 int GentRedis::ParseCommand(const string &data)
 {
+    if(data.size()==0) return 0;
 	vector<string> tokenList;
 	int num = Split(data, "\r\n",	tokenList);
-	if(num < 3) return -1;
+	if(num==0) return 0;
+    if(num < 3) return -1;
 	std::map<string, GentSubCommand*>::iterator it=commands.find(tokenList[2]);
 	c = NULL;	
 	if(it == commands.end()) return -1;
@@ -289,7 +293,7 @@ int GentRedis::ParseCommand(const string &data)
 	return c->Parser(num, tokenList, data, this);
 }
 
-int GentRedis::Process(const char *rbuf, size_t size, string &outstr) 
+int GentRedis::Process(const char *rbuf, uint64_t size, string &outstr)
 {
 	string data = string(rbuf,size);
 	int status = ParseCommand(data);
