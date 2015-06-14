@@ -44,7 +44,7 @@ void GentConnect::Init(int sfd) {
 void GentConnect::ReAllocation() {
     curstatus = Status::CONN_READ;
     rsize = GentCommand::READ_BUFFER_SIZE;
-	rcurr = NULL;
+	//rcurr = NULL;
     content = NULL;
 	actualsize = 0;
     rbuf = (char *)malloc(rsize);
@@ -86,6 +86,7 @@ int GentConnect::TryRunning(string &outstr2) {
                 LOG(GentLog::INFO, "curstatus: %d",curstatus);
                  if(!remainsize && outstr != "") {
                      curstatus = Status::CONN_WRITE;
+                     Reset();
                      gevent->UpdateEvent(fd, this, eventWrite);
                 }
                 break;
@@ -93,9 +94,9 @@ int GentConnect::TryRunning(string &outstr2) {
                 //OutString("ok\r\n"); 
                 //LOG(GentLog::INFO, "start conn_nread remainsize:%d",remainsize);
 				if(!content) {
-                    new_rbuf = (char *)malloc(remainsize);
-                    memset(new_rbuf,0,remainsize);
-                    rcont = content = new_rbuf;
+                    content = (char *)malloc(remainsize);
+                    memset(content,0,remainsize);
+                    rcont = content;
                 }
                 if(NextRead() == -1) {
                     stop = 1;
@@ -110,6 +111,7 @@ int GentConnect::TryRunning(string &outstr2) {
                 
                 return 0;
             case Status::CONN_WRITE:
+                Reset();
                 OutString(outstr);
                 break;
             case Status::CONN_WAIT:

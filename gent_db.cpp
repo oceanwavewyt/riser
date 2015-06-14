@@ -48,6 +48,12 @@ bool GentDb::Put(string &key, string &value)
     return s.ok();
 }
 
+bool GentDb::Put(string &key, const char *val, uint64_t len)
+{
+    leveldb::Status s = db->Put(leveldb::WriteOptions(), key, leveldb::Slice(val,len));
+    return s.ok();
+}
+
 bool GentDb::Del(string &key)
 {
 	leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);

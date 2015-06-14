@@ -27,6 +27,7 @@ public:
 public:
     bool Init(string &err);
     bool Put(string &key, string &value);
+    bool Put(string &key, const char *val, uint64_t len);
     bool Get(string &key,string &value);
     bool Del(string &key);
 	uint64_t Count(const string &pre="");

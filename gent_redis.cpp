@@ -85,27 +85,24 @@ int GentProcessSet::Parser(int num,vector<string> &tokenList,const string &data,
 		i--;
 	}
 	uint64_t rlbytes = GetLength(tokenList[5]);
-	string content = data.substr(pos);
+	redis->content = data.substr(pos);
 	redis->rlbytes = rlbytes;
-	if(rlbytes<content.length()) {
-		content = data.substr(pos, rlbytes);
-		redis->content = content;
+	if(rlbytes<redis->content.length()) {
+		redis->content = data.substr(pos, rlbytes);
 		return 0;
 	}
-	redis->content = content;
-	return rlbytes-content.length();
+	return rlbytes-redis->content.length();
 }
 
 void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	LOG(GentLog::WARN, "commandtype::comm_set");
 	redis->content += string(recont,len);
-	string nr;                   
-	nr.assign(redis->content.c_str(), redis->rlbytes);
-	redis->content = "";
+	//string nr;
+	//nr.assign(redis->content.c_str(), redis->rlbytes);
     outstr=REDIS_INFO+"\r\n";
     return;
-	if(!GentDb::Instance()->Put(redis->keystr, nr)) {
+	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes)) {
 		outstr = redis->Info("NOT_STORED",REDIS_ERROR);
 	}else{
 		//GentList::Instance()->Save(keystr);
