@@ -51,7 +51,7 @@ public:
 	virtual bool Init(string &msg) = 0;
 	virtual void Reset();
 public:
-    static const int READ_BUFFER_SIZE = 1024;
+    static const int READ_BUFFER_SIZE = 4096;
 };
 
 class GentWang
