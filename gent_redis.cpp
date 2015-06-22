@@ -100,8 +100,8 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 	redis->content += string(recont,len);
 	//string nr;
 	//nr.assign(redis->content.c_str(), redis->rlbytes);
-    outstr=REDIS_INFO+"\r\n";
-    return;
+    //outstr=REDIS_INFO+"\r\n";
+    //return;
 	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes)) {
 		outstr = redis->Info("NOT_STORED",REDIS_ERROR);
 	}else{

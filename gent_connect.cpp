@@ -11,7 +11,7 @@
 #include "gent_level.h"
 #include "gent_app_mgr.h"
 #include <errno.h>
-GentConnect::GentConnect(int sfd)
+GentConnect::GentConnect(int sfd):rbuf(NULL)
 {
 	Init(sfd);
 }
@@ -22,13 +22,19 @@ GentConnect::~GentConnect()
 }
 void GentConnect::Destruct()
 {
+    if(rbuf) {
+        free(rbuf);
+        rbuf = NULL;
+    }
+    if(content) {
+        free(content);
+        content = NULL;
+    }
     if(!fd) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);
-    if(rbuf) {
-        free(rbuf);
-    }
+    
 }
 void GentConnect::Init(int sfd) {
     fd = sfd;
@@ -43,19 +49,22 @@ void GentConnect::Init(int sfd) {
 
 void GentConnect::ReAllocation() {
     curstatus = Status::CONN_READ;
-    rsize = GentCommand::READ_BUFFER_SIZE;
+    
 	//rcurr = NULL;
     content = NULL;
 	actualsize = 0;
-    rbuf = (char *)malloc(rsize);
+    if(!rbuf) {
+        rsize = GentCommand::READ_BUFFER_SIZE;
+        rbuf = (char *)malloc(rsize);
+    }
     memset(rbuf,0,rsize);
 }
 
 void GentConnect::Reset() {
     //comm->Reset();
-    if(rbuf) {
-        free(rbuf);
-    }
+    //if(rbuf) {
+    //    free(rbuf);
+    //}
     if(content) {
         free(content);
     }
