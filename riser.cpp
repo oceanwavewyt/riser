@@ -18,6 +18,8 @@
 #include <sys/resource.h>
 #include <queue.h>
 
+#define PATHBUF 100
+
 void daemonize(void) {
     int fd;
 
@@ -51,13 +53,29 @@ void usage() {
     exit(1);
 }
 
+bool getpath(char *filepath) {
+	char *c = filepath;
+	if(*c == '/') return true;
+	char buf[PATHBUF] ={0};
+	if(!getcwd(buf,PATHBUF)) return false;
+	if(*c=='.') {
+		c++;
+		if(*c == '/') c++;
+		else
+		  c--;
+	}
+	char tt[PATHBUF]={0};
+	sprintf(tt, "%s/%s", buf,c);
+	memmove(filepath,tt,PATHBUF);
+	return true;		
+}
 
 int main(int argc, char **argv)
 {
     int ch;
     bool deamon = false;
     int port = -1;
-    char configfile[100] = "riser.conf";
+    char configfile[PATHBUF] = "riser.conf";
     struct rlimit rlim;
 	while((ch = getopt(argc,argv,"c:vhdp:"))!= -1) {
         switch (ch) {
@@ -95,6 +113,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
      */
+	getpath(configfile);
 	struct riserserver server;
 	server.configfile = configfile;
 	/* initialize config file */

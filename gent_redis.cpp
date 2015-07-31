@@ -197,14 +197,17 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 			"current_connect: %lu\r\n"
 			"\r\n# Disk\r\n"
 			"disk_use: %lu\r\n"
-			"disk_use_human: %s\r\n",
+			"disk_use_human: %s\r\n"
+			"\r\n# Keyspace\r\n"
+			"key_num: %lu\r\n\r\n",
              (long) getpid(),
 			 GentFrame::Instance()->s->port,
 			 GentFrame::Instance()->s->configfile,
 			 GentAppMgr::Instance()->GetTotalConnCount(),
 			 GentAppMgr::Instance()->GetConnCount(),
 			 totals,
-			 hmen);
+			 hmen,
+			 GentDb::Instance()->Count(""));
 	outstr = retbuf;
     char c[50]={0};
 	snprintf(c,50,"$%lu\r\n",outstr.size()-2);

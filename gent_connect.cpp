@@ -72,7 +72,6 @@ void GentConnect::Reset() {
 }
 
 int GentConnect::TryRunning(string &outstr2) {
-    char *new_rbuf;
     int rbytes = 0;
     int readNum;
     int stop=0;
