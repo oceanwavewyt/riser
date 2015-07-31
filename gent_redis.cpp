@@ -184,11 +184,11 @@ int GentProcessInfo::Parser(int num,vector<string> &tokenList,const string &data
 
 void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	char retbuf[200] = {0};
+	char retbuf[300] = {0};
     uint64_t totals = GentDb::Instance()->TotalSize(); 
 	char hmen[64]={0};
 	GentUtil::BytesToHuman(hmen, totals);
-	snprintf(retbuf,200,"# Server\r\n"
+	snprintf(retbuf,300,"# Server\r\n"
 			"process_id: %ld\r\n"
 			"port: %d\r\n"
 			"config_file: %s\r\n"
