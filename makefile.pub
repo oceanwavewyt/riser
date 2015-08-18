@@ -6,9 +6,9 @@ OUTPATH=output
 ROOT=./include/
 INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
 
-LDFLAGS += -lpthread -levent ./lib/libleveldb.a
+LDFLAGS += -pg -lpthread -levent ./lib/libleveldb.a
 LDFLAGS += -llevelque
-CPPFLAGS += -g -fPIC -pg -Wall
+CPPFLAGS += -fPIC -pg -Wall
 OS := $(shell uname -s)
 IS_DARWIN := $(shell echo $(OS)|grep -i Darwin)
 ifdef IS_DARWIN

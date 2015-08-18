@@ -9,7 +9,6 @@
 #include "gent_frame.h"
 #include "gent_app_mgr.h"
 #include "gent_thread.h"
-#include "gent_queue.h"
 #include "gent_level.h"
 #include "gent_redis.h"
 #include "gent_list.h"
@@ -62,13 +61,6 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
 		if(!p->Init(msg))
         {
 			INFO(GentLog::ERROR, "database initialize failed");
-            return false;
-        }
-    }else if(config["type"] == "queue"){
-        GentQueue *p;
-        REGISTER_COMMAND(p, GentQueue);
-        if(!p->Init(msg))
-        {
             return false;
         }
     }else if(config["type"] == "filter") {
