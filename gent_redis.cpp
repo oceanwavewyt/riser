@@ -5,6 +5,7 @@
 #include "gent_list.h"
 #include "gent_app_mgr.h"
 #include "gent_frame.h"
+#include "gent_repl.h"
 
 std::map<string, GentSubCommand*> GentRedis::commands;
 
@@ -45,6 +46,9 @@ void GentRedis::SetCommands()
 	GentProcessInfo *info=new GentProcessInfo();	
 	commands["info"] = info;
 	commands["INFO"] = info;
+	GentProcessRep *rep=new GentProcessRep();	
+	commands["rep"] = rep;
+	commands["REP"] = rep;
 }
 
 int GentProcessGet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
@@ -277,6 +281,29 @@ int GentProcessPing::Parser(int num,vector<string> &tokenList,const string &data
 void GentProcessPing::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	outstr="+PONG\r\n";	
+}
+
+int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 3) return -1;
+	//rep name runid
+	//rep name ok
+
+	//tokenlist[1] 
+	//redis->conn->SetStatus(Status::CONN_DATA);
+	//redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	return 0;
+}
+
+void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	//string nr="";
+    //if(!GentDb::Instance()->Get(redis->keystr, nr))
+    //{
+    //    outstr = ":0\r\n";
+    //}else{
+	//	outstr = ":1\r\n";
+	//}
 }
 
 int GentRedis::ParseCommand(const string &data)
