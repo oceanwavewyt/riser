@@ -1,7 +1,8 @@
 #ifndef riser_gent_repl_h
 #define riser_gent_repl_h
 #include "gent_queue_list.h"
-
+class GentEvent;
+class GentConnect;
 class GentReplication
 {
 	string rep_name;
@@ -18,8 +19,10 @@ class GentReplication
 public:
 	GentReplication(const string &name);
 	~GentReplication();	
-	bool Check();
-	bool Start();
+	bool Start(string &msg, string &outstr);
+	void Push(int type, string &key);
+private:
+	void Reply(int type, string &key,string &outstr, const string &nr="");
 };
 
 
@@ -27,17 +30,23 @@ class GentRepMgr
 {
 	static GentRepMgr *intance_;
 	std::map<string,GentReplication*> rep_list_;	
+	GentConnect *connect_;
 private:
 	GentReplication *Get(string &name);
 public:
 	static GentRepMgr *Instance();
 	static void UnInstance();
+	static void Handle(int fd, short which, void *arg);
 public:
 	GentRepMgr();
 	~GentRepMgr();
 	void Destroy(int id);	
 	bool Logout(string &name);	
-	bool Run(string &name, string &runid);
+	bool Run(string &name,string &msg, string &outstr);
+	void Push(int type, string &key);
+	void Slave(const string &client_name, GentEvent *e);
+	void SlaveReply(string &outstr, int suc);
+	void CannelConnect();
 };
 
 #endif

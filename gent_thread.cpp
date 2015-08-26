@@ -10,6 +10,7 @@
 #include "gent_thread.h"
 #include "gent_app_mgr.h"
 #include "gent_connect.h"
+#include "gent_repl.h"
 
 GentThread *GentThread::intanceth_ = NULL;
 
@@ -93,6 +94,14 @@ void *GentThread::Work(void *arg) {
 	return ((void *)0);
 }
 
+void *GentThread::Rep(void *arg) {
+	GentEvent *ev = new GentEvent();
+	struct timeval tv = {1,0};
+	ev->AddTimeEvent(&tv, GentRepMgr::Handle);
+	ev->Loop(); 
+	return ((void *)0);
+}
+
 void GentThread::Start() {
 	int i;
 	for(i=0; i<thread_count_; ++i) {
@@ -108,7 +117,17 @@ void GentThread::Start() {
 		}
 
 	}
-
+	if(GentFrame::Instance()->config["slavename"] != "") {
+		pthread_attr_t attr;
+		pthread_t pid;
+		int ret;
+		pthread_attr_init(&attr);
+		ret = pthread_create(&pid,&attr,GentThread::Rep,NULL);
+		if(ret != 0) {
+			INFO(GentLog::ERROR,"thread create failed");
+			exit(0);
+		}		
+	}
 }
 
 void *GentThread::Handle2(void *arg) {

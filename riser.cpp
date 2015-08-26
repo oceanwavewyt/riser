@@ -74,10 +74,11 @@ int main(int argc, char **argv)
 {
     int ch;
     bool deamon = false;
+	bool is_slave = false;
     int port = -1;
     char configfile[PATHBUF] = "riser.conf";
     struct rlimit rlim;
-	while((ch = getopt(argc,argv,"c:vhdp:"))!= -1) {
+	while((ch = getopt(argc,argv,"c:vhdsp:"))!= -1) {
         switch (ch) {
             case 'c':
                 printf("option a:'%s'\n",optarg);
@@ -86,6 +87,9 @@ int main(int argc, char **argv)
             case 'd':
                 deamon = true;
                 break;
+			case 's':
+				is_slave = true;
+				break;
             case 'p':
                 port = atoi(optarg);
                 break;

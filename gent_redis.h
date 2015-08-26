@@ -111,8 +111,9 @@ public:
 };
 class GentProcessRep : public GentSubCommand
 {
+	string msg;
 public:
-	GentProcessRep(){};
+	GentProcessRep(){msg="";};
 	~GentProcessRep(){};
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
@@ -148,6 +149,7 @@ public:
    GentCommand *Clone(GentConnect *);
    int GetStatus();
    bool Init(string &msg);
+   bool Slave();
 private:
 	int Split(const string &str, const string &delimit, vector<string> &v);
 	uint64_t GetLength(string &str);

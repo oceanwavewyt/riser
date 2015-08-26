@@ -116,7 +116,11 @@ int GentFrame::ServerSocket(int port)  {
 	bzero(&addr,sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(config["host"] == "") {
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	}else{
+		addr.sin_addr.s_addr = inet_addr(config["host"].c_str());
+	}
 	char str[50]={0};
 	if(bind(fd,(struct sockaddr *)&addr,sizeof(addr)) == -1 ) {
 		sprintf(str, "bind port %d failed",port);

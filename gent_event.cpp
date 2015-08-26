@@ -59,7 +59,12 @@ int GentEvent::UpdateEvent(int fd,GentConnect *c, int state) {
 	return 0;
 }
 
-
+int GentEvent::AddTimeEvent(struct timeval *tv, void(*handle)(const int fd, const short which, void *arg)) {
+	event_set(&ev_, -1, 0, handle, this);
+	event_base_set(main_base_, &ev_);
+	event_add(&ev_, tv);
+	return 0;
+}
 
 void GentEvent::Loop() {
 	//while(true) {
@@ -256,3 +261,18 @@ void GentEvent::HandleMain1(struct evhttp_request *request, void *arg) {
 	 close(sfd);
 }
 */
+
+int GentEvent::Client(const string &host, int port)
+{
+	int client_sock=socket(AF_INET,SOCK_STREAM,0);
+	struct sockaddr_in address; 
+	address.sin_addr.s_addr=inet_addr(host.c_str());    
+	address.sin_family=AF_INET;  
+	address.sin_port=htons(port);
+	int result=connect(client_sock, (struct sockaddr *)&address, sizeof(address));  
+	if(result==-1){  
+    	LOG(GentLog::ERROR, "connect replicaton master failed");	
+		return -1;  
+	} 	
+	return client_sock; 
+}

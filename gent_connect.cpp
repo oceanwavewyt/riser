@@ -10,6 +10,7 @@
 #include "gent_event.h"
 #include "gent_level.h"
 #include "gent_app_mgr.h"
+#include "gent_repl.h"
 #include <errno.h>
 GentConnect::GentConnect(int sfd):rbuf(NULL)
 {
@@ -33,11 +34,15 @@ void GentConnect::Destruct()
     if(!fd) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
+	if(is_slave) {
+		GentRepMgr::Instance()->CannelConnect();		
+	}
 	LOG(GentLog::INFO, "file description %d close.", fd);
     
 }
 void GentConnect::Init(int sfd) {
     fd = sfd;
+	is_slave = false;
     clen = 0;
     remainsize = 0;
 	sendsize = 0;
@@ -182,7 +187,7 @@ int GentConnect::InitRead(int &rbytes) {
            }
            return -1;
        }                                                    
-   }                                                        
+   }
    return gotdata;                                          
 }
 

@@ -30,7 +30,7 @@ public:
 
 class GentConnect
 {
-    int clen;
+	int clen;
     GentCommand *comm;	    
     char *rbuf;
 
@@ -52,6 +52,7 @@ public:
     GentEvent *gevent;
     int fd;
     struct sockaddr request_addr;
+    bool is_slave;
 public:
     GentConnect(int);
     ~GentConnect();

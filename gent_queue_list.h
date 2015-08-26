@@ -75,7 +75,7 @@ public:
     }  
   
     //取得队头元素  
-    NODE<T>* front_element()  
+    T front_element()  
     {  
         if (front == rear)  
         {  
@@ -84,12 +84,12 @@ public:
         }  
         else  
         {  
-            NODE<T>* p = front->next;  
-            return p;  
+            NODE<T> *p = front->next;  
+			return p->data;  
         }  
     }  
   
-    NODE<T>* back_element()  
+    T back_element()  
     {  
         if (front == rear)  
         {  
@@ -98,7 +98,7 @@ public:
         }  
         else  
         {  
-            return rear;  
+            return rear->data;  
         }  
     }  
      
