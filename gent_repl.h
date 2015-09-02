@@ -28,15 +28,20 @@ private:
 
 class GentRepMgr
 {
-	static GentRepMgr *intance_;
+	static GentRepMgr *intanceMaster_;
+	static GentRepMgr *intanceSlave_;
 	std::map<string,GentReplication*> rep_list_;	
 	GentConnect *connect_;
+	int status;
 private:
 	GentReplication *Get(string &name);
+	int LinkMaster(GentEvent *ev_, const string &host, int port);	
 public:
-	static GentRepMgr *Instance();
+	enum status {INIT=0,AUTH=1,TRAN=2,COMPLETE=3};
+public:
+	static GentRepMgr *Instance(const string &name);
 	static void UnInstance();
-	static void Handle(int fd, short which, void *arg);
+	static void SlaveHandle(int fd, short which, void *arg);
 public:
 	GentRepMgr();
 	~GentRepMgr();
@@ -44,8 +49,10 @@ public:
 	bool Logout(string &name);	
 	bool Run(string &name,string &msg, string &outstr);
 	void Push(int type, string &key);
-	void Slave(const string &client_name, GentEvent *e);
+	int SlaveAuth(GentEvent *ev_, const string &client_name);
 	void SlaveReply(string &outstr, int suc);
+	void SlaveSetStatus(int t);
+	void Slave(GentEvent *e);
 	void CannelConnect();
 };
 

@@ -53,11 +53,12 @@ public:
     int fd;
     struct sockaddr request_addr;
     bool is_slave;
+	bool slave_complete;
 public:
     GentConnect(int);
     ~GentConnect();
 public:
-    void OutString(const string &str);
+    int OutString(const string &str);
     int TryRunning(string &str);
     void SetStatus(int);
     void Destruct();

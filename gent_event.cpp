@@ -60,7 +60,8 @@ int GentEvent::UpdateEvent(int fd,GentConnect *c, int state) {
 }
 
 int GentEvent::AddTimeEvent(struct timeval *tv, void(*handle)(const int fd, const short which, void *arg)) {
-	event_set(&ev_, -1, 0, handle, this);
+	//evtimer_set(&ev_, handle, this);
+	event_set(&ev_, -1, EV_PERSIST, handle, this);
 	event_base_set(main_base_, &ev_);
 	event_add(&ev_, tv);
 	return 0;

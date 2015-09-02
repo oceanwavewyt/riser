@@ -97,7 +97,7 @@ void *GentThread::Work(void *arg) {
 void *GentThread::Rep(void *arg) {
 	GentEvent *ev = new GentEvent();
 	struct timeval tv = {1,0};
-	ev->AddTimeEvent(&tv, GentRepMgr::Handle);
+	ev->AddTimeEvent(&tv, GentRepMgr::SlaveHandle);
 	ev->Loop(); 
 	return ((void *)0);
 }

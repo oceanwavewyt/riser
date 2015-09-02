@@ -34,15 +34,13 @@ void GentConnect::Destruct()
     if(!fd) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
-	if(is_slave) {
-		GentRepMgr::Instance()->CannelConnect();		
-	}
 	LOG(GentLog::INFO, "file description %d close.", fd);
     
 }
 void GentConnect::Init(int sfd) {
     fd = sfd;
 	is_slave = false;
+	slave_complete = true;
     clen = 0;
     remainsize = 0;
 	sendsize = 0;
@@ -191,8 +189,8 @@ int GentConnect::InitRead(int &rbytes) {
    return gotdata;                                          
 }
 
-void GentConnect::OutString(const string &str) {
-    if(sendsize <= 0) {
+int GentConnect::OutString(const string &str) {
+	if(sendsize <= 0) {
 		sendsize = str.size();
 		cursendsize = 0;
 	}
@@ -202,14 +200,15 @@ void GentConnect::OutString(const string &str) {
     	slen = send(fd, curpos+cursendsize, sendsize, 0);
 		if (slen == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 			gevent->UpdateEvent(fd, this, eventWrite);
-			return;	
+			return 0;	
 		}
-		if(slen<0) break;
+		if(slen<0) return -1;
 		//cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
 		sendsize -= slen;
 		cursendsize += slen;
 	}
     curstatus = Status::CONN_WAIT;
+	return cursendsize;
 }
 
 void GentConnect::SetStatus(int s) {
