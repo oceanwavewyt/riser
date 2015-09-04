@@ -53,6 +53,7 @@ void GentRepMgr::Slave(GentEvent *e)
 		if(config["slaveof_ip"] == "" || config["slaveof_port"] == "") return;
 		int port = atoi(config["slaveof_port"].c_str());
 		if(LinkMaster(e, config["slaveof_ip"], port)<=0) return;
+		status = GentRepMgr::INIT;
 	}
 	if(status == GentRepMgr::INIT) {
 		//认证过程	
@@ -83,7 +84,6 @@ int GentRepMgr::LinkMaster(GentEvent *ev_, const string &host, int port) {
 	connect_ = GentAppMgr::Instance()->GetConnect(sfd);
 	connect_->is_slave = true;
 	connect_->gevent = ev_;
-	//ev_->AddEvent(connect_, GentEvent::Handle);
 	return sfd;
 }
 
@@ -117,8 +117,10 @@ void GentRepMgr::SlaveSetStatus(int t)
 
 void GentRepMgr::CannelConnect() {
 	event_del(&connect_->ev);                    
-	connect_->Destruct();                        
-	GentAppMgr::Instance()->RetConnect(connect_);
+	if(connect_->fd > 0) {
+		connect_->Destruct();                        
+		GentAppMgr::Instance()->RetConnect(connect_);
+	}
 	connect_ = NULL;
 }
 bool GentRepMgr::Logout(string &name)

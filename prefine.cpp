@@ -7,7 +7,7 @@
 #include "prefine.h"
 static const char *levelname[] = {"INFO","WARN", "ERROR", "FATAL"};
 FILE *GentLog::logfd = stdout;
-int GentLog::runLevel = GentLog::ERROR;
+int GentLog::runLevel = GentLog::INFO;
 
 int GentLog::setfd(string &filename)
 {

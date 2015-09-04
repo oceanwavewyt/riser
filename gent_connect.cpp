@@ -31,7 +31,7 @@ void GentConnect::Destruct()
         free(content);
         content = NULL;
     }
-    if(!fd) return;
+    if(fd>0) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);
@@ -40,7 +40,6 @@ void GentConnect::Destruct()
 void GentConnect::Init(int sfd) {
     fd = sfd;
 	is_slave = false;
-	slave_complete = true;
     clen = 0;
     remainsize = 0;
 	sendsize = 0;
