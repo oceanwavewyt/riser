@@ -7,7 +7,6 @@ ROOT=./include/
 INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
 
 LDFLAGS += -pg -lpthread -levent ./lib/libleveldb.a
-LDFLAGS += -llevelque
 CPPFLAGS += -fPIC -pg -Wall
 OS := $(shell uname -s)
 IS_DARWIN := $(shell echo $(OS)|grep -i Darwin)
