@@ -14,9 +14,7 @@
 #include "gent_util.h"
 #include "gent_frame.h"
 #include "gent_config.h"
-#include "gent_link.h"
 #include <sys/resource.h>
-#include <queue.h>
 
 #define PATHBUF 100
 

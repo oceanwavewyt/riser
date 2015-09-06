@@ -11,8 +11,6 @@
 #include "gent_thread.h"
 #include "gent_level.h"
 #include "gent_redis.h"
-#include "gent_list.h"
-#include "gent_filter.h"
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -63,7 +61,9 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
 			INFO(GentLog::ERROR, "database initialize failed");
             return false;
         }
-    }else if(config["type"] == "filter") {
+    }
+	/*
+	else if(config["type"] == "filter") {
 		GentFilter *p;
 		REGISTER_COMMAND(p, GentFilter);
 		if(!p->Init(msg))              
@@ -71,6 +71,7 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
     		return false;              
 		}                              
 	}
+	*/
     return true;
 
 }
