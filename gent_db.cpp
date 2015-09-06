@@ -188,3 +188,7 @@ bool GentDb::Init(string &err)
     err = status.ToString();
     return false;
 }
+
+string &GentDb::GetPath() {
+	return pathname; 
+}

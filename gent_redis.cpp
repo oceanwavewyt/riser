@@ -183,13 +183,23 @@ void GentProcessDel::Complete(string &outstr,const char *recont, uint64_t len, G
 	string nr = "";
 	if(!GentDb::Instance()->Get(keystr, nr)){
 		outstr = ":0\r\n";
+		if(redis->Slave()) {
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);
+		}
 		return;                  
 	}
-	GentList::Instance()->Clear(keystr);			
+	//GentList::Instance()->Clear(keystr);			
 	if(!GentDb::Instance()->Del(keystr)) {
 		outstr = ":0\r\n";
+		if(redis->Slave()) {
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);
+		}
 	}else{
+		GentRepMgr::Instance("master")->Push(itemData::DEL, keystr);
 		outstr = ":1\r\n";
+		if(redis->Slave()) {
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 1);
+		}
 	}
 }
 
@@ -320,7 +330,7 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 
 void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	cout << "GentProcessRep::Complete"<<endl;
+	//cout << "GentProcessRep::Complete"<<endl;
 	GentRepMgr::Instance("master")->Run(redis->keystr, msg, outstr);
 	//string nr="";
     //if(!GentDb::Instance()->Get(redis->keystr, nr))

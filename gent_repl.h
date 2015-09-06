@@ -1,8 +1,25 @@
 #ifndef riser_gent_repl_h
 #define riser_gent_repl_h
 #include "gent_queue_list.h"
+#include "gent_file.h"
+
 class GentEvent;
 class GentConnect;
+
+typedef struct repinfo
+{
+    char name[SLAVE_NAME_SIZE];
+	uint32_t name_len;
+	uint8_t  available;
+    uint64_t rep_time;
+    uint64_t ser_time;
+	void set(const string &n) {
+		memcpy(name, n.c_str(), n.size());
+		name_len = n.size();
+		available = 1;
+	};
+}repinfo;
+
 class GentReplication
 {
 	string rep_name;
@@ -16,8 +33,9 @@ class GentReplication
 	GentListQueue<itemData*> main_que;
 	//在同步所有的数据时，不写如main_que,而写入que_
 	GentListQueue<itemData*> que;
+	repinfo *rinfo_;
 public:
-	GentReplication(const string &name);
+	GentReplication(const string &name, repinfo *rinfo);
 	~GentReplication();	
 	bool Start(string &msg, string &outstr);
 	void Push(int type, string &key);
@@ -33,6 +51,8 @@ class GentRepMgr
 	std::map<string,GentReplication*> rep_list_;	
 	GentConnect *connect_;
 	int status;
+	GentFile<repinfo> *repinfo_;
+	map<string,repinfo *> rep_map_;
 private:
 	GentReplication *Get(string &name);
 	int LinkMaster(GentEvent *ev_, const string &host, int port);	
@@ -43,7 +63,7 @@ public:
 	static void UnInstance();
 	static void SlaveHandle(int fd, short which, void *arg);
 public:
-	GentRepMgr();
+	GentRepMgr(const string &name);
 	~GentRepMgr();
 	void Destroy(int id);	
 	bool Logout(string &name);	

@@ -10,12 +10,12 @@ GentRepMgr *GentRepMgr::intanceSlave_ = NULL;
 GentRepMgr *GentRepMgr::Instance(const string &name) {
 	if(name == "master") {
 		if(intanceMaster_ == NULL) {
-			intanceMaster_ = new GentRepMgr();
+			intanceMaster_ = new GentRepMgr(name);
 		}
 		return intanceMaster_;		
 	}
 	if(intanceSlave_ == NULL) {
-		intanceSlave_ = new GentRepMgr();
+		intanceSlave_ = new GentRepMgr(name);
 	}
 	return intanceSlave_;
 }
@@ -26,8 +26,15 @@ void GentRepMgr::UnInstance() {
 }
 
 
-GentRepMgr::GentRepMgr():connect_(NULL),status(GentRepMgr::INIT)
+GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INIT)
 {
+	if(name == "master") {
+   		string pathname = GentDb::Instance()->GetPath()+"/REPLICATION_INFO";
+   		repinfo_ = new GentFile<repinfo>(pathname, SLAVE_NUM);	
+		if(!repinfo_->Init(rep_map_)) {
+			LOG(GentLog::ERROR, "init replication infomation failed.");
+		}
+	}
 }
 
 GentRepMgr::~GentRepMgr()
@@ -132,10 +139,18 @@ bool GentRepMgr::Logout(string &name)
 
 GentReplication *GentRepMgr::Get(string &name)
 {
-	std::map<string,GentReplication*>::iterator it;
-	it = rep_list_.find(name); 	
+	
+	std::map<string,GentReplication*>::iterator it = rep_list_.find(name); 	
 	if(it == rep_list_.end()) {
-		rep_list_[name] = new GentReplication(name);
+		map<string,repinfo *>::iterator it_info = rep_map_.find(name);
+		repinfo *info;
+		if(it_info == rep_map_.end()) {
+			info = repinfo_->AddItem();
+			info->set(name);	
+		}else{
+			info = it_info->second;
+		}
+		rep_list_[name] = new GentReplication(name, info);
 	}	
 	return rep_list_[name];
 }
@@ -156,21 +171,29 @@ void GentRepMgr::Push(int type, string &key)
 	}
 }
 
-GentReplication::GentReplication(const string &name):status(0)
+GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0)
 {
 	cout <<"init GentReplication" <<endl;
 	rep_name = name;
+	rinfo_ = rinfo;
 	current_node = NULL;
-	//设置所有的磁盘数据到队列
-	is_update_main_que = true;	
-	vector<string> outvec;
-	vector<string>::iterator it;
-	GentDb::Instance()->Keys(outvec, "*");
-	for(it=outvec.begin();it!=outvec.end();it++) {
-		itemData *item = new itemData(*it,itemData::ADD);
-		main_que.push(item);
+	cout << "ser_time: "<< rinfo_->ser_time << endl;
+	cout << "rep_time: "<< rinfo_->rep_time << endl;
+	if(!rinfo_->ser_time || rinfo_->ser_time > rinfo_->rep_time) {
+		cout << "同步所有..." <<endl;
+		//设置所有的磁盘数据到队列
+		is_update_main_que = true;	
+		vector<string> outvec;
+		vector<string>::iterator it;
+		GentDb::Instance()->Keys(outvec, "*");
+		for(it=outvec.begin();it!=outvec.end();it++) {
+			itemData *item = new itemData(*it,itemData::ADD);
+			main_que.push(item);
+		}
+		is_update_main_que = false;	
+	}else{
+		cout << "不用同步所有" <<endl;
 	}
-	is_update_main_que = false;	
 }
 
 GentReplication::~GentReplication(){
@@ -181,6 +204,7 @@ void GentReplication::Push(int type, string &key)
 {
 	itemData *item = new itemData(key,type);
 	main_que.push(item);
+	rinfo_->ser_time = time(NULL);
 }
 
 bool GentReplication::Start(string &msg, string &outstr)
@@ -199,7 +223,8 @@ bool GentReplication::Start(string &msg, string &outstr)
 		if(msg == "ok") {
 			itemData *it = main_que.pop();
 			delete it;
-			it = NULL;	
+			it = NULL;
+			rinfo_->rep_time = time(NULL);	
 		}else if(msg == "error") {
 			outstr = "*2\r\n$5\r\nreply\r\n$5\r\nclose\r\n";
 			return false;
