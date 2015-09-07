@@ -40,9 +40,9 @@ using namespace std;
 const uint32_t LOGBUFSIZE = 2048;
 const uint32_t LINEBUFSIZE = 4096;
 
-const int TARGET_FILE_SIZE = 64;
+const int TARGET_FILE_SIZE = 128;
 
-const int WRITE_BUFFER_SIZE = 8;
+const int WRITE_BUFFER_SIZE = 32;
 //从服务器的名字长度
 const int SLAVE_NAME_SIZE = 500;
 //从服务器数量最多1024

@@ -82,9 +82,9 @@ int GentProcessSet::Parser(int num,vector<string> &tokenList,const string &data,
 	if(num < 5) return -1;	
 	string keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
 	redis->keystr = keystr;
-	//redis->SetKey(keystr);
 	if(keystr.size()>=250) return -3;
-	size_t pos = 0;
+	size_t pos = data.find_first_of("*3",0);
+	if(pos == string::npos) return -1;
 	int i = 5;
 	while(i>=0) {
 		pos = data.find_first_of("\r\n", pos);
@@ -95,7 +95,7 @@ int GentProcessSet::Parser(int num,vector<string> &tokenList,const string &data,
 	uint64_t rlbytes = GetLength(tokenList[5]);
 	redis->content = data.substr(pos);
 	redis->rlbytes = rlbytes;
-	if(rlbytes<redis->content.length()) {
+	if(rlbytes < redis->content.length()) {
 		redis->content = data.substr(pos, rlbytes);
 		return 0;
 	}
@@ -106,10 +106,6 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 {
 	LOG(GentLog::WARN, "commandtype::comm_set");
 	redis->content += string(recont,len);
-	//string nr;
-	//nr.assign(redis->content.c_str(), redis->rlbytes);
-    //outstr=REDIS_INFO+"\r\n";
-    //return;
 	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes)) {
 		if(!redis->Slave()) {
 			outstr = redis->Info("NOT_STORED",REDIS_ERROR);
@@ -376,17 +372,19 @@ int GentRedis::ParseCommand(const string &data)
 	vector<string> tokenList;
 	int num = Split(data, "\r\n",	tokenList);
 	if(num==0) return 0;
-    if(num < 3) return -1;
+	if(num < 3) return -1;
 	std::map<string, GentSubCommand*>::iterator it=commands.find(tokenList[2]);
 	c = NULL;	
-	if(it == commands.end()) return -1;
+	if(it == commands.end()){
+		return -1;
+	}
 	c = (*it).second;
 	return c->Parser(num, tokenList, data, this);
 }
 
 int GentRedis::Process(const char *rbuf, uint64_t size, string &outstr)
 {
-	string data = string(rbuf,size);
+	string data(rbuf,size);
 	int status = ParseCommand(data);
 	if(status == -1) {
 		outstr = Info("unknown command",REDIS_ERROR);
@@ -408,7 +406,7 @@ int GentRedis::Split(const string &str, const string &delimit, vector<string> &v
     int num = 0;                                                                   
     while((pos = str.find_first_of(delimit,last_pos)) != string::npos){                
         if(pos == last_pos){                                                           
-            last_pos++;                                                                
+            last_pos+=2;                                                                
         }else{
             v.push_back(str.substr(last_pos, pos-last_pos));                           
             num++;                                                                     

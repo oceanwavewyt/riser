@@ -25,8 +25,8 @@ class GentReplication
 	string rep_name;
 	//0:初始状态;1:正在同步状态;
 	int status;
-	//当全量同步时候，导出所有影片的ID到main_que
-	bool is_update_main_que;
+	//当全量同步时候，导出所有影片的ID到que
+	bool is_update_que;
 	//queue node point
 	NODE<itemData*> *current_node;
 	//主队列
@@ -41,6 +41,8 @@ public:
 	void Push(int type, string &key);
 private:
 	void Reply(int type, string &key,string &outstr, const string &nr="");
+	void Pop();	
+	itemData *front_element();
 };
 
 

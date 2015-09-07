@@ -53,7 +53,7 @@ public:
   
         if (front == rear)  
         {  
-            cout << "The queue is empty." << endl;  
+            //cout << "The queue is empty." << endl;  
             return NULL;  
         }  
         else  
@@ -79,7 +79,7 @@ public:
     {  
         if (front == rear)  
         {  
-            cout << "The queue is empty." << endl;  
+            //cout << "The queue is empty." << endl;  
             return NULL;  
         }  
         else  

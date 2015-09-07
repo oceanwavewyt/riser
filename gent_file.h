@@ -51,7 +51,6 @@ public:
 			T *h = head_ + sizeof(T)*i;
 			if(!h->available) break;
 			string s(h->name,h->name_len);
-			cout << s << endl;
 			lead_rep[s] = h; 
 		}
 		

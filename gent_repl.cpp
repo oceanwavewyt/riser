@@ -48,7 +48,7 @@ GentRepMgr::~GentRepMgr()
 void GentRepMgr::SlaveHandle(int fd, short which, void *arg) 
 {
 	GentEvent *e = static_cast<GentEvent *>(arg);
-	cout << "create slave thread" <<endl;
+	//cout << "create slave thread" <<endl;
 	GentRepMgr::Instance("slave")->Slave(e);
 }
 
@@ -173,26 +173,22 @@ void GentRepMgr::Push(int type, string &key)
 
 GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0)
 {
-	cout <<"init GentReplication" <<endl;
 	rep_name = name;
 	rinfo_ = rinfo;
 	current_node = NULL;
-	cout << "ser_time: "<< rinfo_->ser_time << endl;
-	cout << "rep_time: "<< rinfo_->rep_time << endl;
 	if(!rinfo_->ser_time || rinfo_->ser_time > rinfo_->rep_time) {
-		cout << "同步所有..." <<endl;
+		LOG(GentLog::WARN, "sync all data for %s slave.", name.c_str());
 		//设置所有的磁盘数据到队列
-		is_update_main_que = true;	
+		is_update_que = true;	
 		vector<string> outvec;
 		vector<string>::iterator it;
 		GentDb::Instance()->Keys(outvec, "*");
 		for(it=outvec.begin();it!=outvec.end();it++) {
 			itemData *item = new itemData(*it,itemData::ADD);
-			main_que.push(item);
+			que.push(item);
 		}
-		is_update_main_que = false;	
 	}else{
-		cout << "不用同步所有" <<endl;
+		LOG(GentLog::WARN, "not need to sync all data for %s slave.", name.c_str());
 	}
 }
 
@@ -206,6 +202,33 @@ void GentReplication::Push(int type, string &key)
 	main_que.push(item);
 	rinfo_->ser_time = time(NULL);
 }
+
+void GentReplication::Pop()
+{
+	itemData *it;
+	if(!is_update_que) {
+	 	it= main_que.pop();
+		rinfo_->rep_time = time(NULL);
+	}else{
+		it= que.pop();
+	}
+	delete it;
+	it = NULL;
+}
+
+itemData *GentReplication::front_element()
+{
+	if(!is_update_que) {
+	 	return main_que.front_element();
+	}
+	itemData *it= que.front_element();
+	if(it == NULL) {
+		is_update_que = false;
+		return main_que.front_element();
+	}
+	return it;
+}
+
 
 bool GentReplication::Start(string &msg, string &outstr)
 {
@@ -221,17 +244,14 @@ bool GentReplication::Start(string &msg, string &outstr)
 		status = 0;
 		//删除节点数据
 		if(msg == "ok") {
-			itemData *it = main_que.pop();
-			delete it;
-			it = NULL;
-			rinfo_->rep_time = time(NULL);	
+			Pop();	
 		}else if(msg == "error") {
 			outstr = "*2\r\n$5\r\nreply\r\n$5\r\nclose\r\n";
 			return false;
 		}
 	}
 	//同步数据
-	itemData *it = main_que.front_element();
+	itemData *it = front_element();
 	if(it == NULL) {
 		outstr = "*2\r\n$5\r\nreply\r\n$8\r\ncomplete\r\n";
 		return false;
@@ -239,7 +259,7 @@ bool GentReplication::Start(string &msg, string &outstr)
 	status = 1;
 	if(it->type == itemData::ADD) {
 		string nr = "";
-		cout << "itemData: "<< it->name << endl;
+		LOG(GentLog::INFO, "sync the key of %s data.", it->name.c_str());
 		if(!GentDb::Instance()->Get(it->name, nr)) {
 			Reply(itemData::DEL, it->name,	outstr);
 			return true;		
