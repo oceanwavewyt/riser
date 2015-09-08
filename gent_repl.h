@@ -34,6 +34,8 @@ class GentReplication
 	//在同步所有的数据时，不写如main_que,而写入que_
 	GentListQueue<itemData*> que;
 	repinfo *rinfo_;
+	CommLock que_push_lock;
+	CommLock que_pop_lock;
 public:
 	GentReplication(const string &name, repinfo *rinfo);
 	~GentReplication();	

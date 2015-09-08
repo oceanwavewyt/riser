@@ -53,6 +53,8 @@ public:
     int fd;
     struct sockaddr request_addr;
     bool is_slave;
+	char ip[50];
+	int port;
 public:
     GentConnect(int);
     ~GentConnect();

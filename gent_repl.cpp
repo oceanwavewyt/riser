@@ -198,6 +198,7 @@ GentReplication::~GentReplication(){
 
 void GentReplication::Push(int type, string &key)
 {
+	AutoLock lock(&que_push_lock);
 	itemData *item = new itemData(key,type);
 	main_que.push(item);
 	rinfo_->ser_time = time(NULL);
@@ -205,6 +206,7 @@ void GentReplication::Push(int type, string &key)
 
 void GentReplication::Pop()
 {
+	AutoLock lock(&que_push_lock);
 	itemData *it;
 	if(!is_update_que) {
 	 	it= main_que.pop();
@@ -218,6 +220,7 @@ void GentReplication::Pop()
 
 itemData *GentReplication::front_element()
 {
+	AutoLock lock(&que_push_lock);
 	if(!is_update_que) {
 	 	return main_que.front_element();
 	}

@@ -128,7 +128,15 @@ public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
 };
-
+class GentProcessTest : public GentSubCommand
+{
+public:
+	GentProcessTest(){};
+	~GentProcessTest(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+};
 class GentRedis: public GentCommand
 {
 	friend class GentProcessSet;
@@ -142,6 +150,7 @@ class GentRedis: public GentCommand
 	friend class GentProcessInfo;
 	friend class GentProcessRep;
 	friend class GentProcessReply;
+	friend class GentProcessTest;
 	static std::map<string, GentSubCommand*> commands;
 private:
 	string auth;	

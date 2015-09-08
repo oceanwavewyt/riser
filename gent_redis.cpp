@@ -53,6 +53,21 @@ void GentRedis::SetCommands()
 	GentProcessReply *reply=new GentProcessReply();	
 	commands["reply"] = reply;
 	commands["REPLY"] = reply;
+	GentProcessTest *test=new GentProcessTest();	
+	commands["test"] = test;
+	commands["TEST"] = test;
+}
+
+int GentProcessTest::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	redis->conn->SetStatus(Status::CONN_DATA);
+	return 0;
+}
+
+void GentProcessTest::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	outstr = "+OK\r\n";
+	cout << outstr<<endl;
 }
 
 int GentProcessGet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)

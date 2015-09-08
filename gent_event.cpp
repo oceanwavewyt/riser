@@ -109,17 +109,19 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
         close(sfd);
         return;
     }
-    
+   	
     int nRecvBuf=32*1024;//设置为32K
     setsockopt(sfd,SOL_SOCKET,SO_RCVBUF,(const char*)&nRecvBuf,sizeof(int));
     //发送缓冲区
     int nSendBuf=1*1024*1024;//设置为32K
     setsockopt(sfd,SOL_SOCKET,SO_SNDBUF,(const char*)&nSendBuf,sizeof(int));
-    
 
-    //GentConnect *gconnect = new GentConnect(sfd);
     GentConnect *gconnect = GentAppMgr::Instance()->GetConnect(sfd);
-    GentFrame::Instance()->msg_.Push(gconnect);
+   	struct sockaddr_in sin;
+ 	memcpy(&sin, &addr, sizeof(sin));
+	sprintf(gconnect->ip, inet_ntoa(sin.sin_addr));	
+	gconnect->port = sin.sin_port; 
+	GentFrame::Instance()->msg_.Push(gconnect);
     GentThread::Intance()->SendThread();
 }
 
