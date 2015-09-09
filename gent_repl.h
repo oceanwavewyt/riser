@@ -73,6 +73,8 @@ public:
 	bool Logout(string &name);	
 	bool Run(string &name,string &msg, string &outstr);
 	void Push(int type, string &key);
+	uint32_t GetReplicationNum();
+
 	int SlaveAuth(GentEvent *ev_, const string &client_name);
 	void SlaveReply(string &outstr, int suc);
 	void SlaveSetStatus(int t);

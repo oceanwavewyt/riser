@@ -171,6 +171,11 @@ void GentRepMgr::Push(int type, string &key)
 	}
 }
 
+uint32_t GentRepMgr::GetReplicationNum()
+{
+	return rep_list_.size();
+}
+
 GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0)
 {
 	rep_name = name;
