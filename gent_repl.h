@@ -33,6 +33,8 @@ class GentReplication
 	GentListQueue<itemData*> main_que;
 	//在同步所有的数据时，不写如main_que,而写入que_
 	GentListQueue<itemData*> que;
+	//队列长度
+	uint64_t main_que_length;
 	repinfo *rinfo_;
 	CommLock que_push_lock;
 	CommLock que_pop_lock;
@@ -41,6 +43,7 @@ public:
 	~GentReplication();	
 	bool Start(string &msg, string &outstr);
 	void Push(int type, string &key);
+	uint64_t QueLength(){return main_que_length;};
 private:
 	void Reply(int type, string &key,string &outstr, const string &nr="");
 	void Pop();	
@@ -74,8 +77,9 @@ public:
 	bool Run(string &name,string &msg, string &outstr);
 	void Push(int type, string &key);
 	uint32_t GetReplicationNum();
+	uint64_t QueLength();
 
-	int SlaveAuth(GentEvent *ev_, const string &client_name);
+	int SlaveAuth(const string &client_name, const string &authstr);
 	void SlaveReply(string &outstr, int suc);
 	void SlaveSetStatus(int t);
 	void Slave(GentEvent *e);

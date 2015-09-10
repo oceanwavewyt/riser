@@ -55,6 +55,7 @@ public:
 	static int runLevel;
 	static FILE *logfd;
 	static int setfd(string &filename);
+	static void setLevel(string &loglevel);
 	static void write(int levels, const char *file, const int line, const char *func, const char *format, ...);
 	static void console(int level, const string &);
 };

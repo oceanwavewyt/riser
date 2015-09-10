@@ -44,10 +44,11 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
 		return false;
     }
     config.Parse(string(configfile,strlen(configfile)));
-	if(!GentLog::setfd(config["logfile"])) {
-		INFO(GentLog::ERROR,"open "+config["logfile"]+" error");
+	if(!GentLog::setfd(config["log_file"])) {
+		INFO(GentLog::ERROR,"open "+config["log_file"]+" error");
 		return false;
 	}
+	GentLog::setLevel(config["log_level"]);
 	s = server;
 	//config info
     string msg;

@@ -51,6 +51,7 @@ public:
     struct event ev;
     GentEvent *gevent;
     int fd;
+	uint64_t start_time;
     struct sockaddr request_addr;
     bool is_slave;
 	char ip[50];

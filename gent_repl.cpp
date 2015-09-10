@@ -15,7 +15,7 @@ GentRepMgr *GentRepMgr::Instance(const string &name) {
 		return intanceMaster_;		
 	}
 	if(intanceSlave_ == NULL) {
-		intanceSlave_ = new GentRepMgr(name);
+		intanceSlave_ = new GentRepMgr(name);	
 	}
 	return intanceSlave_;
 }
@@ -63,13 +63,19 @@ void GentRepMgr::Slave(GentEvent *e)
 		status = GentRepMgr::INIT;
 	}
 	if(status == GentRepMgr::INIT) {
-		//认证过程	
-		int sdnum = SlaveAuth(e, config["slavename"]);
-		if(sdnum == -1) {
-			CannelConnect();
-			return;
+		if(config["master_auth"] == "") {
+			status = GentRepMgr::COMPLETE;
+			cout << "master_auth is null "<<endl;
+		}else{
+			//认证过程	
+			int sdnum = SlaveAuth(config["slavename"], config["master_auth"]);
+			if(sdnum == -1) {
+				CannelConnect();
+				return;
+			}
+			status = GentRepMgr::AUTH;
 		}
-		status = GentRepMgr::AUTH;
+		e->AddEvent(connect_, GentEvent::Handle);
 		return;
 	}else if(status == GentRepMgr::COMPLETE) {
 		char str[300] = {0};
@@ -94,17 +100,13 @@ int GentRepMgr::LinkMaster(GentEvent *ev_, const string &host, int port) {
 	return sfd;
 }
 
-int GentRepMgr::SlaveAuth(GentEvent *ev_, const string &client_name)
+int GentRepMgr::SlaveAuth(const string &client_name, const string &auth)
 {
 	char str[300] = {0};
-	snprintf(str, 300,"*4\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\nauth\r\n$6\r\n123456\r\n",
-			client_name.size(),client_name.c_str());
+	snprintf(str, 300,"*4\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\nauth\r\n$%ld\r\n%s\r\n",
+			client_name.size(),client_name.c_str(), auth.size(),auth.c_str());
 	string sendstr(str);
-	int ret = connect_->OutString(sendstr);
-	if(ret >= 0) {
-		ev_->AddEvent(connect_, GentEvent::Handle);
-	}
-	return ret;
+	return connect_->OutString(sendstr);
 }
 
 void GentRepMgr::SlaveReply(string &outstr, int suc)
@@ -176,7 +178,19 @@ uint32_t GentRepMgr::GetReplicationNum()
 	return rep_list_.size();
 }
 
-GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0)
+uint64_t GentRepMgr::QueLength()
+{
+	uint64_t len = 0;
+	std::map<string,GentReplication*>::iterator it;
+	for(it=rep_list_.begin(); it!=rep_list_.end(); it++)
+	{
+		len += it->second->QueLength();
+	}
+	return len;
+}
+
+GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0),
+main_que_length(0)
 {
 	rep_name = name;
 	rinfo_ = rinfo;
@@ -191,6 +205,7 @@ GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0)
 		for(it=outvec.begin();it!=outvec.end();it++) {
 			itemData *item = new itemData(*it,itemData::ADD);
 			que.push(item);
+			main_que_length++;	
 		}
 	}else{
 		LOG(GentLog::WARN, "not need to sync all data for %s slave.", name.c_str());
@@ -206,6 +221,7 @@ void GentReplication::Push(int type, string &key)
 	AutoLock lock(&que_push_lock);
 	itemData *item = new itemData(key,type);
 	main_que.push(item);
+	main_que_length++;
 	rinfo_->ser_time = time(NULL);
 }
 
@@ -219,7 +235,10 @@ void GentReplication::Pop()
 	}else{
 		it= que.pop();
 	}
-	delete it;
+	if(it != NULL) {
+		main_que_length--;
+		delete it;
+	}
 	it = NULL;
 }
 
@@ -242,6 +261,9 @@ bool GentReplication::Start(string &msg, string &outstr)
 {
 	if(msg == "auth" ) {
 		outstr = "*2\r\n$5\r\nreply\r\n$6\r\nauthok\r\n";
+		return true;
+	}else if(msg == "autherror"){
+		outstr = "*2\r\n$5\r\nreply\r\n$9\r\nautherror\r\n";
 		return true;
 	}
 	if(msg != "ok" && msg != "data"){

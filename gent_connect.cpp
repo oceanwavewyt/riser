@@ -31,6 +31,7 @@ void GentConnect::Destruct()
         free(content);
         content = NULL;
     }
+	start_time = 0;	
     if(fd>0) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
@@ -40,6 +41,7 @@ void GentConnect::Destruct()
 void GentConnect::Init(int sfd) {
     fd = sfd;
 	is_slave = false;
+	start_time = time(NULL);
     clen = 0;
     remainsize = 0;
 	sendsize = 0;

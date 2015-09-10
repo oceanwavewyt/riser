@@ -53,18 +53,18 @@ void GentRedis::SetCommands()
 	GentProcessReply *reply=new GentProcessReply();	
 	commands["reply"] = reply;
 	commands["REPLY"] = reply;
-	GentProcessTest *test=new GentProcessTest();	
-	commands["test"] = test;
-	commands["TEST"] = test;
+	GentProcessSlave *sl=new GentProcessSlave();	
+	commands["slave"] = sl;
+	commands["SLAVE"] = sl;
 }
 
-int GentProcessTest::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+int GentProcessSlave::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
 	redis->conn->SetStatus(Status::CONN_DATA);
 	return 0;
 }
 
-void GentProcessTest::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+void GentProcessSlave::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	outstr = "+OK\r\n";
 	cout << outstr<<endl;
@@ -246,7 +246,8 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 			"key_num: %lu\r\n"
 			"\r\n# Replication\r\n"
 			"role:%s\r\n"
-			"connected_slaves:%u\r\n\r\n",
+			"connected_slaves:%u\r\n"
+			"master_repl_length:%lu\r\n\r\n",
 
              (long) getpid(),
 			 GentFrame::Instance()->s->port,
@@ -257,7 +258,8 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 			 hmen,
 			 GentDb::Instance()->Count(""),
 			 role.c_str(),
-			 slaveNum	
+			 slaveNum,
+			 GentRepMgr::Instance("master")->QueLength()		
 			 );
 	outstr = retbuf;
     char c[50]={0};
@@ -335,34 +337,29 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 	if(num < 7) return -1;
 	//rep name auth authstr
 	//rep name ok
-	//验证auth是否合法	
-	if(redis->auth=="") {		
-		if(num != 9) return -1;	
-		if(tokenList[6] != "auth") return -1;
-		if(tokenList[8] != "123456") return -1;
-		redis->auth = tokenList[8];
-	}
+	//验证auth是否合法
 	msg = tokenList[6];
-	
+	if(redis->auth=="") {
+		GentConfig &config = GentFrame::Instance()->config;
+		if(config["master_auth"] == "") {
+			redis->auth = "yes";
+		}else{			
+			if(num != 9 || tokenList[6] != "auth" || 
+					tokenList[8] != config["master_auth"]) {
+				msg = "autherror";
+			}else{
+				redis->auth = tokenList[8];
+			}
+		}
+	}
 	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));	
 	redis->conn->SetStatus(Status::CONN_DATA);
-	//tokenlist[1] 
-	//redis->conn->SetStatus(Status::CONN_DATA);
-	//redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
 	return 0;
 }
 
 void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	//cout << "GentProcessRep::Complete"<<endl;
 	GentRepMgr::Instance("master")->Run(redis->keystr, msg, outstr);
-	//string nr="";
-    //if(!GentDb::Instance()->Get(redis->keystr, nr))
-    //{
-    //    outstr = ":0\r\n";
-    //}else{
-	//	outstr = ":1\r\n";
-	//}
 }
 
 int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
@@ -376,6 +373,10 @@ int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &dat
 			cout << "client authok.............." <<endl;
 			redis->conn->SetStatus(Status::CONN_WAIT);
 			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::COMPLETE);
+		}else if(num == 5  && tokenList[4] == "autherror") {
+			cout << "client auth failed" <<endl;
+			LOG(GentLog::ERROR, "slave auth failed");	
+			redis->conn->SetStatus(Status::CONN_WAIT);	
 		}
 		return 0;
 	return 0;
@@ -383,15 +384,7 @@ int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &dat
 
 void GentProcessReply::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	//cout << "GentProcessRep::Complete"<<endl;
-	//GentRepMgr::Instance("master")->Run(redis->keystr, msg, outstr);
-	//string nr="";
-    //if(!GentDb::Instance()->Get(redis->keystr, nr))
-    //{
-    //    outstr = ":0\r\n";
-    //}else{
-	//	outstr = ":1\r\n";
-	//}
+
 }
 
 int GentRedis::ParseCommand(const string &data)
