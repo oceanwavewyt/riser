@@ -36,6 +36,8 @@ class GentReplication
 	//队列长度
 	uint64_t main_que_length;
 	repinfo *rinfo_;
+	uint64_t slave_start_time;
+	uint64_t slave_last_time;
 	CommLock que_push_lock;
 	CommLock que_pop_lock;
 public:
@@ -44,6 +46,7 @@ public:
 	bool Start(string &msg, string &outstr);
 	void Push(int type, string &key);
 	uint64_t QueLength(){return main_que_length;};
+	void GetInfo(string &str);
 private:
 	void Reply(int type, string &key,string &outstr, const string &nr="");
 	void Pop();	
@@ -78,6 +81,7 @@ public:
 	void Push(int type, string &key);
 	uint32_t GetReplicationNum();
 	uint64_t QueLength();
+	void GetSlaveInfo(string &str);
 
 	int SlaveAuth(const string &client_name, const string &authstr);
 	void SlaveReply(string &outstr, int suc);

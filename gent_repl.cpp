@@ -54,7 +54,10 @@ void GentRepMgr::SlaveHandle(int fd, short which, void *arg)
 
 void GentRepMgr::Slave(GentEvent *e) 
 {
-	if(status == GentRepMgr::AUTH || status == GentRepMgr::TRAN) return;
+	if(status == GentRepMgr::AUTH || status == GentRepMgr::TRAN){
+		if(connect_ && connect_->fd>0) return;
+		status = GentRepMgr::COMPLETE;
+	}
 	GentConfig &config = GentFrame::Instance()->config;
 	if(!connect_) {
 		if(config["slaveof_ip"] == "" || config["slaveof_port"] == "") return;
@@ -173,6 +176,21 @@ void GentRepMgr::Push(int type, string &key)
 	}
 }
 
+void GentRepMgr::GetSlaveInfo(string &str)
+{
+	str = "";
+	std::map<string,GentReplication*>::iterator it;
+	for(it=rep_list_.begin(); it!=rep_list_.end(); it++)
+	{
+		string info;
+		it->second->GetInfo(info);
+		str+=info;
+	}
+	if(str == ""){
+		str = "no slave\r\n";
+	}
+}
+
 uint32_t GentRepMgr::GetReplicationNum()
 {
 	return rep_list_.size();
@@ -192,6 +210,7 @@ uint64_t GentRepMgr::QueLength()
 GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0),
 main_que_length(0)
 {
+	slave_start_time = time(NULL);	
 	rep_name = name;
 	rinfo_ = rinfo;
 	current_node = NULL;
@@ -256,9 +275,17 @@ itemData *GentReplication::front_element()
 	return it;
 }
 
+void GentReplication::GetInfo(string &str)
+{
+	char ret[500] = {0};
+	snprintf(ret,500,"name:%s,start_time:%ld,end_time:%ld,need_sync_data: %ld\r\n",
+			rep_name.c_str(),slave_start_time,slave_last_time,main_que_length);
+	str = ret;
+}
 
 bool GentReplication::Start(string &msg, string &outstr)
 {
+	slave_last_time = time(NULL);
 	if(msg == "auth" ) {
 		outstr = "*2\r\n$5\r\nreply\r\n$6\r\nauthok\r\n";
 		return true;

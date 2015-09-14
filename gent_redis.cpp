@@ -216,51 +216,66 @@ void GentProcessDel::Complete(string &outstr,const char *recont, uint64_t len, G
 
 int GentProcessInfo::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	redis->keystr = "";
+	if(num >= 5) {
+		redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	}
 	redis->conn->SetStatus(Status::CONN_DATA);
 	return 0;
 }
 
 void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	char retbuf[300] = {0};
-    uint64_t totals = GentDb::Instance()->TotalSize(); 
-	char hmen[64]={0};
-	GentConfig &config = GentFrame::Instance()->config;
-	string role = "master";
-	uint32_t slaveNum = GentRepMgr::Instance("master")->GetReplicationNum();
-	if(config["slaveof_ip"] != "" && config["slaveof_port"] != "") {
-		role += (role == "")?"slave":",slave";
-	}
-	GentUtil::BytesToHuman(hmen, totals);
-	snprintf(retbuf,300,"# Server\r\n"
-			"process_id: %ld\r\n"
-			"port: %d\r\n"
-			"config_file: %s\r\n"
-			"\r\n# Clients\r\n"
-			"total_connect: %lu\r\n"
-			"current_connect: %lu\r\n"
-			"\r\n# Disk\r\n"
-			"disk_use: %lu\r\n"
-			"disk_use_human: %s\r\n"
-			"\r\n# Keyspace\r\n"
-			"key_num: %lu\r\n"
-			"\r\n# Replication\r\n"
-			"role:%s\r\n"
-			"connected_slaves:%u\r\n"
-			"master_repl_length:%lu\r\n\r\n",
-
-             (long) getpid(),
-			 GentFrame::Instance()->s->port,
-			 GentFrame::Instance()->s->configfile,
-			 GentAppMgr::Instance()->GetTotalConnCount(),
-			 GentAppMgr::Instance()->GetConnCount(),
-			 totals,
-			 hmen,
-			 GentDb::Instance()->Count(""),
-			 role.c_str(),
-			 slaveNum,
-			 GentRepMgr::Instance("master")->QueLength()		
+	char retbuf[500] = {0};
+	if(redis->keystr == "slave") {
+		string slave_info;
+		GentRepMgr::Instance("master")->GetSlaveInfo(slave_info);
+		snprintf(retbuf,500,
+			"# Slave\r\n"
+			"%s\r\n",
+			 slave_info.c_str()
 			 );
+	}else {
+	    uint64_t totals = GentDb::Instance()->TotalSize(); 
+		char hmen[64]={0};
+		GentConfig &config = GentFrame::Instance()->config;
+		string role = "master";
+		uint32_t slaveNum = GentRepMgr::Instance("master")->GetReplicationNum();
+		if(config["slaveof_ip"] != "" && config["slaveof_port"] != "") {
+			role += (role == "")?"slave":",slave";
+		}
+			
+		GentUtil::BytesToHuman(hmen, totals);
+		snprintf(retbuf,500,"# Server\r\n"
+				"process_id: %ld\r\n"
+				"port: %d\r\n"
+				"config_file: %s\r\n"
+				"\r\n# Clients\r\n"
+				"total_connect: %lu\r\n"
+				"current_connect: %lu\r\n"
+				"\r\n# Disk\r\n"
+				"disk_use: %lu\r\n"
+				"disk_use_human: %s\r\n"
+				"\r\n# Keyspace\r\n"
+				"key_num: %lu\r\n"
+				"\r\n# Replication\r\n"
+				"role:%s\r\n"
+				"connected_slaves:%u\r\n"
+				"master_repl_length:%lu\r\n"
+				,
+	             (long) getpid(),
+				 GentFrame::Instance()->s->port,
+				 GentFrame::Instance()->s->configfile,
+				 GentAppMgr::Instance()->GetTotalConnCount(),
+				 GentAppMgr::Instance()->GetConnCount(),
+				 totals,
+				 hmen,
+				 GentDb::Instance()->Count(""),
+				 role.c_str(),
+				 slaveNum,
+				 GentRepMgr::Instance("master")->QueLength()
+				 );
+	}
 	outstr = retbuf;
     char c[50]={0};
 	snprintf(c,50,"$%lu\r\n",outstr.size()-2);
