@@ -30,7 +30,7 @@ public:
 
 class GentConnect
 {
-    int clen;
+	int clen;
     GentCommand *comm;	    
     char *rbuf;
 
@@ -51,12 +51,16 @@ public:
     struct event ev;
     GentEvent *gevent;
     int fd;
+	uint64_t start_time;
     struct sockaddr request_addr;
+    bool is_slave;
+	char ip[50];
+	int port;
 public:
     GentConnect(int);
     ~GentConnect();
 public:
-    void OutString(const string &str);
+    int OutString(const string &str);
     int TryRunning(string &str);
     void SetStatus(int);
     void Destruct();

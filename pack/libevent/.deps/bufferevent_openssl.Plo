@@ -46,13 +46,15 @@ bufferevent_openssl.lo: bufferevent_openssl.c /usr/include/sys/types.h \
  /usr/include/openssl/buffer.h /usr/include/openssl/evp.h \
  /usr/include/openssl/fips.h /usr/include/openssl/objects.h \
  /usr/include/openssl/obj_mac.h /usr/include/openssl/asn1.h \
- /usr/include/openssl/bn.h /usr/include/openssl/rsa.h \
- /usr/include/openssl/dsa.h /usr/include/openssl/dh.h \
- /usr/include/openssl/sha.h /usr/include/openssl/x509_vfy.h \
- /usr/include/openssl/lhash.h /usr/include/openssl/pkcs7.h \
- /usr/include/openssl/pem.h /usr/include/openssl/pem2.h \
- /usr/include/openssl/hmac.h /usr/include/openssl/kssl.h \
- /usr/include/ctype.h /usr/include/krb5.h /usr/include/krb5/krb5.h \
+ /usr/include/openssl/bn.h /usr/include/openssl/ec.h \
+ /usr/include/openssl/ecdsa.h /usr/include/openssl/ecdh.h \
+ /usr/include/openssl/rsa.h /usr/include/openssl/dsa.h \
+ /usr/include/openssl/dh.h /usr/include/openssl/sha.h \
+ /usr/include/openssl/x509_vfy.h /usr/include/openssl/lhash.h \
+ /usr/include/openssl/pkcs7.h /usr/include/openssl/pem.h \
+ /usr/include/openssl/pem2.h /usr/include/openssl/hmac.h \
+ /usr/include/openssl/kssl.h /usr/include/ctype.h /usr/include/krb5.h \
+ /usr/include/krb5/krb5.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include/limits.h \
  /usr/lib/gcc/x86_64-redhat-linux/4.4.7/include/syslimits.h \
  /usr/include/limits.h /usr/include/bits/posix1_lim.h \
@@ -61,7 +63,7 @@ bufferevent_openssl.lo: bufferevent_openssl.c /usr/include/sys/types.h \
  /usr/include/openssl/ssl2.h /usr/include/openssl/ssl3.h \
  /usr/include/openssl/tls1.h /usr/include/openssl/dtls1.h \
  /usr/include/openssl/pqueue.h /usr/include/openssl/ssl23.h \
- /usr/include/openssl/err.h
+ /usr/include/openssl/srtp.h /usr/include/openssl/err.h
 
 /usr/include/sys/types.h:
 
@@ -265,6 +267,12 @@ ratelim-internal.h:
 
 /usr/include/openssl/bn.h:
 
+/usr/include/openssl/ec.h:
+
+/usr/include/openssl/ecdsa.h:
+
+/usr/include/openssl/ecdh.h:
+
 /usr/include/openssl/rsa.h:
 
 /usr/include/openssl/dsa.h:
@@ -320,5 +328,7 @@ ratelim-internal.h:
 /usr/include/openssl/pqueue.h:
 
 /usr/include/openssl/ssl23.h:
+
+/usr/include/openssl/srtp.h:
 
 /usr/include/openssl/err.h:

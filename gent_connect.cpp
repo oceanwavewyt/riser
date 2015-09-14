@@ -10,6 +10,7 @@
 #include "gent_event.h"
 #include "gent_level.h"
 #include "gent_app_mgr.h"
+#include "gent_repl.h"
 #include <errno.h>
 GentConnect::GentConnect(int sfd):rbuf(NULL)
 {
@@ -30,7 +31,8 @@ void GentConnect::Destruct()
         free(content);
         content = NULL;
     }
-    if(!fd) return;
+	start_time = 0;	
+    if(fd>0) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);
@@ -38,6 +40,8 @@ void GentConnect::Destruct()
 }
 void GentConnect::Init(int sfd) {
     fd = sfd;
+	is_slave = false;
+	start_time = time(NULL);
     clen = 0;
     remainsize = 0;
 	sendsize = 0;
@@ -182,12 +186,12 @@ int GentConnect::InitRead(int &rbytes) {
            }
            return -1;
        }                                                    
-   }                                                        
+   }
    return gotdata;                                          
 }
 
-void GentConnect::OutString(const string &str) {
-    if(sendsize <= 0) {
+int GentConnect::OutString(const string &str) {
+	if(sendsize <= 0) {
 		sendsize = str.size();
 		cursendsize = 0;
 	}
@@ -197,14 +201,15 @@ void GentConnect::OutString(const string &str) {
     	slen = send(fd, curpos+cursendsize, sendsize, 0);
 		if (slen == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 			gevent->UpdateEvent(fd, this, eventWrite);
-			return;	
+			return 0;	
 		}
-		if(slen<0) break;
+		if(slen<0) return -1;
 		//cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
 		sendsize -= slen;
 		cursendsize += slen;
 	}
     curstatus = Status::CONN_WAIT;
+	return cursendsize;
 }
 
 void GentConnect::SetStatus(int s) {

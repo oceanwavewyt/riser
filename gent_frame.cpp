@@ -11,8 +11,6 @@
 #include "gent_thread.h"
 #include "gent_level.h"
 #include "gent_redis.h"
-#include "gent_list.h"
-#include "gent_filter.h"
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -46,10 +44,11 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
 		return false;
     }
     config.Parse(string(configfile,strlen(configfile)));
-	if(!GentLog::setfd(config["logfile"])) {
-		INFO(GentLog::ERROR,"open "+config["logfile"]+" error");
+	if(!GentLog::setfd(config["log_file"])) {
+		INFO(GentLog::ERROR,"open "+config["log_file"]+" error");
 		return false;
 	}
+	GentLog::setLevel(config["log_level"]);
 	s = server;
 	//config info
     string msg;
@@ -63,7 +62,9 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
 			INFO(GentLog::ERROR, "database initialize failed");
             return false;
         }
-    }else if(config["type"] == "filter") {
+    }
+	/*
+	else if(config["type"] == "filter") {
 		GentFilter *p;
 		REGISTER_COMMAND(p, GentFilter);
 		if(!p->Init(msg))              
@@ -71,6 +72,7 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
     		return false;              
 		}                              
 	}
+	*/
     return true;
 
 }
@@ -116,7 +118,11 @@ int GentFrame::ServerSocket(int port)  {
 	bzero(&addr,sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
-	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(config["host"] == "") {
+		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	}else{
+		addr.sin_addr.s_addr = inet_addr(config["host"].c_str());
+	}
 	char str[50]={0};
 	if(bind(fd,(struct sockaddr *)&addr,sizeof(addr)) == -1 ) {
 		sprintf(str, "bind port %d failed",port);

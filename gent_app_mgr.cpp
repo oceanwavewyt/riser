@@ -125,6 +125,7 @@ void GentAppMgr::RetConnect(GentConnect *c)
     assert(c!=NULL);
     AutoLock lock(&conn_lock);
     conn_mgr.push_back(c);
+	c->fd = -1;
 }
 
 size_t GentAppMgr::GetConnCount()

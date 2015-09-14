@@ -295,7 +295,6 @@ PACKAGE_BUGREPORT =
 PACKAGE_NAME = 
 PACKAGE_STRING = 
 PACKAGE_TARNAME = 
-PACKAGE_URL = 
 PACKAGE_VERSION = 
 PATH_SEPARATOR = :
 PTHREAD_CC = gcc
@@ -1008,7 +1007,7 @@ distcheck: dist
 	*.zip*) \
 	  unzip $(distdir).zip ;;\
 	esac
-	chmod -R a-w $(distdir); chmod a+w $(distdir)
+	chmod -R a-w $(distdir); chmod u+w $(distdir)
 	mkdir $(distdir)/_build
 	mkdir $(distdir)/_inst
 	chmod a-w $(distdir)

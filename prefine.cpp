@@ -7,7 +7,7 @@
 #include "prefine.h"
 static const char *levelname[] = {"INFO","WARN", "ERROR", "FATAL"};
 FILE *GentLog::logfd = stdout;
-int GentLog::runLevel = GentLog::ERROR;
+int GentLog::runLevel = GentLog::INFO;
 
 int GentLog::setfd(string &filename)
 {
@@ -16,6 +16,19 @@ int GentLog::setfd(string &filename)
 		return 0;
 	}	
 	return 1;
+}
+
+void GentLog::setLevel(string &loglevel)
+{
+	if(loglevel == "info" || loglevel == "INFO"){
+		GentLog::runLevel = GentLog::INFO;
+	}else if(loglevel == "warn" || loglevel == "WARN"){
+		GentLog::runLevel = GentLog::WARN;
+	}else if(loglevel == "error" || loglevel == "ERROR"){ 
+		GentLog::runLevel = GentLog::ERROR;
+	}else if(loglevel == "fatal" || loglevel == "FATAL"){
+		GentLog::runLevel = GentLog::FATAL;
+	}
 }
 
 void GentLog::write(int levels, const char *file, const int line, const char *func, const char *format, ...)

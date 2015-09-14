@@ -145,16 +145,18 @@ int GentLevel::Process(const char *rbuf, uint64_t size, string &outstr) {
 }
 void GentLevel::ProcessDel(string &outstr)
 {
+	/*
 	if(!GentList::Instance()->Load(keystr)) {
 		outstr = "NOT_FOUND\r\n";
 		return;
 	}
+	*/
 	string nr = "";
 	if(!GentDb::Instance()->Get(keystr, nr)){
 		outstr = "NOT_FOUND\r\n";
 		return;                  
 	}
-	GentList::Instance()->Clear(keystr);			
+	//GentList::Instance()->Clear(keystr);			
 	if(!GentDb::Instance()->Del(keystr)) {
 		outstr = "NOT_FOUND\r\n";
 	}else{
@@ -233,7 +235,7 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 				if(!GentDb::Instance()->Put(keystr, nr)) {
                     outstr = "NOT_STORED\r\n";
                 }else{
-                    GentList::Instance()->Save(keystr);
+                    //GentList::Instance()->Save(keystr);
                     LOG(GentLog::WARN, "commandtype::comm_set stored");
                     sprintf(buf,"STORED\r\n");
                     //outstr = "STORED\r\n";
@@ -267,7 +269,7 @@ bool GentLevel::Init(string &msg)
        LOG(GentLog::ERROR, "db init fail,%s",msg.c_str());
        return false;
    }
-   GentList::Instance()->Init();
+   //GentList::Instance()->Init();
    return true;
 }
 

@@ -31,9 +31,10 @@ public:
 	~GentEvent();
 	int AddEvent(GentConnect *,void (*)(const int, const short, void *));
     int UpdateEvent(int fd,GentConnect *c, int);
-	//int AddEvent(string &, unsigned int);
+	int AddTimeEvent(struct timeval *tv, void (*)(const int, const short, void *));
 	void Loop();
 	int AcceptSocket(struct evhttp *http, int fd);
+	int Client(const string &host, int port);
 //	void ContentParse(COMM_PACK &pack,struct evhttp_request *&request);
 	static void HandleMain(const int fd, const short which, void *arg);
 	static void Handle(const int fd, const short which, void *arg);

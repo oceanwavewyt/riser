@@ -35,6 +35,7 @@ public:
 	static GentThread *Intance();
 	static void UnIntance();
 	static void* Work(void *);
+	static void *Rep(void *);
 	static void Handle(int fd, short which, void *arg);
 public:
 	GentThread();
@@ -44,7 +45,7 @@ public:
 	void SendThread();
 	void SetupThread(THREADINFO *thread);
 	static void* Handle2(void *arg);
-
+	
 };
 
 #endif /* GENT_THREAD_H_ */

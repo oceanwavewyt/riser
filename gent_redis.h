@@ -109,8 +109,34 @@ public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
 };
-
-
+class GentProcessRep : public GentSubCommand
+{
+	string msg;
+public:
+	GentProcessRep(){msg="";};
+	~GentProcessRep(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+};
+class GentProcessReply : public GentSubCommand
+{
+public:
+	GentProcessReply(){};
+	~GentProcessReply(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+};
+class GentProcessSlave : public GentSubCommand
+{
+public:
+	GentProcessSlave(){};
+	~GentProcessSlave(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+};
 class GentRedis: public GentCommand
 {
 	friend class GentProcessSet;
@@ -122,8 +148,12 @@ class GentRedis: public GentCommand
 	friend class GentProcessQuit;
 	friend class GentProcessPing;
 	friend class GentProcessInfo;
+	friend class GentProcessRep;
+	friend class GentProcessReply;
+	friend class GentProcessSlave;
 	static std::map<string, GentSubCommand*> commands;
-private:	
+private:
+	string auth;	
 	string keystr;
 	vector<string> keyvec;
 	string content;
@@ -139,6 +169,7 @@ public:
    GentCommand *Clone(GentConnect *);
    int GetStatus();
    bool Init(string &msg);
+   bool Slave();
 private:
 	int Split(const string &str, const string &delimit, vector<string> &v);
 	uint64_t GetLength(string &str);

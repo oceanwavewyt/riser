@@ -221,25 +221,25 @@
 /* Define to 1 if the system has the type `struct in6_addr'. */
 #define HAVE_STRUCT_IN6_ADDR 1
 
-/* Define to 1 if `s6_addr16' is a member of `struct in6_addr'. */
+/* Define to 1 if `s6_addr16' is member of `struct in6_addr'. */
 #define HAVE_STRUCT_IN6_ADDR_S6_ADDR16 1
 
-/* Define to 1 if `s6_addr32' is a member of `struct in6_addr'. */
+/* Define to 1 if `s6_addr32' is member of `struct in6_addr'. */
 #define HAVE_STRUCT_IN6_ADDR_S6_ADDR32 1
 
 /* Define to 1 if the system has the type `struct sockaddr_in6'. */
 #define HAVE_STRUCT_SOCKADDR_IN6 1
 
-/* Define to 1 if `sin6_len' is a member of `struct sockaddr_in6'. */
+/* Define to 1 if `sin6_len' is member of `struct sockaddr_in6'. */
 /* #undef HAVE_STRUCT_SOCKADDR_IN6_SIN6_LEN */
 
-/* Define to 1 if `sin_len' is a member of `struct sockaddr_in'. */
+/* Define to 1 if `sin_len' is member of `struct sockaddr_in'. */
 /* #undef HAVE_STRUCT_SOCKADDR_IN_SIN_LEN */
 
-/* Define to 1 if `ss_family' is a member of `struct sockaddr_storage'. */
+/* Define to 1 if `ss_family' is member of `struct sockaddr_storage'. */
 #define HAVE_STRUCT_SOCKADDR_STORAGE_SS_FAMILY 1
 
-/* Define to 1 if `__ss_family' is a member of `struct sockaddr_storage'. */
+/* Define to 1 if `__ss_family' is member of `struct sockaddr_storage'. */
 /* #undef HAVE_STRUCT_SOCKADDR_STORAGE___SS_FAMILY */
 
 /* Define to 1 if you have the <sys/devpoll.h> header file. */
@@ -356,9 +356,6 @@
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME ""
-
-/* Define to the home page for this package. */
-#define PACKAGE_URL ""
 
 /* Define to the version of this package. */
 #define PACKAGE_VERSION ""
