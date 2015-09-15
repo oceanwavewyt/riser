@@ -137,7 +137,6 @@ void GentEvent::Handle(const int fd, const short which, void *arg) {
     }    
     if(outstr != "") {
         //clear connect
-        //c->OutString(outstr);
     }
     
     //continue read

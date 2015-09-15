@@ -44,7 +44,7 @@ class GentConnect
 
 	uint64_t sendsize;
 	uint64_t cursendsize;    
-    uint8_t curstatus;
+    uint32_t curstatus;
 	uint64_t remainsize;
 	uint64_t actualsize;
 public:
@@ -63,7 +63,8 @@ public:
     int OutString(const string &str);
     int TryRunning(string &str);
     void SetStatus(int);
-    void Destruct();
+    void SetWrite(const string &str);
+	void Destruct();
     void Init(int sfd);
 private:
     int InitRead(int &rbytes);

@@ -84,7 +84,9 @@ uint64_t GentDb::TotalSize() {
 
 uint64_t GentDb::Count(const string &pre) 
 {
-	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	leveldb::ReadOptions options;
+	options.snapshot = db->GetSnapshot();
+	leveldb::Iterator* it = db->NewIterator(options);
 	uint64_t num=0;
 	bool first = false;
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
@@ -100,14 +102,15 @@ uint64_t GentDb::Count(const string &pre)
 			num++;
 		}
 	}
+	db->ReleaseSnapshot(options.snapshot);
 	delete it;
 	return num;
 }
 
 uint64_t GentDb::Keys(vector<string> &outvec, const string &pre) 
 {
- 	leveldb::ReadOptions options;
-  	//options.fill_cache = false;
+	leveldb::ReadOptions options;
+	options.snapshot = db->GetSnapshot();
 	leveldb::Iterator* it = db->NewIterator(options);
 	uint64_t num=0;
 	bool first = true;
@@ -130,9 +133,11 @@ uint64_t GentDb::Keys(vector<string> &outvec, const string &pre)
 			num++;
 		}
 	}
+	db->ReleaseSnapshot(options.snapshot);
 	delete it;
 	return num;
 }
+
 
 bool GentDb::GetPathname(string &err)
 {
@@ -205,3 +210,55 @@ bool GentDb::Init(string &err)
 string &GentDb::GetPath() {
 	return pathname; 
 }
+/*
+uint64_t GentDb::Count(const string &pre) 
+{
+	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+	uint64_t num=0;
+	bool first = false;
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		if(pre != "") {
+			string curkey(it->key().ToString());
+			if(curkey.substr(0, pre.size())!=pre){
+				if(first) break; 
+				continue;
+			}
+			first = true;
+			num++;
+		}else{
+			num++;
+		}
+	}
+	delete it;
+	return num;
+}
+uint64_t GentDb::Keys(vector<string> &outvec, const string &pre) 
+{
+ 	leveldb::ReadOptions options;
+  	options.fill_cache = false;
+	leveldb::Iterator* it = db->NewIterator(options);
+	uint64_t num=0;
+	bool first = true;
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		if(pre != "*") {
+			string curkey(it->key().ToString());
+			if(curkey.substr(0, pre.size())!=pre) {
+				if(first == false) {
+					break;
+				}else{
+					continue;
+				}
+			}
+			outvec.push_back(curkey);
+			cout << "item: "<<curkey <<endl; 
+			num++;
+			first = false;
+		}else{
+			outvec.push_back(it->key().ToString());
+			num++;
+		}
+	}
+	delete it;
+	return num;
+}
+*/

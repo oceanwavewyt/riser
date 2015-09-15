@@ -54,20 +54,23 @@ void GentRepMgr::SlaveHandle(int fd, short which, void *arg)
 
 void GentRepMgr::Slave(GentEvent *e) 
 {
-	if(status == GentRepMgr::AUTH || status == GentRepMgr::TRAN){
+	if(status == GentRepMgr::AUTH || status == GentRepMgr::WAIT){
 		if(connect_ && connect_->fd>0) return;
-		status = GentRepMgr::COMPLETE;
+		status = GentRepMgr::CONTINUE;
 	}
 	GentConfig &config = GentFrame::Instance()->config;
 	if(!connect_) {
 		if(config["slaveof_ip"] == "" || config["slaveof_port"] == "") return;
 		int port = atoi(config["slaveof_port"].c_str());
 		if(LinkMaster(e, config["slaveof_ip"], port)<=0) return;
+		if(slave_start_time == 0) {
+			slave_start_time = time(NULL);
+		}
 		status = GentRepMgr::INIT;
 	}
 	if(status == GentRepMgr::INIT) {
 		if(config["master_auth"] == "") {
-			status = GentRepMgr::COMPLETE;
+			status = GentRepMgr::CONTINUE;
 			cout << "master_auth is null "<<endl;
 		}else{
 			//认证过程	
@@ -80,7 +83,7 @@ void GentRepMgr::Slave(GentEvent *e)
 		}
 		e->AddEvent(connect_, GentEvent::Handle);
 		return;
-	}else if(status == GentRepMgr::COMPLETE) {
+	}else if(status == GentRepMgr::CONTINUE) {
 		char str[300] = {0};
 		snprintf(str, 300,"*3\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\ndata\r\n",
 				config["slavename"].size(),config["slavename"].c_str());
@@ -90,7 +93,7 @@ void GentRepMgr::Slave(GentEvent *e)
 			CannelConnect();
 			return;
 		}
-		status = GentRepMgr::TRAN;
+		status = GentRepMgr::WAIT;
 	}
 }
 
@@ -160,13 +163,6 @@ GentReplication *GentRepMgr::Get(string &name)
 	return rep_list_[name];
 }
 
-bool GentRepMgr::Run(string &name,string &msg, string &outstr)
-{
-	GentReplication *rep = Get(name);	
-	rep->Start(msg, outstr);		
-	return true;
-}
-
 void GentRepMgr::Push(int type, string &key)
 {
 	std::map<string,GentReplication*>::iterator it;
@@ -188,6 +184,26 @@ void GentRepMgr::GetSlaveInfo(string &str)
 	}
 	if(str == ""){
 		str = "no slave\r\n";
+	}
+}
+
+void GentRepMgr::GetInfo(string &str)
+{
+	GentConfig &config = GentFrame::Instance()->config;                       
+    if(config["slaveof_ip"] != "" && config["slaveof_port"] != "")
+	{
+		char buf[200] = {0};
+		map<int, string> st_map;
+		st_map[GentRepMgr::INIT] = "initialization";
+		st_map[GentRepMgr::AUTH] = "authentication";
+		st_map[GentRepMgr::WAIT] = "wait";
+		st_map[GentRepMgr::CONTINUE] = "transmit";
+		snprintf(buf,200, "connect master %s:%s,start_time:%lu,stage: %s\r\n",
+				config["slaveof_ip"].c_str(),config["slaveof_port"].c_str(),
+				slave_start_time,st_map[status].c_str());
+		str = buf;
+	}else{
+		str = "no master\r\n";
 	}
 }
 
@@ -240,6 +256,13 @@ void GentReplication::Push(int type, string &key)
 	AutoLock lock(&que_push_lock);
 	itemData *item = new itemData(key,type);
 	main_que.push(item);
+	//通知slave
+	if(main_que_length == 0) {
+		if(conn_ && conn_->fd>0) {
+			string outstr = "*2\r\n$5\r\nreply\r\n$8\r\ncomplete\r\n";
+			conn_->SetWrite(outstr);	
+		}
+	}
 	main_que_length++;
 	rinfo_->ser_time = time(NULL);
 }
@@ -283,8 +306,9 @@ void GentReplication::GetInfo(string &str)
 	str = ret;
 }
 
-bool GentReplication::Start(string &msg, string &outstr)
+bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 {
+	conn_ = c;
 	slave_last_time = time(NULL);
 	if(msg == "auth" ) {
 		outstr = "*2\r\n$5\r\nreply\r\n$6\r\nauthok\r\n";
@@ -295,7 +319,7 @@ bool GentReplication::Start(string &msg, string &outstr)
 	}
 	if(msg != "ok" && msg != "data"){
 		 outstr = "*2\r\n$5\r\nreply\r\n$5\r\nclose\r\n";
-		 return false;	
+		 return true;	
 	}
 	if(status == 1) {
 		status = 0;
@@ -304,13 +328,14 @@ bool GentReplication::Start(string &msg, string &outstr)
 			Pop();	
 		}else if(msg == "error") {
 			outstr = "*2\r\n$5\r\nreply\r\n$5\r\nclose\r\n";
-			return false;
+			return true;
 		}
 	}
 	//同步数据
 	itemData *it = front_element();
 	if(it == NULL) {
-		outstr = "*2\r\n$5\r\nreply\r\n$8\r\ncomplete\r\n";
+		//outstr = "*2\r\n$5\r\nreply\r\n$8\r\ncomplete\r\n";
+		outstr = "";
 		return false;
 	}
 	status = 1;

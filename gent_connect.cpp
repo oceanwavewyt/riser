@@ -103,7 +103,6 @@ int GentConnect::TryRunning(string &outstr2) {
                 }
                 break;
             case Status::CONN_NREAD:
-                //OutString("ok\r\n"); 
                 //LOG(GentLog::INFO, "start conn_nread remainsize:%d",remainsize);
 				if(!content) {
                     content = (char *)malloc(remainsize);
@@ -118,9 +117,10 @@ int GentConnect::TryRunning(string &outstr2) {
             case Status::CONN_DATA:
                 outstr = "";
                 comm->Complete(outstr,content, actualsize);
-                curstatus = Status::CONN_WRITE;
-                gevent->UpdateEvent(fd, this, eventWrite);
-                
+                if(outstr != "") {
+					curstatus = Status::CONN_WRITE;
+                	gevent->UpdateEvent(fd, this, eventWrite);
+                }
                 return 0;
             case Status::CONN_WRITE:
                 Reset();
@@ -210,6 +210,13 @@ int GentConnect::OutString(const string &str) {
 	}
     curstatus = Status::CONN_WAIT;
 	return cursendsize;
+}
+
+void GentConnect::SetWrite(const string &str)
+{
+	outstr = str;
+	curstatus = Status::CONN_WRITE;
+    gevent->UpdateEvent(fd, this, eventWrite);
 }
 
 void GentConnect::SetStatus(int s) {

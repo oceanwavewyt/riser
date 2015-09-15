@@ -38,12 +38,13 @@ class GentReplication
 	repinfo *rinfo_;
 	uint64_t slave_start_time;
 	uint64_t slave_last_time;
+	GentConnect *conn_;
 	CommLock que_push_lock;
 	CommLock que_pop_lock;
 public:
 	GentReplication(const string &name, repinfo *rinfo);
 	~GentReplication();	
-	bool Start(string &msg, string &outstr);
+	bool Start(string &msg, GentConnect *c, string &outstr);
 	void Push(int type, string &key);
 	uint64_t QueLength(){return main_que_length;};
 	void GetInfo(string &str);
@@ -63,11 +64,11 @@ class GentRepMgr
 	int status;
 	GentFile<repinfo> *repinfo_;
 	map<string,repinfo *> rep_map_;
+	uint64_t slave_start_time;
 private:
-	GentReplication *Get(string &name);
 	int LinkMaster(GentEvent *ev_, const string &host, int port);	
 public:
-	enum status {INIT=0,AUTH=1,TRAN=2,COMPLETE=3};
+	enum status {INIT=0,AUTH=1,WAIT=2,CONTINUE=3};
 public:
 	static GentRepMgr *Instance(const string &name);
 	static void UnInstance();
@@ -77,7 +78,7 @@ public:
 	~GentRepMgr();
 	void Destroy(int id);	
 	bool Logout(string &name);	
-	bool Run(string &name,string &msg, string &outstr);
+	GentReplication *Get(string &name);
 	void Push(int type, string &key);
 	uint32_t GetReplicationNum();
 	uint64_t QueLength();
@@ -88,6 +89,7 @@ public:
 	void SlaveSetStatus(int t);
 	void Slave(GentEvent *e);
 	void CannelConnect();
+	void GetInfo(string &str);
 };
 
 #endif

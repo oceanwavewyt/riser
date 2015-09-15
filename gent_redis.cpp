@@ -227,12 +227,18 @@ int GentProcessInfo::Parser(int num,vector<string> &tokenList,const string &data
 void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	char retbuf[500] = {0};
-	if(redis->keystr == "slave") {
+	if(redis->keystr == "rep") {
+		string master_info;
+		GentRepMgr::Instance("master")->GetSlaveInfo(master_info);
 		string slave_info;
-		GentRepMgr::Instance("master")->GetSlaveInfo(slave_info);
+		GentRepMgr::Instance("slave")->GetInfo(slave_info);
 		snprintf(retbuf,500,
+			"# Master\r\n"
+			"%s\r\n"
 			"# Slave\r\n"
-			"%s\r\n",
+			"%s\r\n"
+			,
+			 master_info.c_str(),	
 			 slave_info.c_str()
 			 );
 	}else {
@@ -261,7 +267,7 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 				"\r\n# Replication\r\n"
 				"role:%s\r\n"
 				"connected_slaves:%u\r\n"
-				"master_repl_length:%lu\r\n"
+				"master_repl_length:%lu\r\n\r\n"
 				,
 	             (long) getpid(),
 				 GentFrame::Instance()->s->port,
@@ -374,7 +380,10 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 
 void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	GentRepMgr::Instance("master")->Run(redis->keystr, msg, outstr);
+	GentReplication *rep = GentRepMgr::Instance("master")->Get(redis->keystr);
+	if(!rep->Start(msg, redis->conn, outstr)) {
+		redis->conn->SetStatus(Status::CONN_WAIT);
+	}
 }
 
 int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
@@ -383,11 +392,11 @@ int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &dat
 			redis->conn->SetStatus(Status::CONN_CLOSE);	
 		}else if(num == 5 && tokenList[4] == "complete") {
 			redis->conn->SetStatus(Status::CONN_WAIT);
-			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::COMPLETE);
+			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::CONTINUE);
 		}else if(num == 5  && tokenList[4] == "authok") {
 			cout << "client authok.............." <<endl;
 			redis->conn->SetStatus(Status::CONN_WAIT);
-			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::COMPLETE);
+			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::CONTINUE);
 		}else if(num == 5  && tokenList[4] == "autherror") {
 			cout << "client auth failed" <<endl;
 			LOG(GentLog::ERROR, "slave auth failed");	
