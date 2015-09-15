@@ -106,7 +106,9 @@ uint64_t GentDb::Count(const string &pre)
 
 uint64_t GentDb::Keys(vector<string> &outvec, const string &pre) 
 {
-	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
+ 	leveldb::ReadOptions options;
+  	//options.fill_cache = false;
+	leveldb::Iterator* it = db->NewIterator(options);
 	uint64_t num=0;
 	bool first = true;
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
@@ -181,10 +183,15 @@ bool GentDb::Init(string &err)
 
 	if(config["leveldb_block_size_kb"] != "") {
 		int size = atoi(config["leveldb_block_size_kb"].c_str());
-		if(size < 1) {
+		if(size > 1) {
 			options.block_size = size * 1024;
 		} 
 	}
+	
+	if(config["leveldb_compression"] != "" && config["leveldb_compression"] != "true") {
+		options.compression = leveldb::kNoCompression;
+	}
+
 	options.filter_policy = leveldb::NewBloomFilterPolicy(10);
 	leveldb::Status status = leveldb::DB::Open(options, pathname , &db);
     if(status.ok())
