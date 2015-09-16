@@ -117,7 +117,8 @@ void GentThread::Start() {
 		}
 
 	}
-	if(GentFrame::Instance()->config["slavename"] != "") {
+	GentConfig &config = GentFrame::Instance()->config;
+	if(config["slaveof_ip"] != "" && config["slaveof_port"] != ""){
 		pthread_attr_t attr;
 		pthread_t pid;
 		int ret;

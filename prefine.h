@@ -28,12 +28,12 @@
 #include<ctype.h>
 #include <pthread.h>
 #include <assert.h>
-
 #include <map>
 #include <iostream>
 #include <vector>
 #include <list>
 
+#include "gent_hw.h"
 typedef unsigned char byte;
 using namespace std;
 
@@ -99,6 +99,7 @@ struct riserserver
 {
 	int port;
 	char *configfile;
+	char server_id[100];
 };
 
 #define LOG(level, args...)  GentLog::write(level, __FILE__, __LINE__, __func__, args)

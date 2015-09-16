@@ -17,6 +17,7 @@ public:
 	{
 		filename_ = filepath;
 		len_ = length;
+		cout << "file length:" << len_ <<endl;
 	};
 	~GentFile()
 	{
@@ -47,7 +48,7 @@ public:
 		}  
 		head_ = reinterpret_cast<T*>(h);
 		
-		for(int i=0;i<2; i++) {
+		for(uint32_t i=0;i<len_; i++) {
 			T *h = head_ + sizeof(T)*i;
 			if(!h->available) break;
 			string s(h->name,h->name_len);

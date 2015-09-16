@@ -16,6 +16,7 @@ typedef struct repinfo
 	void set(const string &n) {
 		memcpy(name, n.c_str(), n.size());
 		name_len = n.size();
+		cout << "cpy: "<< name <<endl;
 		available = 1;
 	};
 }repinfo;
@@ -65,6 +66,7 @@ class GentRepMgr
 	GentFile<repinfo> *repinfo_;
 	map<string,repinfo *> rep_map_;
 	uint64_t slave_start_time;
+	string server_id_;
 private:
 	int LinkMaster(GentEvent *ev_, const string &host, int port);	
 public:
@@ -78,7 +80,7 @@ public:
 	~GentRepMgr();
 	void Destroy(int id);	
 	bool Logout(string &name);	
-	GentReplication *Get(string &name);
+	GentReplication *Get(const string &name);
 	void Push(int type, string &key);
 	uint32_t GetReplicationNum();
 	uint64_t QueLength();

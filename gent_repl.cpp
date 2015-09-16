@@ -35,6 +35,7 @@ GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INI
 			LOG(GentLog::ERROR, "init replication infomation failed.");
 		}
 	}
+	server_id_ = GentFrame::Instance()->s->server_id;
 }
 
 GentRepMgr::~GentRepMgr()
@@ -74,7 +75,7 @@ void GentRepMgr::Slave(GentEvent *e)
 			cout << "master_auth is null "<<endl;
 		}else{
 			//认证过程	
-			int sdnum = SlaveAuth(config["slavename"], config["master_auth"]);
+			int sdnum = SlaveAuth(server_id_, config["master_auth"]);
 			if(sdnum == -1) {
 				CannelConnect();
 				return;
@@ -86,7 +87,7 @@ void GentRepMgr::Slave(GentEvent *e)
 	}else if(status == GentRepMgr::CONTINUE) {
 		char str[300] = {0};
 		snprintf(str, 300,"*3\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\ndata\r\n",
-				config["slavename"].size(),config["slavename"].c_str());
+				server_id_.size(),server_id_.c_str());
 		string sendstr(str);
 		int sdnum = connect_->OutString(sendstr);
 		if(sdnum == -1) {		
@@ -119,9 +120,8 @@ void GentRepMgr::SlaveReply(string &outstr, int suc)
 {
 	string t = (suc==1)?"ok":"error";
 	char str[300] = {0};
-	GentConfig &config = GentFrame::Instance()->config;	
 	snprintf(str, 300,"*3\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$%ld\r\n%s\r\n",
-			config["slavename"].size(),config["slavename"].c_str(), t.size(),t.c_str());
+			server_id_.size(),server_id_.c_str(), t.size(),t.c_str());
 	outstr = str;
 }
 
@@ -145,7 +145,7 @@ bool GentRepMgr::Logout(string &name)
 	return true;
 }
 
-GentReplication *GentRepMgr::Get(string &name)
+GentReplication *GentRepMgr::Get(const string &name)
 {
 	
 	std::map<string,GentReplication*>::iterator it = rep_list_.find(name); 	
@@ -153,9 +153,11 @@ GentReplication *GentRepMgr::Get(string &name)
 		map<string,repinfo *>::iterator it_info = rep_map_.find(name);
 		repinfo *info;
 		if(it_info == rep_map_.end()) {
+			cout << "no find "<< name <<endl;
 			info = repinfo_->AddItem();
 			info->set(name);	
 		}else{
+			cout << "exist "<< name <<endl;
 			info = it_info->second;
 		}
 		rep_list_[name] = new GentReplication(name, info);
@@ -230,6 +232,8 @@ main_que_length(0)
 	rep_name = name;
 	rinfo_ = rinfo;
 	current_node = NULL;
+	cout << "ser_time:"<<rinfo_->ser_time << endl;
+	cout << "rep_time:"<<rinfo_->rep_time << endl;
 	if(!rinfo_->ser_time || rinfo_->ser_time > rinfo_->rep_time) {
 		LOG(GentLog::WARN, "sync all data for %s slave.", name.c_str());
 		//设置所有的磁盘数据到队列
@@ -241,6 +245,10 @@ main_que_length(0)
 			itemData *item = new itemData(*it,itemData::ADD);
 			que.push(item);
 			main_que_length++;	
+		}
+		if(!rinfo_->ser_time) {
+			AutoLock lock(&que_push_lock);
+			rinfo_->ser_time = time(NULL);	
 		}
 	}else{
 		LOG(GentLog::WARN, "not need to sync all data for %s slave.", name.c_str());
@@ -276,6 +284,9 @@ void GentReplication::Pop()
 		rinfo_->rep_time = time(NULL);
 	}else{
 		it= que.pop();
+		if(it == NULL && !rinfo_->rep_time ) {
+			rinfo_->rep_time = time(NULL);
+		}
 	}
 	if(it != NULL) {
 		main_que_length--;

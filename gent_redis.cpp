@@ -66,6 +66,11 @@ int GentProcessSlave::Parser(int num,vector<string> &tokenList,const string &dat
 
 void GentProcessSlave::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
+	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3553");
+	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3552");
+	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3551");
+	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3550");
+
 	outstr = "+OK\r\n";
 	cout << outstr<<endl;
 }

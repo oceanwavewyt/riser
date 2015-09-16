@@ -115,6 +115,7 @@ int GentFrame::ServerSocket(int port)  {
 	if((fd = Socket()) == -1) {
 		return -1;
 	}
+	snprintf(s->server_id,100,"%s_%d",SERVER_ID.c_str(),port);
 	bzero(&addr,sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);

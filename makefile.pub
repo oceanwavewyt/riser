@@ -1,3 +1,4 @@
+hw := $(shell sh -c './gent_hw.sh')
 CC:=g++
 CXX:=g++
 DEBUG=DEBUG
