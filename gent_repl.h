@@ -6,20 +6,104 @@
 class GentEvent;
 class GentConnect;
 
-typedef struct repinfo
+class pageitem
 {
+public:
+	uint32_t  available;
+protected:
+	char *head;
+public:
+	pageitem(){};
+	pageitem(char *str){head = str;};
+	virtual ~pageitem(){};
+	virtual size_t size()=0;
+	virtual void set(const string &str)=0;	
+};
+
+class repinfo : public pageitem
+{
+public:
     char name[SLAVE_NAME_SIZE];
-	uint32_t name_len;
-	uint8_t  available;
-    uint64_t rep_time;
-    uint64_t ser_time;
-	void set(const string &n) {
-		memcpy(name, n.c_str(), n.size());
-		name_len = n.size();
-		cout << "cpy: "<< name <<endl;
-		available = 1;
+    uint32_t rep_time;
+    uint32_t ser_time;
+	repinfo(){};
+	repinfo(char *str):pageitem(str) {
+		init(str);	
 	};
-}repinfo;
+	~repinfo(){};
+    void set(const string &nstr) {
+		string n = nstr;
+		if((int)n.size()<SLAVE_NAME_SIZE) {
+			size_t len = SLAVE_NAME_SIZE - n.size();
+			string tmp= "";
+			for(size_t i=0;i<len; i++) {
+				tmp+="\x00";
+			}
+			n+=tmp;	
+		}
+        memcpy(name, n.c_str(), SLAVE_NAME_SIZE);
+        available = 1;
+        rep_time = 0;
+        ser_time = 0;
+		string wstr;	
+		tostring(wstr);	
+		memcpy(head, wstr.c_str(), wstr.size());
+    };
+	void set(const string &fieldname, uint64_t val)
+	{
+		int offset = 0;
+		int ln = 0;
+		if(fieldname == "ser_time") {
+			ser_time = val;
+			offset = 1;
+			ln = 10;
+		}else if(fieldname == "rep_time") {
+			rep_time = val;
+			offset = 11;
+			ln = 10;
+		}else if(fieldname == "available") {
+			available = val;
+			offset = 0;
+			ln = 1;
+		}
+		char buf[12] = {0};
+		snprintf(buf,ln,"%ld",val);
+		memcpy(head+offset, buf, ln);
+	}; 
+	void tostring(string &str) {
+		char buf[100] = {0};
+		char st[12] = {0};
+		if(ser_time == 0){
+			memcpy(st,"0000000000",10);
+		}else{
+			snprintf(st,12,"%ld",(unsigned long)ser_time);	
+		}
+		char rt[12] = {0};
+		if(rep_time == 0){
+			memcpy(rt,"0000000000",10);
+		}else{
+			snprintf(rt,12,"%ld",(unsigned long)rep_time);	
+		}
+		snprintf(buf,100,"%ld%s%s%s",(unsigned long)available,st,rt,name);	
+		cout << buf<<endl;
+		str = buf;
+	};
+	size_t size() {
+		return SLAVE_NAME_SIZE+21;
+	};
+	void init(char *str) {
+		char t[2] ={0};
+		memcpy(t,str,1);
+		available = atoi(t);
+		char tt[11];
+		memcpy(tt,str+1,10);
+		ser_time = atoi(tt);
+		memcpy(tt,str+11,10);
+		rep_time = atoi(tt);
+		memcpy(name,str+21,SLAVE_NAME_SIZE);	
+	};
+};
+
 
 class GentReplication
 {
@@ -63,7 +147,7 @@ class GentRepMgr
 	std::map<string,GentReplication*> rep_list_;	
 	GentConnect *connect_;
 	int status;
-	GentFile<repinfo> *repinfo_;
+	GentFile<repinfo> *repfile_;
 	map<string,repinfo *> rep_map_;
 	uint64_t slave_start_time;
 	string server_id_;

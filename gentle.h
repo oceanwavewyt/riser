@@ -15,7 +15,7 @@ public:
 	string resp_str_;
 public:
 	GentBasic();
-	~GentBasic();
+	virtual ~GentBasic();
 public:
 	virtual int Proccess() = 0;
 	virtual GentBasic *CloneProccess() = 0;

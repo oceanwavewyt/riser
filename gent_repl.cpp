@@ -3,6 +3,7 @@
 #include "gent_event.h"
 #include "gent_app_mgr.h"
 #include "gent_frame.h"
+#include "gent_util.h"
 
 GentRepMgr *GentRepMgr::intanceMaster_ = NULL;
 GentRepMgr *GentRepMgr::intanceSlave_ = NULL;
@@ -30,8 +31,8 @@ GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INI
 {
 	if(name == "master") {
    		string pathname = GentDb::Instance()->GetPath()+"/REPLICATION_INFO";
-   		repinfo_ = new GentFile<repinfo>(pathname, SLAVE_NUM);	
-		if(!repinfo_->Init(rep_map_)) {
+   		repfile_ = new GentFile<repinfo>(pathname, SLAVE_NUM);	
+		if(!repfile_->Init(rep_map_)) {
 			LOG(GentLog::ERROR, "init replication infomation failed.");
 		}
 	}
@@ -51,6 +52,9 @@ void GentRepMgr::SlaveHandle(int fd, short which, void *arg)
 	GentEvent *e = static_cast<GentEvent *>(arg);
 	//cout << "create slave thread" <<endl;
 	GentRepMgr::Instance("slave")->Slave(e);
+	e->DelEvent();
+	struct timeval tv = {1,0};                    
+	e->AddTimeEvent(&tv, GentRepMgr::SlaveHandle);
 }
 
 void GentRepMgr::Slave(GentEvent *e) 
@@ -87,7 +91,7 @@ void GentRepMgr::Slave(GentEvent *e)
 	}else if(status == GentRepMgr::CONTINUE) {
 		char str[300] = {0};
 		snprintf(str, 300,"*3\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\ndata\r\n",
-				server_id_.size(),server_id_.c_str());
+			(unsigned long)server_id_.size(),server_id_.c_str());
 		string sendstr(str);
 		int sdnum = connect_->OutString(sendstr);
 		if(sdnum == -1) {		
@@ -111,7 +115,7 @@ int GentRepMgr::SlaveAuth(const string &client_name, const string &auth)
 {
 	char str[300] = {0};
 	snprintf(str, 300,"*4\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\nauth\r\n$%ld\r\n%s\r\n",
-			client_name.size(),client_name.c_str(), auth.size(),auth.c_str());
+			(unsigned long)client_name.size(),client_name.c_str(), (unsigned long)auth.size(),auth.c_str());
 	string sendstr(str);
 	return connect_->OutString(sendstr);
 }
@@ -121,7 +125,7 @@ void GentRepMgr::SlaveReply(string &outstr, int suc)
 	string t = (suc==1)?"ok":"error";
 	char str[300] = {0};
 	snprintf(str, 300,"*3\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$%ld\r\n%s\r\n",
-			server_id_.size(),server_id_.c_str(), t.size(),t.c_str());
+			(unsigned long)server_id_.size(),server_id_.c_str(), (unsigned long)t.size(),t.c_str());
 	outstr = str;
 }
 
@@ -153,13 +157,11 @@ GentReplication *GentRepMgr::Get(const string &name)
 		map<string,repinfo *>::iterator it_info = rep_map_.find(name);
 		repinfo *info;
 		if(it_info == rep_map_.end()) {
-			cout << "no find "<< name <<endl;
-			info = repinfo_->AddItem();
-			info->set(name);	
+			info = repfile_->AddItem(name);
 		}else{
-			cout << "exist "<< name <<endl;
 			info = it_info->second;
 		}
+		if(info == NULL) return NULL;
 		rep_list_[name] = new GentReplication(name, info);
 	}	
 	return rep_list_[name];
@@ -200,9 +202,9 @@ void GentRepMgr::GetInfo(string &str)
 		st_map[GentRepMgr::AUTH] = "authentication";
 		st_map[GentRepMgr::WAIT] = "wait";
 		st_map[GentRepMgr::CONTINUE] = "transmit";
-		snprintf(buf,200, "connect master %s:%s,start_time:%lu,stage: %s\r\n",
+		snprintf(buf,200, "connect master %s:%s,start_time:%ld,stage: %s\r\n",
 				config["slaveof_ip"].c_str(),config["slaveof_port"].c_str(),
-				slave_start_time,st_map[status].c_str());
+				(unsigned long)slave_start_time,st_map[status].c_str());
 		str = buf;
 	}else{
 		str = "no master\r\n";
@@ -248,7 +250,7 @@ main_que_length(0)
 		}
 		if(!rinfo_->ser_time) {
 			AutoLock lock(&que_push_lock);
-			rinfo_->ser_time = time(NULL);	
+			rinfo_->set("ser_time",time(NULL));	
 		}
 	}else{
 		LOG(GentLog::WARN, "not need to sync all data for %s slave.", name.c_str());
@@ -272,7 +274,7 @@ void GentReplication::Push(int type, string &key)
 		}
 	}
 	main_que_length++;
-	rinfo_->ser_time = time(NULL);
+	rinfo_->set("ser_time",time(NULL));
 }
 
 void GentReplication::Pop()
@@ -281,11 +283,11 @@ void GentReplication::Pop()
 	itemData *it;
 	if(!is_update_que) {
 	 	it= main_que.pop();
-		rinfo_->rep_time = time(NULL);
+		rinfo_->set("rep_time",time(NULL));
 	}else{
 		it= que.pop();
 		if(it == NULL && !rinfo_->rep_time ) {
-			rinfo_->rep_time = time(NULL);
+			rinfo_->set("rep_time", time(NULL));
 		}
 	}
 	if(it != NULL) {
@@ -304,6 +306,9 @@ itemData *GentReplication::front_element()
 	itemData *it= que.front_element();
 	if(it == NULL) {
 		is_update_que = false;
+		if(!rinfo_->rep_time ) {
+			rinfo_->set("rep_time", time(NULL));	
+		}
 		return main_que.front_element();
 	}
 	return it;
@@ -312,8 +317,10 @@ itemData *GentReplication::front_element()
 void GentReplication::GetInfo(string &str)
 {
 	char ret[500] = {0};
-	snprintf(ret,500,"name:%s,start_time:%ld,end_time:%ld,need_sync_data: %ld\r\n",
-			rep_name.c_str(),slave_start_time,slave_last_time,main_que_length);
+	snprintf(ret,500,"name:%s,ip:%s,start:%s,last:%s,need_sync: %lld\r\n",
+			rep_name.c_str(),conn_->ip,
+			GentUtil::TimeToStr(slave_start_time).c_str(),
+			GentUtil::TimeToStr(slave_last_time).c_str(),(unsigned long long)main_que_length);
 	str = ret;
 }
 
@@ -357,6 +364,7 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 			Reply(itemData::DEL, it->name,	outstr);
 			return true;		
 		}
+		LOG(GentLog::INFO, "reply %s.", it->name.c_str());
 		Reply(itemData::ADD, it->name, outstr, nr);
 		return true;
 	}				
@@ -370,10 +378,10 @@ void GentReplication::Reply(int type, string &key,string &outstr, const string &
 	char retstr[300] = {0};
 	if(type == itemData::ADD) {
 		snprintf(retstr,300,"*3\r\n$3\r\nset\r\n$%ld\r\n%s\r\n$%ld\r\n",
-				key.size(),key.c_str(),nr.size());
+				(unsigned long)key.size(),key.c_str(),(unsigned long)nr.size());
 		outstr=retstr+nr+"\r\n";
 	}else if(type == itemData::DEL){
-		snprintf(retstr,300,"*2\r\n$3\r\ndel\r\n$%ld\r\n%s\r\n",key.size(), key.c_str());
+		snprintf(retstr,300,"*2\r\n$3\r\ndel\r\n$%ld\r\n%s\r\n",(unsigned long)key.size(), key.c_str());
 		outstr=retstr;		
 	}	
 }

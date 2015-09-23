@@ -66,11 +66,6 @@ int GentProcessSlave::Parser(int num,vector<string> &tokenList,const string &dat
 
 void GentProcessSlave::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3553");
-	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3552");
-	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3551");
-	GentRepMgr::Instance("master")->Get("localhost.localdomain-1442387287_3550");
-
 	outstr = "+OK\r\n";
 	cout << outstr<<endl;
 }
@@ -386,6 +381,10 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	GentReplication *rep = GentRepMgr::Instance("master")->Get(redis->keystr);
+	if(rep == NULL) {
+		outstr = REDIS_ERROR+" slave full,manual clear\r\n";
+		return;
+	}
 	if(!rep->Start(msg, redis->conn, outstr)) {
 		redis->conn->SetStatus(Status::CONN_WAIT);
 	}

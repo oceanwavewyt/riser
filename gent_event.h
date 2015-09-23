@@ -30,7 +30,8 @@ public:
 	GentEvent();
 	~GentEvent();
 	int AddEvent(GentConnect *,void (*)(const int, const short, void *));
-    int UpdateEvent(int fd,GentConnect *c, int);
+    void DelEvent() {event_del(&ev_);};
+	int UpdateEvent(int fd,GentConnect *c, int);
 	int AddTimeEvent(struct timeval *tv, void (*)(const int, const short, void *));
 	void Loop();
 	int AcceptSocket(struct evhttp *http, int fd);

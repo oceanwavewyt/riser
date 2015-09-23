@@ -43,7 +43,7 @@ public:
     int rbytes;
 public:
     GentCommand(GentConnect *c);
-    ~GentCommand();
+    virtual ~GentCommand();
 public:
     virtual int Process(const char *rbuf, uint64_t size, string &outstr) = 0;
     virtual void Complete(string &outstr, const char *recont, uint64_t len) = 0;
@@ -54,9 +54,5 @@ public:
     static const int READ_BUFFER_SIZE = 4096;
 };
 
-class GentWang
-{
-public:
-    virtual bool Init(string &)=0;
-};
+
 #endif

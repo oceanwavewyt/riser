@@ -15,7 +15,7 @@
 #include <sys/un.h>
 #include <fcntl.h>
 #include <unistd.h>
-//#include <types.h>
+#include <time.h>
 #include <inttypes.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -44,7 +44,7 @@ const int TARGET_FILE_SIZE = 128;
 
 const int WRITE_BUFFER_SIZE = 32;
 //从服务器的名字长度
-const int SLAVE_NAME_SIZE = 500;
+const int SLAVE_NAME_SIZE = 50;
 //从服务器数量最多1024
 const int SLAVE_NUM = 1024;
 //LOG

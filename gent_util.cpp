@@ -83,3 +83,15 @@ void GentUtil::BytesToHuman(char *s, unsigned long long n) {
         sprintf(s,"%lluB",n);
     }
 }
+
+string GentUtil::TimeToStr(size_t tm)
+{
+	time_t times = (time_t)tm;
+	struct tm *lt = localtime(&times);  
+    char nowtime[24]={0};  
+    memset(nowtime, 0, sizeof(nowtime));  
+    strftime(nowtime, 24, "%Y-%m-%d %H:%M:%S", lt); 		
+	string str(nowtime);
+	return str;
+}
+

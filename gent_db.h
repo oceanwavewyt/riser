@@ -14,7 +14,7 @@
 #include "prefine.h"
 #include "gent_command.h"
 
-class GentDb : public GentWang
+class GentDb
 {
 	static GentDb *intance_;
 private:

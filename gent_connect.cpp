@@ -15,6 +15,14 @@
 GentConnect::GentConnect(int sfd):rbuf(NULL)
 {
 	Init(sfd);
+	/*
+	st_map[Status::CONN_READ] = "read"; 
+	st_map[Status::CONN_NREAD] = "read"; 
+	st_map[Status::CONN_WRITE] = "send";
+	st_map[Status::CONN_WAIT] = "wait"; 
+	st_map[Status::CONN_CLOSE] = "close";
+	st_map[Status::CONN_DATA] = "parse";
+	*/	
 }
 
 GentConnect::~GentConnect()
@@ -46,16 +54,15 @@ void GentConnect::Init(int sfd) {
     remainsize = 0;
 	sendsize = 0;
 	cursendsize = 0;
+    curstatus = Status::CONN_READ;
     //configure info
     comm = GentAppMgr::Instance()->GetCommand(this, fd);
     ReAllocation();
 }
 
 void GentConnect::ReAllocation() {
-    curstatus = Status::CONN_READ;
-    
 	//rcurr = NULL;
-    content = NULL;
+	content = NULL;
 	actualsize = 0;
     if(!rbuf) {
         rsize = GentCommand::READ_BUFFER_SIZE;
@@ -86,7 +93,7 @@ int GentConnect::TryRunning(string &outstr2) {
                 outstr = "";
                 readNum = InitRead(rbytes);
                 LOG(GentLog::INFO, "init read the number of byte is %d.", readNum);
-                if(readNum < 0) {
+				if(readNum < 0) {
                     LOG(GentLog::WARN, "init read the number of byte less than zero");
                     outstr2 = "read error\r\n";
                     Reset();
@@ -95,7 +102,6 @@ int GentConnect::TryRunning(string &outstr2) {
                     return readNum;
                 }
                 remainsize = comm->Process(rbuf, rbytes, outstr);
-                LOG(GentLog::INFO, "curstatus: %d",curstatus);
                  if(!remainsize && outstr != "") {
                      curstatus = Status::CONN_WRITE;
                      Reset();
@@ -124,8 +130,8 @@ int GentConnect::TryRunning(string &outstr2) {
                 return 0;
             case Status::CONN_WRITE:
                 Reset();
-                OutString(outstr);
-                break;
+				OutString(outstr);
+                return 0;
             case Status::CONN_WAIT:
 				LOG(GentLog::INFO, "the status of %d is connect wait", fd);
                 remainsize = 0;
@@ -221,6 +227,10 @@ void GentConnect::SetWrite(const string &str)
 
 void GentConnect::SetStatus(int s) {
     curstatus = s;
+}
+
+string GentConnect::GetStatus() {
+	return st_map[curstatus];			
 }
 
 int GentConnect::NextRead() {

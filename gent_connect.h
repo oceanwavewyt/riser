@@ -47,6 +47,7 @@ class GentConnect
     uint32_t curstatus;
 	uint64_t remainsize;
 	uint64_t actualsize;
+   	map<int,string> st_map;
 public:
     struct event ev;
     GentEvent *gevent;
@@ -63,7 +64,8 @@ public:
     int OutString(const string &str);
     int TryRunning(string &str);
     void SetStatus(int);
-    void SetWrite(const string &str);
+    string GetStatus();
+	void SetWrite(const string &str);
 	void Destruct();
     void Init(int sfd);
 private:
