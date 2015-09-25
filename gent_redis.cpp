@@ -506,7 +506,7 @@ bool GentRedis::Init(string &msg)
        return false;
    }
    GentRedis::SetCommands();
-   GentList::Instance()->Init();
+   //GentList::Instance()->Init();
    return true;
 }
 

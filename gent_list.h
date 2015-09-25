@@ -29,7 +29,7 @@ class HashInter
 	CommLock hash_lock;
 public:
     HashInter();
-    ~HashInter();
+    virtual ~HashInter();
 private:
     uint8_t Position(char *key,int isget=1);
 protected:

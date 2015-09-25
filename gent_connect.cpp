@@ -40,7 +40,7 @@ void GentConnect::Destruct()
         content = NULL;
     }
 	start_time = 0;	
-    if(fd>0) return;
+    if(fd<0) return;
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
 	LOG(GentLog::INFO, "file description %d close.", fd);

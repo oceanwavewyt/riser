@@ -135,9 +135,6 @@ void GentEvent::Handle(const int fd, const short which, void *arg) {
         GentAppMgr::Instance()->RetConnect(c);
         return;
     }    
-    if(outstr != "") {
-        //clear connect
-    }
     
     //continue read
     
@@ -274,6 +271,7 @@ int GentEvent::Client(const string &host, int port)
 	int result=connect(client_sock, (struct sockaddr *)&address, sizeof(address));  
 	if(result==-1){  
     	LOG(GentLog::ERROR, "connect replicaton master failed");	
+		close(client_sock);
 		return -1;  
 	} 	
 	return client_sock; 

@@ -151,7 +151,7 @@ int GentFrame::Run(int port) {
     conn->gevent = gevent;
     
 	gevent->AddEvent(conn,GentEvent::HandleMain);
-	GentThread::Intance()->init(atoi(config["thread"].c_str()));
+	GentThread::Intance()->init(atoi(config["threads"].c_str()));
 	//启动线程
 //    std::cout << "start " << std::endl;
 	GentThread::Intance()->Start();
