@@ -23,7 +23,7 @@ void GentDb::UnIntance() {
 	if(intance_) delete intance_;
 }
 
-GentDb::GentDb()
+GentDb::GentDb():key_num(0)
 {
     
     
@@ -45,18 +45,30 @@ bool GentDb::Put(string &key, string &value)
 {
     leveldb::Slice s2 = value;
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, s2);
-    return s.ok();
+    if(key_num > 0) {
+		AutoLock lock(&key_num_lock);
+		key_num++;
+	}
+	return s.ok();
 }
 
 bool GentDb::Put(string &key, const char *val, uint64_t len)
 {
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, leveldb::Slice(val,len));
-    return s.ok();
+    if(key_num > 0) {
+		AutoLock lock(&key_num_lock);
+		key_num++;
+	}
+	return s.ok();
 }
 
 bool GentDb::Del(string &key)
 {
 	leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
+	if(key_num > 0) {
+		AutoLock lock(&key_num_lock);
+		key_num--;
+	}
 	return s.ok();
 }
 
@@ -84,6 +96,7 @@ uint64_t GentDb::TotalSize() {
 
 uint64_t GentDb::Count(const string &pre) 
 {
+	if(pre == "" && key_num > 0) return key_num;
 	leveldb::ReadOptions options;
 	options.snapshot = db->GetSnapshot();
 	leveldb::Iterator* it = db->NewIterator(options);
@@ -104,6 +117,10 @@ uint64_t GentDb::Count(const string &pre)
 	}
 	db->ReleaseSnapshot(options.snapshot);
 	delete it;
+	if(pre == "" && key_num == 0) {
+		AutoLock lock(&key_num_lock);
+		key_num = num;
+	}
 	return num;
 }
 

@@ -21,6 +21,8 @@ private:
 	leveldb::DB* db;
     leveldb::Options options;
 	string pathname;
+	uint64_t key_num;
+	CommLock key_num_lock;		
 public:
 	GentDb();
 	~GentDb();
