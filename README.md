@@ -34,7 +34,16 @@ usage see --help
 ### client
      redis's method: set(key, value),get(key),mget(array),delete(key),keys,exists(key),close()
      memcache's method:  set(key, value), get(key), get(array), delete(key), close()
+     
+### redis command line
+     set, get,del, keys, exists, info
+     其中 info rep  命令查看slave状况   
 
+### replicaton
+     开启配置文件riser.conf中，
+     #slaveof_ip=127.0.0.1
+     #slaveof_port=3555
+     
 ### Author:
     oceanwavewyt,  oceanwavewyt@gmail.com
 
