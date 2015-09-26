@@ -67,7 +67,7 @@ public:
 			ln = 1;
 		}
 		char buf[12] = {0};
-		snprintf(buf,ln,"%ld",val);
+		snprintf(buf,ln,"%llu",(unsigned long long)val);
 		memcpy(head+offset, buf, ln);
 	}; 
 	void tostring(string &str) {

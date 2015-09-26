@@ -39,9 +39,9 @@ using namespace std;
 
 const uint32_t LOGBUFSIZE = 2048;
 const uint32_t LINEBUFSIZE = 4096;
-
+//单位M
 const int TARGET_FILE_SIZE = 128;
-
+//单位M
 const int WRITE_BUFFER_SIZE = 32;
 //从服务器的名字长度
 const int SLAVE_NAME_SIZE = 50;

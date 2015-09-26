@@ -86,7 +86,7 @@ void GentProcessGet::Complete(string &outstr,const char *recont, uint64_t len, G
         outstr = "$-1\r\n";
     }
     char retbuf[50]={0};
-    snprintf(retbuf,50, "$%ld\r\n",nr.size());
+    snprintf(retbuf,50, "$%u\r\n",(unsigned int)nr.size());
     outstr = retbuf;
 	outstr += nr+"\r\n";
 }
@@ -167,7 +167,7 @@ void GentProcessMget::Complete(string &outstr,const char *recont, uint64_t len, 
         }
 		num++;
         char retbuf[20]={0};
-        snprintf(retbuf,20, "$%ld\r\n", nr.size());
+        snprintf(retbuf,20, "$%u\r\n", (unsigned int)nr.size());
         outstr += retbuf;
         outstr += nr+"\r\n";
     }
@@ -257,34 +257,34 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 				"port: %d\r\n"
 				"config_file: %s\r\n"
 				"\r\n# Clients\r\n"
-				"total_connect: %lu\r\n"
-				"current_connect: %lu\r\n"
+				"total_connect: %u\r\n"
+				"current_connect: %u\r\n"
 				"\r\n# Disk\r\n"
-				"disk_use: %lu\r\n"
+				"disk_use: %llu\r\n"
 				"disk_use_human: %s\r\n"
 				"\r\n# Keyspace\r\n"
-				"key_num: %lu\r\n"
+				"key_num: %llu\r\n"
 				"\r\n# Replication\r\n"
 				"role:%s\r\n"
 				"connected_slaves:%u\r\n"
-				"master_repl_length:%lu\r\n\r\n"
+				"master_repl_length:%llu\r\n\r\n"
 				,
 	             (long) getpid(),
 				 GentFrame::Instance()->s->port,
 				 GentFrame::Instance()->s->configfile,
-				 GentAppMgr::Instance()->GetTotalConnCount(),
-				 GentAppMgr::Instance()->GetConnCount(),
-				 totals,
+				 (unsigned int)GentAppMgr::Instance()->GetTotalConnCount(),
+				 (unsigned int)GentAppMgr::Instance()->GetConnCount(),
+				 (unsigned long long)totals,
 				 hmen,
-				 GentDb::Instance()->Count(""),
+				 (unsigned long long)GentDb::Instance()->Count(""),
 				 role.c_str(),
 				 slaveNum,
-				 GentRepMgr::Instance("master")->QueLength()
+				 (unsigned long long)GentRepMgr::Instance("master")->QueLength()
 				 );
 	}
 	outstr = retbuf;
     char c[50]={0};
-	snprintf(c,50,"$%lu\r\n",outstr.size()-2);
+	snprintf(c,50,"$%u\r\n",(unsigned int)outstr.size()-2);
 	outstr = c+outstr;
 	return;
 }
@@ -314,11 +314,11 @@ void GentProcessKeys::Complete(string &outstr,const char *recont, uint64_t len, 
 	vector<string>::iterator it;
 	GentDb::Instance()->Keys(outvec, redis->keystr);
 	char ret[20]={0};
-	snprintf(ret,20,"*%ld\r\n",outvec.size());
+	snprintf(ret,20,"*%u\r\n",(unsigned int)outvec.size());
 	outstr = ret;	
 	for(it=outvec.begin();it!=outvec.end();it++) {
 		char s[260]={0};
-		snprintf(s,260,"$%ld\r\n%s\r\n",(*it).size(),(*it).c_str());
+		snprintf(s,260,"$%u\r\n%s\r\n",(unsigned int)(*it).size(),(*it).c_str());
 		outstr+=string(s);
 	}
 }
@@ -480,8 +480,11 @@ void GentRedis::ProcessStats(string &outstr)
     char retbuf[200] = {0};
 	uint64_t num = GentDb::Instance()->Count(keystr);
     uint64_t totals = GentDb::Instance()->TotalSize(); 
-	snprintf(retbuf,200,"total_connect: %lu\r\ncurrent_connect: %lu\r\nitem_nums: %lu\r\ntotal_size: %lu\r\n",
-             GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount(), num, totals);
+	snprintf(retbuf,200,"total_connect: %u\r\ncurrent_connect: %u\r\nitem_nums: %llu\r\ntotal_size: %llu\r\n",
+             (unsigned int)GentAppMgr::Instance()->GetTotalConnCount(),
+			 (unsigned int)GentAppMgr::Instance()->GetConnCount(), 
+			 (unsigned long long)num, 
+			 (unsigned long long)totals);
     outstr = retbuf;
 }
 

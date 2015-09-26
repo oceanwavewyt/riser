@@ -22,7 +22,7 @@ protected:
 	};
 public:
 	GentSubCommand(){};
-	~GentSubCommand(){};
+	virtual ~GentSubCommand(){};
 public:
 	virtual int Parser(int,vector<string> &,const string &, GentRedis *)=0;
 	virtual void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)=0;	

@@ -176,7 +176,7 @@ void GentLevel::ProcessGet(string &outstr)
         outstr = "END\r\n";
     }
     char retbuf[200]={0};
-    snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",keystr.c_str(), nr.size());
+    snprintf(retbuf,200, "VALUE %s 0 %u\r\n",keystr.c_str(), (unsigned int)nr.size());
     outstr = retbuf;
 	outstr += nr+"\r\nEND\r\n";
 }
@@ -192,7 +192,7 @@ void GentLevel::ProcessMultiGet(string &outstr)
             continue;
         }
         char retbuf[200]={0};
-        snprintf(retbuf,200, "VALUE %s 0 %ld\r\n",(*iter).c_str(), nr.size());
+        snprintf(retbuf,200, "VALUE %s 0 %u\r\n",(*iter).c_str(), (unsigned int)nr.size());
         outstr += retbuf;
         outstr += nr+"\r\n";
     }
@@ -203,9 +203,11 @@ void GentLevel::ProcessStats(string &outstr)
 {
     char retbuf[200] = {0};
 	uint64_t num = GentDb::Instance()->Count(keystr);
-    uint64_t totals = GentDb::Instance()->TotalSize(); 
-	snprintf(retbuf,200,"total_connect: %lu\r\ncurrent_connect: %lu\r\nitem_nums: %lu\r\ntotal_size: %lu\r\n",
-             GentAppMgr::Instance()->GetTotalConnCount(),GentAppMgr::Instance()->GetConnCount(), num, totals);
+    uint64_t totals = GentDb::Instance()->TotalSize();
+	snprintf(retbuf,200,"total_connect: %u\r\ncurrent_connect: %u\r\nitem_nums: %llu\r\ntotal_size: %llu\r\n",
+         (unsigned int)GentAppMgr::Instance()->GetTotalConnCount(),
+		 (unsigned int)GentAppMgr::Instance()->GetConnCount(), 
+		 (unsigned long long)num, (unsigned long long)totals); 
     outstr = retbuf;
 }
 
