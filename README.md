@@ -36,7 +36,7 @@ usage see --help
      memcache's method:  set(key, value), get(key), get(array), delete(key), close()
      
 ### redis command line
-     set, get,del, keys, exists, info
+     set, get,del, keys, exists, info, ping
      其中 info rep  命令查看slave状况   
 
 ### replicaton
