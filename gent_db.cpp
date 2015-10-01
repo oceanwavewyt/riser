@@ -189,11 +189,11 @@ bool GentDb::Init(string &err)
             options.write_buffer_size = size*1024*1024;
         }
     }	
-    options.target_file_size = TARGET_FILE_SIZE*1024*1024;
+    options.target_file_size = TARGET_FILE_SIZE;
     if(config["leveldb_target_file_size_mb"] != "") {
         int size = atoi(config["leveldb_target_file_size_mb"].c_str());
         if(size > 2) {
-            options.target_file_size = size*1024*1024;
+            options.target_file_size = size;
         }
     }
 	if(config["leveldb_block_cache_size_mb"] != "") {
