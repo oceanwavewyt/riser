@@ -27,6 +27,18 @@ public:
     };
 };
 
+class GentDestroy
+{
+protected:
+	GentConnect *conn_;
+public:
+    GentDestroy(){};
+    virtual ~GentDestroy(){};
+public:
+    void Destroy(){
+		conn_ = NULL;
+	}; 
+};
 
 class GentConnect
 {
@@ -48,6 +60,7 @@ class GentConnect
 	uint64_t remainsize;
 	uint64_t actualsize;
    	map<int,string> st_map;
+	map<string, GentDestroy *> dest_list;
 public:
     struct event ev;
     GentEvent *gevent;
@@ -67,6 +80,11 @@ public:
     string GetStatus();
 	void SetWrite(const string &str);
 	void Destruct();
+	void RegDestroy(string &name, GentDestroy *d){
+		map<string, GentDestroy*>::iterator it = dest_list.find(name);
+		if(it != dest_list.end()) return;
+		dest_list[name] = d;
+	};
     void Init(int sfd);
 private:
     int InitRead(int &rbytes);

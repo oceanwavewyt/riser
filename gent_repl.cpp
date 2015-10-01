@@ -317,16 +317,26 @@ itemData *GentReplication::front_element()
 void GentReplication::GetInfo(string &str)
 {
 	char ret[500] = {0};
-	snprintf(ret,500,"name:%s,ip:%s,start:%s,last:%s,need_sync: %lld\r\n",
-			rep_name.c_str(),conn_->ip,
+	string s = "";
+	if(!conn_) {
+		s = "close";
+	}else{
+		s = conn_->GetStatus();
+	}
+	snprintf(ret,500,"name:%s,ip:%s,start:%s,last:%s,status:%s,need_sync: %lld\r\n",
+			rep_name.c_str(),slave_ip.c_str(),
 			GentUtil::TimeToStr(slave_start_time).c_str(),
-			GentUtil::TimeToStr(slave_last_time).c_str(),(unsigned long long)main_que_length);
+			GentUtil::TimeToStr(slave_last_time).c_str(),
+			s.c_str(),
+			(unsigned long long)main_que_length);
 	str = ret;
 }
 
 bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 {
 	conn_ = c;
+	slave_ip = conn_->ip;
+	c->RegDestroy(rep_name, this);
 	slave_last_time = time(NULL);
 	if(msg == "auth" ) {
 		outstr = "*2\r\n$5\r\nreply\r\n$6\r\nauthok\r\n";

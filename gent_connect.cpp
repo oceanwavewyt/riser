@@ -15,14 +15,14 @@
 GentConnect::GentConnect(int sfd):rbuf(NULL)
 {
 	Init(sfd);
-	/*
+	
 	st_map[Status::CONN_READ] = "read"; 
 	st_map[Status::CONN_NREAD] = "read"; 
 	st_map[Status::CONN_WRITE] = "send";
 	st_map[Status::CONN_WAIT] = "wait"; 
 	st_map[Status::CONN_CLOSE] = "close";
 	st_map[Status::CONN_DATA] = "parse";
-	*/	
+
 }
 
 GentConnect::~GentConnect()
@@ -41,8 +41,14 @@ void GentConnect::Destruct()
     }
 	start_time = 0;	
     if(fd<0) return;
+	map<string, GentDestroy*>::iterator it;
+	for(it=dest_list.begin();it!=dest_list.end();it++) {
+		(*it).second->Destroy();
+		dest_list.erase(it);	
+	}
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
+	curstatus = Status::CONN_CLOSE;
 	LOG(GentLog::INFO, "file description %d close.", fd);
     
 }

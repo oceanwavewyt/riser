@@ -2,9 +2,9 @@
 #define riser_gent_repl_h
 #include "gent_queue_list.h"
 #include "gent_file.h"
+#include "gent_connect.h"
 
 class GentEvent;
-class GentConnect;
 
 class pageitem
 {
@@ -105,13 +105,15 @@ public:
 };
 
 
-class GentReplication
+class GentReplication : public GentDestroy
 {
 	string rep_name;
 	//0:初始状态;1:正在同步状态;
 	int status;
 	//当全量同步时候，导出所有影片的ID到que
 	bool is_update_que;
+	//slave的IP地址
+	string slave_ip;
 	//queue node point
 	NODE<itemData*> *current_node;
 	//主队列
@@ -123,7 +125,6 @@ class GentReplication
 	repinfo *rinfo_;
 	uint64_t slave_start_time;
 	uint64_t slave_last_time;
-	GentConnect *conn_;
 	CommLock que_push_lock;
 	CommLock que_pop_lock;
 public:
