@@ -26,6 +26,7 @@ public:
 public:
 	virtual int Parser(int,vector<string> &,const string &, GentRedis *)=0;
 	virtual void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)=0;	
+	virtual GentSubCommand *Clone()=0;
 };
 class GentProcessGet : public GentSubCommand
 {
@@ -35,6 +36,10 @@ public:
 public:
 	int Parser(int,vector<string> &, const string &,GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessGet();
+	};
 };
 class GentProcessSet : public GentSubCommand
 {
@@ -44,6 +49,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &,GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessSet();
+	};
 };
 class GentProcessMget : public GentSubCommand
 {
@@ -53,6 +62,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &,GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessMget();
+	};
 };
 class GentProcessDel : public GentSubCommand
 {
@@ -62,6 +75,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &,GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessDel();
+	};
 };
 class GentProcessQuit : public GentSubCommand
 {
@@ -71,6 +88,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &,GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessQuit();
+	};
 };
 
 class GentProcessKeys : public GentSubCommand
@@ -81,6 +102,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessKeys();
+	};
 };
 class GentProcessExists : public GentSubCommand
 {
@@ -90,6 +115,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data,GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessExists();
+	};
 };
 class GentProcessPing : public GentSubCommand
 {
@@ -99,6 +128,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessPing();
+	};
 };
 class GentProcessInfo : public GentSubCommand
 {
@@ -108,6 +141,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessInfo();
+	};
 };
 class GentProcessRep : public GentSubCommand
 {
@@ -118,6 +155,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessRep();
+	};
 };
 class GentProcessReply : public GentSubCommand
 {
@@ -127,6 +168,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessReply();
+	};
 };
 class GentProcessSlave : public GentSubCommand
 {
@@ -136,6 +181,10 @@ public:
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessSlave();
+	};
 };
 class GentRedis: public GentCommand
 {
@@ -157,7 +206,7 @@ private:
 	string keystr;
 	vector<string> keyvec;
 	string content;
-	GentSubCommand *c; 
+	GentSubCommand *subc; 
 	uint64_t  rlbytes;
 public:
     GentRedis(GentConnect *c=NULL);

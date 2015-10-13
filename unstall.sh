@@ -5,4 +5,5 @@ make clean
 cd ../leveldb/
 make clean
 cd ../../
+rm -f gent_hw.h
 make clean
