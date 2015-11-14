@@ -370,12 +370,19 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 	if(it->type == itemData::ADD) {
 		string nr = "";
 		LOG(GentLog::INFO, "sync the key of %s data.", it->name.c_str());
-		if(!GentDb::Instance()->Get(it->name, nr)) {
+		uint64_t expire;
+		if(!GentDb::Instance()->Get(it->name, nr, expire)) {
 			Reply(itemData::DEL, it->name,	outstr);
 			return true;		
 		}
+		uint64_t t = (unsigned long long)time(NULL);
+		if(expire != 0 && expire < t) {
+			Reply(itemData::DEL, it->name,  outstr);
+			return true;
+		}
+		expire = t - expire;
 		LOG(GentLog::INFO, "reply %s.", it->name.c_str());
-		Reply(itemData::ADD, it->name, outstr, nr);
+		Reply(itemData::ADD, it->name, outstr, nr, expire);
 		return true;
 	}				
 	Reply(itemData::DEL, it->name, outstr);
@@ -383,12 +390,19 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 
 }
 
-void GentReplication::Reply(int type, string &key,string &outstr, const string &nr)
+void GentReplication::Reply(int type, string &key,string &outstr, const string &nr, uint64_t expire)
 {
 	char retstr[300] = {0};
 	if(type == itemData::ADD) {
-		snprintf(retstr,300,"*3\r\n$3\r\nset\r\n$%ld\r\n%s\r\n$%ld\r\n",
+		if(expire == 0){
+			snprintf(retstr,300,"*3\r\n$3\r\nset\r\n$%ld\r\n%s\r\n$%ld\r\n",
 				(unsigned long)key.size(),key.c_str(),(unsigned long)nr.size());
+		}else{
+			char expstr[20]={0};
+			snprintf(expstr, 20, "%llu",(unsigned long long)expire);
+			snprintf(retstr,300,"*4\r\n$5\r\nsetex\r\n$%ld\r\n%s\r\n$%ld\r\n%s\r\n$%ld\r\n",
+				(unsigned long)key.size(),key.c_str(),strlen(expstr),expstr, (unsigned long)nr.size());
+		}
 		outstr=retstr+nr+"\r\n";
 	}else if(type == itemData::DEL){
 		snprintf(retstr,300,"*2\r\n$3\r\ndel\r\n$%ld\r\n%s\r\n",(unsigned long)key.size(), key.c_str());

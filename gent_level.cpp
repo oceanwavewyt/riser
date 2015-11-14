@@ -234,7 +234,7 @@ void GentLevel::Complete(string &outstr, const char *recont, uint64_t len)
 			}else{
 				string nr;                   
  				nr.assign(content.c_str(), rlbytes-2);
-				if(!GentDb::Instance()->Put(keystr, nr)) {
+				if(!GentDb::Instance()->Put(keystr, nr,0, 0)) {
                     outstr = "NOT_STORED\r\n";
                 }else{
                     //GentList::Instance()->Save(keystr);

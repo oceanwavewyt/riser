@@ -135,7 +135,7 @@ public:
 	uint64_t QueLength(){return main_que_length;};
 	void GetInfo(string &str);
 private:
-	void Reply(int type, string &key,string &outstr, const string &nr="");
+	void Reply(int type, string &key,string &outstr, const string &nr="", uint64_t expire=0);
 	void Pop();	
 	itemData *front_element();
 };

@@ -25,7 +25,7 @@ void GentDb::UnIntance() {
 
 GentDb::GentDb():key_num(0)
 {
-    
+	meta_path = "/meta";    
     
 }
 
@@ -37,11 +37,36 @@ GentDb::~GentDb()
 
 bool GentDb::Get(string &key, string &value)
 {
-    leveldb::Status s = db->Get(leveldb::ReadOptions(), key, &value);
+	string metaData;
+	leveldb::Status s= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
+	if(s.ok()) {
+		struct metaData dat;
+		GentDb::MetaUnserialize(metaData, &dat);	
+		if(dat.expire != 0 && dat.expire < (unsigned long long)time(NULL)) {
+			value = "";
+			return false;
+		}
+	}    
+	s = db->Get(leveldb::ReadOptions(), key, &value);
     return s.ok();
 }
 
-bool GentDb::Put(string &key, string &value)
+bool GentDb::Get(string &key, string &value, uint64_t &expire)
+{
+	string metaData;
+	leveldb::Status s= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
+	if(s.ok()) {
+		struct metaData dat;
+		GentDb::MetaUnserialize(metaData, &dat);
+		expire = dat.expire;	
+	}else{
+		expire = 0;
+	}    
+	s = db->Get(leveldb::ReadOptions(), key, &value);
+    return s.ok();
+}
+
+bool GentDb::Put(string &key, string &value,uint64_t expire, int datatype)
 {
     leveldb::Slice s2 = value;
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, s2);
@@ -50,14 +75,27 @@ bool GentDb::Put(string &key, string &value)
 		key_num++;
 	}
 	return s.ok();
+	if(s.ok()) {
+		string meData;
+		MetaSerialize(meData, datatype, expire);
+		leveldb::Slice s3 = meData;
+		meta_db->Put(leveldb::WriteOptions(), key, s3);
+	}
+	return s.ok();
 }
 
-bool GentDb::Put(string &key, const char *val, uint64_t len)
+bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype)
 {
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, leveldb::Slice(val,len));
     if(key_num > 0) {
 		AutoLock lock(&key_num_lock);
 		key_num++;
+	}
+	if(s.ok()) {
+		string meData;
+		MetaSerialize(meData, datatype, expire);
+		leveldb::Slice s3 = meData;
+		meta_db->Put(leveldb::WriteOptions(), key, s3);
 	}
 	return s.ok();
 }
@@ -68,6 +106,9 @@ bool GentDb::Del(string &key)
 	if(key_num > 0) {
 		AutoLock lock(&key_num_lock);
 		key_num--;
+	}
+	if(s.ok()) {
+		meta_db->Delete(leveldb::WriteOptions(), key);
 	}
 	return s.ok();
 }
@@ -218,7 +259,10 @@ bool GentDb::Init(string &err)
 	leveldb::Status status = leveldb::DB::Open(options, pathname , &db);
     if(status.ok())
     {
-        return true;
+		string mp = pathname+meta_path;
+		leveldb::Status meta_status = leveldb::DB::Open(options, mp , &meta_db);
+        if(meta_status.ok()) return true;
+		return false;
     }
     err = status.ToString();
     return false;
@@ -227,55 +271,23 @@ bool GentDb::Init(string &err)
 string &GentDb::GetPath() {
 	return pathname; 
 }
-/*
-uint64_t GentDb::Count(const string &pre) 
-{
-	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
-	uint64_t num=0;
-	bool first = false;
-	for (it->SeekToFirst(); it->Valid(); it->Next()) {
-		if(pre != "") {
-			string curkey(it->key().ToString());
-			if(curkey.substr(0, pre.size())!=pre){
-				if(first) break; 
-				continue;
-			}
-			first = true;
-			num++;
-		}else{
-			num++;
-		}
+
+void GentDb::MetaSerialize(string &outstr, int datatype, uint64_t expire) {
+	char buf[100]={0};
+	if(expire == 0 || expire > REDIS_EXPIRE_TIME) {
+		snprintf(buf, 100, "%d*0000000000%lu",datatype,  time(NULL));
+	}else{
+		snprintf(buf, 100, "%d+%llu%lu",datatype, (unsigned long long)expire, time(NULL));
 	}
-	delete it;
-	return num;
+	outstr = buf;
 }
-uint64_t GentDb::Keys(vector<string> &outvec, const string &pre) 
-{
- 	leveldb::ReadOptions options;
-  	options.fill_cache = false;
-	leveldb::Iterator* it = db->NewIterator(options);
-	uint64_t num=0;
-	bool first = true;
-	for (it->SeekToFirst(); it->Valid(); it->Next()) {
-		if(pre != "*") {
-			string curkey(it->key().ToString());
-			if(curkey.substr(0, pre.size())!=pre) {
-				if(first == false) {
-					break;
-				}else{
-					continue;
-				}
-			}
-			outvec.push_back(curkey);
-			cout << "item: "<<curkey <<endl; 
-			num++;
-			first = false;
-		}else{
-			outvec.push_back(it->key().ToString());
-			num++;
-		}
+
+void GentDb::MetaUnserialize(string &str, struct metaData *dat) {
+	dat->datatype = atoi(str.substr(0,1).c_str());
+	if(str.substr(1,1) == "*") {
+		dat->expire = 0;	
+	}else{
+		dat->expire = strtoull(str.substr(2,10).c_str(),NULL,10);
 	}
-	delete it;
-	return num;
+	dat->store_time = strtoull(str.substr(12,10).c_str(), NULL,10);
 }
-*/

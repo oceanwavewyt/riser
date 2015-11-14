@@ -14,6 +14,7 @@ GentRedis::GentRedis(GentConnect *c):GentCommand(c)
   keystr = "";
   auth = "";
   rlbytes = 0;
+  expire = 0;
   subc = NULL;
 }
 GentRedis::~GentRedis(){
@@ -30,6 +31,9 @@ void GentRedis::SetCommands()
 	GentProcessSet *s=new GentProcessSet();	
 	commands["set"] = s;
 	commands["SET"] = s;
+	GentProcessSetex *ex=new GentProcessSetex();	
+	commands["setex"] = ex;
+	commands["SETEX"] = ex;
 	GentProcessMget *m=new GentProcessMget();	
 	commands["mget"] = m;
 	commands["MGET"] = m;
@@ -125,7 +129,7 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 {
 	LOG(GentLog::WARN, "commandtype::comm_set");
 	redis->content += string(recont,len);
-	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes)) {
+	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes, 0)) {
 		if(!redis->Slave()) {
 			outstr = redis->Info("NOT_STORED",REDIS_ERROR);
 		}else{
@@ -142,6 +146,57 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 		}
 	}
 }
+
+int GentProcessSetex::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	redis->conn->SetStatus(Status::CONN_NREAD);
+	if(num < 7) return -1;	
+	string keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	redis->keystr = keystr;
+	if(keystr.size()>=250) return -3;
+	size_t pos = data.find_first_of("*4",0);
+	if(pos == string::npos) return -1;
+	int i = 7;
+	while(i>=0) {
+		pos = data.find_first_of("\r\n", pos);
+		if(pos == string::npos) return -1;
+		pos+=2;
+		i--;
+	}
+	//expire
+	redis->expire = atoi(tokenList[6].c_str());
+	redis->expire += time(NULL);
+	uint64_t rlbytes = GetLength(tokenList[7]);
+	redis->content = data.substr(pos);
+	redis->rlbytes = rlbytes;
+	if(rlbytes < redis->content.length()) {
+		redis->content = data.substr(pos, rlbytes);
+		return 0;
+	}
+	return rlbytes-redis->content.length();
+}
+
+void GentProcessSetex::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	redis->content += string(recont,len);
+	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes, redis->expire)) {
+		if(!redis->Slave()) {
+			outstr = redis->Info("NOT_STORED",REDIS_ERROR);
+		}else{
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);	
+		}
+	}else{
+		//GentList::Instance()->Save(keystr);
+		GentRepMgr::Instance("master")->Push(itemData::ADD, redis->keystr);
+		LOG(GentLog::WARN, "it is sucess for %s stored",redis->keystr.c_str());
+		if(!redis->Slave()) {
+			outstr=REDIS_INFO+"\r\n";
+		}else{
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 1);	
+		}
+	}
+}
+
 
 int GentProcessMget::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {

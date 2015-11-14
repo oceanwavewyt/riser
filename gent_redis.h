@@ -13,6 +13,7 @@
 #include "gent_connect.h"
 static const string REDIS_INFO="+OK";
 static const string REDIS_ERROR="-ERR";
+static const uint64_t REDIS_EXPIRE_TIME = 9999999999;
 class GentRedis;
 class GentSubCommand
 {
@@ -54,6 +55,20 @@ public:
 		return new GentProcessSet();
 	};
 };
+class GentProcessSetex : public GentSubCommand
+{
+public:
+	GentProcessSetex(){};
+	~GentProcessSetex(){};
+public:
+	int Parser(int,vector<string> &,const string &,GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessSetex();
+	};
+};
+
 class GentProcessMget : public GentSubCommand
 {
 public:
@@ -189,6 +204,7 @@ public:
 class GentRedis: public GentCommand
 {
 	friend class GentProcessSet;
+	friend class GentProcessSetex;
 	friend class GentProcessGet;
 	friend class GentProcessMget;
 	friend class GentProcessDel;
@@ -201,6 +217,13 @@ class GentRedis: public GentCommand
 	friend class GentProcessReply;
 	friend class GentProcessSlave;
 	static std::map<string, GentSubCommand*> commands;
+public:
+	enum datatype
+    {
+        TY_STRING = 1,
+        TY_HASH = 2,
+        TY_ZSET = 3,
+    };
 private:
 	string auth;	
 	string keystr;
@@ -208,6 +231,7 @@ private:
 	string content;
 	GentSubCommand *subc; 
 	uint64_t  rlbytes;
+	uint64_t  expire;
 public:
     GentRedis(GentConnect *c=NULL);
     ~GentRedis();

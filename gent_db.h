@@ -13,6 +13,14 @@
 #include <leveldb/filter_policy.h>
 #include "prefine.h"
 #include "gent_command.h"
+#include "gent_redis.h"
+
+struct metaData
+{
+	int datatype;
+	uint64_t expire;
+	uint64_t store_time; 
+};
 
 class GentDb
 {
@@ -21,16 +29,19 @@ private:
 	leveldb::DB* db;
     leveldb::Options options;
 	string pathname;
+	string meta_path;
 	uint64_t key_num;
-	CommLock key_num_lock;		
+	CommLock key_num_lock;	
+	leveldb::DB* meta_db;	
 public:
 	GentDb();
 	~GentDb();
 public:
     bool Init(string &err);
-    bool Put(string &key, string &value);
-    bool Put(string &key, const char *val, uint64_t len);
+    bool Put(string &key, string &value, uint64_t expire, int datatype=GentRedis::TY_STRING);
+    bool Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype=GentRedis::TY_STRING);
     bool Get(string &key,string &value);
+	bool Get(string &key,string &value, uint64_t &expire);
     bool Del(string &key);
 	uint64_t Count(const string &pre="");
 	uint64_t Keys(vector<string> &outvec, const string &pre="*");
@@ -38,6 +49,8 @@ public:
 	string &GetPath();
 private:
 	bool GetPathname(string &);
+	void MetaSerialize(string &outstr, int datatype, uint64_t expire=0);
+	void MetaUnserialize(string &str, struct metaData *dat);
 public:
 	static GentDb *Instance();
 	static void UnIntance();
