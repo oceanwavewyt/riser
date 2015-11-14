@@ -401,7 +401,7 @@ void GentReplication::Reply(int type, string &key,string &outstr, const string &
 			char expstr[20]={0};
 			snprintf(expstr, 20, "%llu",(unsigned long long)expire);
 			snprintf(retstr,300,"*4\r\n$5\r\nsetex\r\n$%ld\r\n%s\r\n$%ld\r\n%s\r\n$%ld\r\n",
-				(unsigned long)key.size(),key.c_str(),strlen(expstr),expstr, (unsigned long)nr.size());
+				(unsigned long)key.size(),key.c_str(),(unsigned long)strlen(expstr),expstr, (unsigned long)nr.size());
 		}
 		outstr=retstr+nr+"\r\n";
 	}else if(type == itemData::DEL){

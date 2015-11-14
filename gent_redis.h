@@ -11,9 +11,11 @@
 
 #include "gent_command.h"
 #include "gent_connect.h"
+#include <limits.h>
+
 static const string REDIS_INFO="+OK";
 static const string REDIS_ERROR="-ERR";
-static const uint64_t REDIS_EXPIRE_TIME = 9999999999;
+static const uint64_t REDIS_EXPIRE_TIME = LONG_MAX;
 class GentRedis;
 class GentSubCommand
 {
