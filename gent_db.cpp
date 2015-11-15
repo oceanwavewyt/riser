@@ -58,7 +58,7 @@ bool GentDb::Get(string &key, string &value, uint64_t &expire)
 	if(s.ok()) {
 		struct metaData dat;
 		GentDb::MetaUnserialize(metaData, &dat);
-		expire = dat.expire;	
+		expire = dat.expire;
 	}else{
 		expire = 0;
 	}    

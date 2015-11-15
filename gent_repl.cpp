@@ -380,7 +380,9 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 			Reply(itemData::DEL, it->name,  outstr);
 			return true;
 		}
-		expire = t - expire;
+		if(expire != 0) {
+			expire = expire - t;
+		}
 		LOG(GentLog::INFO, "reply %s.", it->name.c_str());
 		Reply(itemData::ADD, it->name, outstr, nr, expire);
 		return true;
@@ -407,7 +409,8 @@ void GentReplication::Reply(int type, string &key,string &outstr, const string &
 	}else if(type == itemData::DEL){
 		snprintf(retstr,300,"*2\r\n$3\r\ndel\r\n$%ld\r\n%s\r\n",(unsigned long)key.size(), key.c_str());
 		outstr=retstr;		
-	}	
+	}
+	//cout << outstr <<endl;	
 }
 
 

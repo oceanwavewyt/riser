@@ -34,6 +34,9 @@ void GentRedis::SetCommands()
 	GentProcessSetex *ex=new GentProcessSetex();	
 	commands["setex"] = ex;
 	commands["SETEX"] = ex;
+	GentProcessTtl *ttl=new GentProcessTtl();	
+	commands["ttl"] = ttl;
+	commands["TTL"] = ttl;
 	GentProcessMget *m=new GentProcessMget();	
 	commands["mget"] = m;
 	commands["MGET"] = m;
@@ -233,6 +236,20 @@ void GentProcessMget::Complete(string &outstr,const char *recont, uint64_t len, 
 	char ret[20]={0};
 	snprintf(ret,20,"*%d\r\n",num);
 	outstr = ret + outstr;
+}
+
+int GentProcessTtl::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 5) return -1; 
+	redis->conn->SetStatus(Status::CONN_DATA);
+	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
+	return 0;
+}
+
+void GentProcessTtl::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	string keystr = redis->keystr;
+	
 }
 
 int GentProcessDel::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
