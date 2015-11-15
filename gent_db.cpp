@@ -113,6 +113,23 @@ bool GentDb::Del(string &key)
 	return s.ok();
 }
 
+bool GentDb::Ttl(string &key, uint64_t &expire)
+{
+	string metaData;
+	leveldb::Status s= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
+	if(s.ok()) {
+		struct metaData dat;
+		GentDb::MetaUnserialize(metaData, &dat);
+		expire = dat.expire;
+		return true;
+	}else{
+		expire = 0;
+	}
+	string value;    
+	s = db->Get(leveldb::ReadOptions(), key, &value);
+    return s.ok();
+}
+
 uint64_t GentDb::TotalSize() {
 	leveldb::Iterator* it = db->NewIterator(leveldb::ReadOptions());
 	leveldb::Range ranges[1];

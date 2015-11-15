@@ -97,6 +97,19 @@ public:
 		return new GentProcessDel();
 	};
 };
+class GentProcessTtl : public GentSubCommand
+{
+public:
+	GentProcessTtl(){};
+	~GentProcessTtl(){};
+public:
+	int Parser(int,vector<string> &,const string &,GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessTtl();
+	};
+};
 class GentProcessQuit : public GentSubCommand
 {
 public:
@@ -210,6 +223,7 @@ class GentRedis: public GentCommand
 	friend class GentProcessGet;
 	friend class GentProcessMget;
 	friend class GentProcessDel;
+	friend class GentProcessTtl;
 	friend class GentProcessKeys;
 	friend class GentProcessExists;
 	friend class GentProcessQuit;

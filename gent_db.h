@@ -42,6 +42,7 @@ public:
     bool Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype=GentRedis::TY_STRING);
     bool Get(string &key,string &value);
 	bool Get(string &key,string &value, uint64_t &expire);
+	bool Ttl(string &key, uint64_t &expire);
     bool Del(string &key);
 	uint64_t Count(const string &pre="");
 	uint64_t Keys(vector<string> &outvec, const string &pre="*");

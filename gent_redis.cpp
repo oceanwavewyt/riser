@@ -249,7 +249,21 @@ int GentProcessTtl::Parser(int num,vector<string> &tokenList,const string &data,
 void GentProcessTtl::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	string keystr = redis->keystr;
-	
+	uint64_t expire;
+	bool isTtl= GentDb::Instance()->Ttl(keystr, expire); 
+	outstr = ":-2\r\n";
+	if(isTtl && expire > 0) {
+		if(expire > (unsigned long long)time(NULL)) {
+			char buf[50]={0};
+			snprintf(buf, 50, ":%llu\r\n", (unsigned long long)(expire-time(NULL)));
+			outstr = buf;
+		}else{
+			//expired
+			outstr = ":-2\r\n";	
+		}
+	}else if(isTtl && expire == 0) {
+		outstr = ":-1\r\n";
+	}
 }
 
 int GentProcessDel::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
@@ -271,7 +285,7 @@ void GentProcessDel::Complete(string &outstr,const char *recont, uint64_t len, G
 	if(!GentDb::Instance()->Get(keystr, nr)){
 		outstr = ":0\r\n";
 		if(redis->Slave()) {
-			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 1);
 		}
 		return;                  
 	}

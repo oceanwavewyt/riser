@@ -199,7 +199,6 @@ int GentConnect::InitRead(int &rbytes) {
            return -1;
        }                                                    
    }
-	cout <<rbuf <<endl;
    return gotdata;                                          
 }
 
