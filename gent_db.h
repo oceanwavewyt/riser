@@ -46,6 +46,7 @@ public:
     bool Del(string &key);
 	uint64_t Count(const string &pre="");
 	uint64_t Keys(vector<string> &outvec, const string &pre="*");
+	uint64_t ExpireKeys(vector<string> &outvec);	
 	uint64_t TotalSize();
 	string &GetPath();
 private:

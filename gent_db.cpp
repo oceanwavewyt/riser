@@ -41,7 +41,7 @@ bool GentDb::Get(string &key, string &value)
 	leveldb::Status s= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
 	if(s.ok()) {
 		struct metaData dat;
-		GentDb::MetaUnserialize(metaData, &dat);	
+		MetaUnserialize(metaData, &dat);	
 		if(dat.expire != 0 && dat.expire < (unsigned long long)time(NULL)) {
 			value = "";
 			return false;
@@ -119,7 +119,7 @@ bool GentDb::Ttl(string &key, uint64_t &expire)
 	leveldb::Status s= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
 	if(s.ok()) {
 		struct metaData dat;
-		GentDb::MetaUnserialize(metaData, &dat);
+		MetaUnserialize(metaData, &dat);
 		expire = dat.expire;
 		return true;
 	}else{
@@ -178,6 +178,24 @@ uint64_t GentDb::Count(const string &pre)
 	if(pre == "" && key_num == 0) {
 		AutoLock lock(&key_num_lock);
 		key_num = num;
+	}
+	return num;
+}
+
+uint64_t GentDb::ExpireKeys(vector<string> &outvec)
+{
+	leveldb::ReadOptions options;
+	options.snapshot = meta_db->GetSnapshot();
+	leveldb::Iterator* it = meta_db->NewIterator(options);
+	uint64_t num=0;
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		struct metaData dat;
+		string metaData(it->value().ToString());
+		MetaUnserialize(metaData, &dat);
+		if(dat.expire == 0) continue;
+		if(dat.expire > (unsigned long long)time(NULL)) continue;
+		outvec.push_back(it->key().ToString());		
+		num++;
 	}
 	return num;
 }
