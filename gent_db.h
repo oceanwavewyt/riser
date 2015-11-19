@@ -15,6 +15,7 @@
 #include "gent_command.h"
 #include "gent_redis.h"
 
+const uint64_t MAX_WRITE_CLEAR = 1000; 
 struct metaData
 {
 	int datatype;
@@ -31,8 +32,11 @@ private:
 	string pathname;
 	string meta_path;
 	uint64_t key_num;
+	uint64_t write_num;
 	CommLock key_num_lock;	
-	leveldb::DB* meta_db;	
+	CommLock clear_lock;
+	leveldb::DB* meta_db;
+	bool is_clear;
 public:
 	GentDb();
 	~GentDb();
@@ -46,7 +50,7 @@ public:
     bool Del(string &key);
 	uint64_t Count(const string &pre="");
 	uint64_t Keys(vector<string> &outvec, const string &pre="*");
-	uint64_t ExpireKeys(vector<string> &outvec);	
+	uint64_t ClearExpireKey();	
 	uint64_t TotalSize();
 	string &GetPath();
 private:

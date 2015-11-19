@@ -51,7 +51,7 @@ const int SLAVE_NUM = 1024;
 struct GentLog
 {
 public:
-	enum logLevel {INFO=0,WARN=1,ERROR=2,FATAL=3};
+	enum logLevel {BUG=0,INFO=1,WARN=2,ERROR=3,FATAL=4 };
 	static int runLevel;
 	static FILE *logfd;
 	static int setfd(string &filename);

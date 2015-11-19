@@ -49,7 +49,7 @@ void GentConnect::Destruct()
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
 	curstatus = Status::CONN_CLOSE;
-	LOG(GentLog::INFO, "file description %d close.", fd);
+	LOG(GentLog::BUG, "file description %d close.", fd);
     
 }
 void GentConnect::Init(int sfd) {
@@ -98,9 +98,9 @@ int GentConnect::TryRunning(string &outstr2) {
             case Status::CONN_READ:
                 outstr = "";
                 readNum = InitRead(rbytes);
-                LOG(GentLog::INFO, "init read the number of byte is %d.", readNum);
+                LOG(GentLog::BUG, "init read the number of byte is %d.", readNum);
 				if(readNum < 0) {
-                    LOG(GentLog::WARN, "init read the number of byte less than zero");
+                    LOG(GentLog::BUG, "init read the number of byte less than zero");
                     outstr2 = "read error\r\n";
                     Reset();
                     return readNum;
@@ -139,7 +139,7 @@ int GentConnect::TryRunning(string &outstr2) {
 				OutString(outstr);
                 return 0;
             case Status::CONN_WAIT:
-				LOG(GentLog::INFO, "the status of %d is connect wait", fd);
+				LOG(GentLog::BUG, "the status of %d is connect wait", fd);
                 remainsize = 0;
                 Reset();
                 curstatus = Status::CONN_READ;

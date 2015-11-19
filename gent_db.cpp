@@ -9,6 +9,7 @@
 #include "gent_db.h"
 #include "gent_config.h"
 #include "gent_frame.h"
+#include "gent_thread.h"
 
 GentDb *GentDb::intance_ = NULL;
 
@@ -26,7 +27,8 @@ void GentDb::UnIntance() {
 GentDb::GentDb():key_num(0)
 {
 	meta_path = "/meta";    
-    
+	is_clear = false;
+	write_num = 0;
 }
 
 GentDb::~GentDb()
@@ -68,24 +70,30 @@ bool GentDb::Get(string &key, string &value, uint64_t &expire)
 
 bool GentDb::Put(string &key, string &value,uint64_t expire, int datatype)
 {
+	AutoLock lockclear(&clear_lock);	
     leveldb::Slice s2 = value;
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, s2);
     if(key_num > 0) {
 		AutoLock lock(&key_num_lock);
 		key_num++;
 	}
-	return s.ok();
 	if(s.ok()) {
 		string meData;
 		MetaSerialize(meData, datatype, expire);
 		leveldb::Slice s3 = meData;
 		meta_db->Put(leveldb::WriteOptions(), key, s3);
 	}
+	write_num++;
 	return s.ok();
 }
 
 bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype)
 {
+	AutoLock lockclear(&clear_lock);
+	if(write_num > MAX_WRITE_CLEAR && is_clear == false) {
+		GentThread::Intance()->StartClear();
+		write_num = 0;	
+	}
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, leveldb::Slice(val,len));
     if(key_num > 0) {
 		AutoLock lock(&key_num_lock);
@@ -97,6 +105,7 @@ bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, in
 		leveldb::Slice s3 = meData;
 		meta_db->Put(leveldb::WriteOptions(), key, s3);
 	}
+	write_num++;
 	return s.ok();
 }
 
@@ -156,8 +165,8 @@ uint64_t GentDb::Count(const string &pre)
 {
 	if(pre == "" && key_num > 0) return key_num;
 	leveldb::ReadOptions options;
-	options.snapshot = db->GetSnapshot();
-	leveldb::Iterator* it = db->NewIterator(options);
+	options.snapshot = meta_db->GetSnapshot();
+	leveldb::Iterator* it = meta_db->NewIterator(options);
 	uint64_t num=0;
 	bool first = false;
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
@@ -173,7 +182,7 @@ uint64_t GentDb::Count(const string &pre)
 			num++;
 		}
 	}
-	db->ReleaseSnapshot(options.snapshot);
+	meta_db->ReleaseSnapshot(options.snapshot);
 	delete it;
 	if(pre == "" && key_num == 0) {
 		AutoLock lock(&key_num_lock);
@@ -182,8 +191,10 @@ uint64_t GentDb::Count(const string &pre)
 	return num;
 }
 
-uint64_t GentDb::ExpireKeys(vector<string> &outvec)
+uint64_t GentDb::ClearExpireKey()
 {
+	AutoLock lockclear(&clear_lock);
+	is_clear = true;	
 	leveldb::ReadOptions options;
 	options.snapshot = meta_db->GetSnapshot();
 	leveldb::Iterator* it = meta_db->NewIterator(options);
@@ -194,17 +205,21 @@ uint64_t GentDb::ExpireKeys(vector<string> &outvec)
 		MetaUnserialize(metaData, &dat);
 		if(dat.expire == 0) continue;
 		if(dat.expire > (unsigned long long)time(NULL)) continue;
-		outvec.push_back(it->key().ToString());		
+		string curkey(it->key().ToString());
+		Del(curkey);		
 		num++;
 	}
+	is_clear = false;
+	meta_db->ReleaseSnapshot(options.snapshot);
+	delete it;
 	return num;
 }
 
 uint64_t GentDb::Keys(vector<string> &outvec, const string &pre) 
 {
 	leveldb::ReadOptions options;
-	options.snapshot = db->GetSnapshot();
-	leveldb::Iterator* it = db->NewIterator(options);
+	options.snapshot = meta_db->GetSnapshot();
+	leveldb::Iterator* it = meta_db->NewIterator(options);
 	uint64_t num=0;
 	bool first = true;
 	for (it->SeekToFirst(); it->Valid(); it->Next()) {
@@ -226,7 +241,7 @@ uint64_t GentDb::Keys(vector<string> &outvec, const string &pre)
 			num++;
 		}
 	}
-	db->ReleaseSnapshot(options.snapshot);
+	meta_db->ReleaseSnapshot(options.snapshot);
 	delete it;
 	return num;
 }

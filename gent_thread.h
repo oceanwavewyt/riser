@@ -44,8 +44,8 @@ public:
 	void init(int thread_count=1);
 	void SendThread();
 	void SetupThread(THREADINFO *thread);
-	static void* Handle2(void *arg);
-	
+	static void* ClearHandle(void *arg);
+	bool StartClear();
 };
 
 #endif /* GENT_THREAD_H_ */

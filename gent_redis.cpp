@@ -491,11 +491,10 @@ int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &dat
 			redis->conn->SetStatus(Status::CONN_WAIT);
 			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::CONTINUE);
 		}else if(num == 5  && tokenList[4] == "authok") {
-			cout << "client authok.............." <<endl;
+			LOG(GentLog::INFO, "auth success");
 			redis->conn->SetStatus(Status::CONN_WAIT);
 			GentRepMgr::Instance("slave")->SlaveSetStatus(GentRepMgr::CONTINUE);
 		}else if(num == 5  && tokenList[4] == "autherror") {
-			cout << "client auth failed" <<endl;
 			LOG(GentLog::ERROR, "slave auth failed");	
 			redis->conn->SetStatus(Status::CONN_WAIT);	
 		}

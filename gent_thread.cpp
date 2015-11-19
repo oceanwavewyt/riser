@@ -11,6 +11,7 @@
 #include "gent_app_mgr.h"
 #include "gent_connect.h"
 #include "gent_repl.h"
+#include "gent_db.h"
 
 GentThread *GentThread::intanceth_ = NULL;
 
@@ -42,7 +43,7 @@ void GentThread::init(int thread_count) {
 //		cout <<"GentThread::init:  " <<  i << endl;
 		int fd[2];
 		if(pipe(fd)) {
-			INFO(GentLog::ERROR,"thread initialize failed");
+			LOG(GentLog::ERROR,"thread initialize failed");
 			exit(1);
 		}
 		threads_[i].id = i;
@@ -110,7 +111,6 @@ void GentThread::Start() {
 		int ret;
 		pthread_attr_init(&attr);
 		ret = pthread_create(&pid,&attr,GentThread::Work,&threads_[i]);
-		//ret = pthread_create(&pid,&attr,GentThread::Handle2,&threads_[i]);
 		if(ret != 0) {
 			INFO(GentLog::ERROR,"thread create failed");
 			exit(0);
@@ -131,32 +131,22 @@ void GentThread::Start() {
 	}
 }
 
-void *GentThread::Handle2(void *arg) {
-	//if(GentFrame::Instance()->msg_.Cursize()==0) return;
-//	THREADINFO *thread = static_cast<THREADINFO *>(arg);
-
-	//GentThread *gthread = static_cast<GentThread *>(thread->th);
-//	GentBasic *app = NULL;
-	cout << "GentThread::Handle " << pthread_self()<< endl;
-	while(true) {
-		//cout << "abc " << pthread_self()<< endl;
-		GentConnect *pack2 = GentFrame::Instance()->msg_.Pop();
-//        LOG(GentLog::INFO, "pack pop");
-        GentEvent::Instance()->AddEvent(pack2, GentEvent::Handle);
-		//cout << "abc2 " << pthread_self()<< endl;
-//		if(GentAppMgr::Intance()->GetModule(1,app)>0) {
-//			printf("GetModule failed\n");
-//		}else{
-//			COMM_REP rep={0};
-//			rep.request_ = pack2.request_;
-//			if(app->Proccess()==0) {
-//				memcpy(rep.ret_buff_,app->resp_str_.c_str(),app->resp_str_.size());
-//			}
-//			GentAppMgr::Intance()->SetModule(1,app);
-			//GentRep::Intance()->rep_.Push(rep);
-			//GentRep::Intance()->Ret(rep);
-//		}
+bool GentThread::StartClear() {
+	pthread_attr_t attr;
+	pthread_t pid;
+	int ret;
+	pthread_attr_init(&attr);
+	ret = pthread_create(&pid,&attr,GentThread::ClearHandle,NULL);
+	if(ret != 0) {
+		LOG(GentLog::ERROR,"clear thread create failed");
+		return false;
 	}
+	return true;
+}
+
+void *GentThread::ClearHandle(void *arg) {
+	uint64_t clearNum = GentDb::Instance()->ClearExpireKey();	
+	LOG(GentLog::INFO,"clear key num: %llu", (unsigned long long)clearNum);	
 	return ((void *)0);
 }
 
