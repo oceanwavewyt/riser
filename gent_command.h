@@ -41,6 +41,7 @@ public:
 	//char *rcont;
     int rsize;
     int rbytes;
+	int auth;	
 public:
     GentCommand(GentConnect *c);
     virtual ~GentCommand();
@@ -50,6 +51,7 @@ public:
     virtual GentCommand *Clone(GentConnect *) = 0;
 	virtual bool Init(string &msg) = 0;
 	virtual void Reset();
+    void SetAuth(int ah) {auth = ah;};
 public:
     static const int READ_BUFFER_SIZE = 4096;
 };

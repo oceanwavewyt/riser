@@ -106,6 +106,7 @@ int GentRepMgr::LinkMaster(GentEvent *ev_, const string &host, int port) {
 	int sfd = ev_->Client(host,port);		
 	if(sfd < 0) return sfd;
 	connect_ = GentAppMgr::Instance()->GetConnect(sfd);
+	connect_->SetAuth(1);
 	connect_->is_slave = true;
 	connect_->gevent = ev_;
 	return sfd;

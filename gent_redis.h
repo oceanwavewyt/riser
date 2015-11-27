@@ -15,7 +15,11 @@
 
 static const string REDIS_INFO="+OK";
 static const string REDIS_ERROR="-ERR";
+static const string REDIS_AUTH_REQ="NOAUTH Authentication required.";
+static const string REDIS_AUTH_FAIL="invalid password";
 static const uint64_t REDIS_EXPIRE_TIME = LONG_MAX;
+static const int AUTH_REQ_FAIL = -4;
+static const int AUTH_FAIL = -5;
 class GentRedis;
 class GentSubCommand
 {
@@ -23,6 +27,7 @@ protected:
 	uint64_t GetLength(string &str){
 		return atoi(str.substr(1).c_str());	
 	};
+	bool IsAuth(GentRedis *r);
 public:
 	GentSubCommand(){};
 	virtual ~GentSubCommand(){};
@@ -216,6 +221,21 @@ public:
 		return new GentProcessSlave();
 	};
 };
+
+class GentProcessAuth : public GentSubCommand
+{
+public:
+	GentProcessAuth(){};
+	~GentProcessAuth(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessAuth();
+	};
+};
+
 class GentRedis: public GentCommand
 {
 	friend class GentProcessSet;
@@ -232,6 +252,7 @@ class GentRedis: public GentCommand
 	friend class GentProcessRep;
 	friend class GentProcessReply;
 	friend class GentProcessSlave;
+	friend class GentProcessAuth;
 	static std::map<string, GentSubCommand*> commands;
 public:
 	enum datatype
@@ -241,7 +262,7 @@ public:
         TY_ZSET = 3,
     };
 private:
-	string auth;	
+	int master_auth;
 	string keystr;
 	vector<string> keyvec;
 	string content;
@@ -259,6 +280,7 @@ public:
    int GetStatus();
    bool Init(string &msg);
    bool Slave();
+   int GetAuth(){return auth;};
 private:
 	int Split(const string &str, const string &delimit, vector<string> &v);
 	uint64_t GetLength(string &str);

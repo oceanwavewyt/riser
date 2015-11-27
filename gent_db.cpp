@@ -233,7 +233,6 @@ uint64_t GentDb::Keys(vector<string> &outvec, const string &pre)
 				}
 			}
 			outvec.push_back(curkey);
-			cout << "item: "<<curkey <<endl; 
 			num++;
 			first = false;
 		}else{

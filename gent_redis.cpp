@@ -9,10 +9,21 @@
 
 std::map<string, GentSubCommand*> GentRedis::commands;
 
+bool GentSubCommand::IsAuth(GentRedis *r)
+{
+	if(r->GetAuth()) return true;
+	GentConfig &config = GentFrame::Instance()->config;
+	if(config["auth"] == "") {
+		r->SetAuth(1);
+		return true;	
+	}
+	return false;
+}
+
 GentRedis::GentRedis(GentConnect *c):GentCommand(c)
 {
   keystr = "";
-  auth = "";
+  auth = 0;
   rlbytes = 0;
   expire = 0;
   subc = NULL;
@@ -34,6 +45,9 @@ void GentRedis::SetCommands()
 	GentProcessSetex *ex=new GentProcessSetex();	
 	commands["setex"] = ex;
 	commands["SETEX"] = ex;
+	GentProcessAuth *ah=new GentProcessAuth();	
+	commands["auth"] = ah;
+	commands["AUTH"] = ah;
 	GentProcessTtl *ttl=new GentProcessTtl();	
 	commands["ttl"] = ttl;
 	commands["TTL"] = ttl;
@@ -83,6 +97,7 @@ void GentProcessSlave::Complete(string &outstr,const char *recont, uint64_t len,
 
 int GentProcessGet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	if(num != 5) return -1; 
 	redis->conn->SetStatus(Status::CONN_DATA);
 	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -104,6 +119,7 @@ void GentProcessGet::Complete(string &outstr,const char *recont, uint64_t len, G
 
 int GentProcessSet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	redis->conn->SetStatus(Status::CONN_NREAD);
 	if(num < 5) return -1;	
 	string keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -152,6 +168,7 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 
 int GentProcessSetex::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	redis->conn->SetStatus(Status::CONN_NREAD);
 	if(num < 7) return -1;	
 	string keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -203,6 +220,7 @@ void GentProcessSetex::Complete(string &outstr,const char *recont, uint64_t len,
 
 int GentProcessMget::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	int fieldNum = GetLength(tokenList[0]);
 	int len = fieldNum*2 + 1;
 	if(num < 5 || num != len) return -1;
@@ -240,6 +258,7 @@ void GentProcessMget::Complete(string &outstr,const char *recont, uint64_t len, 
 
 int GentProcessTtl::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	if(num != 5) return -1; 
 	redis->conn->SetStatus(Status::CONN_DATA);
 	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -268,6 +287,7 @@ void GentProcessTtl::Complete(string &outstr,const char *recont, uint64_t len, G
 
 int GentProcessDel::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	if(num != 5) return -1; 
 	redis->conn->SetStatus(Status::CONN_DATA);
 	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -306,6 +326,7 @@ void GentProcessDel::Complete(string &outstr,const char *recont, uint64_t len, G
 
 int GentProcessInfo::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	redis->keystr = "";
 	if(num >= 5) {
 		redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -392,6 +413,7 @@ void GentProcessQuit::Complete(string &outstr,const char *recont, uint64_t len, 
 
 int GentProcessKeys::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	if(num != 5) return -2;
 	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
 	redis->conn->SetStatus(Status::CONN_DATA);
@@ -415,6 +437,7 @@ void GentProcessKeys::Complete(string &outstr,const char *recont, uint64_t len, 
 
 int GentProcessExists::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	if(num != 5) return -1; 
 	redis->conn->SetStatus(Status::CONN_DATA);
 	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
@@ -434,6 +457,7 @@ void GentProcessExists::Complete(string &outstr,const char *recont, uint64_t len
 
 int GentProcessPing::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	redis->conn->SetStatus(Status::CONN_DATA);
 	return 0;
 }
@@ -451,16 +475,16 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 	//验证auth是否合法
 	msg = tokenList[6];
 	//LOG(GentLog::INFO, "fd:%d,GentProcessRep::Parser: %s",redis->conn->fd,msg.c_str());
-	if(redis->auth=="") {
+	if(redis->master_auth == 0) {
 		GentConfig &config = GentFrame::Instance()->config;
 		if(config["master_auth"] == "") {
-			redis->auth = "yes";
+			redis->master_auth = 1;
 		}else{			
 			if(num != 9 || tokenList[6] != "auth" || 
 					tokenList[8] != config["master_auth"]) {
 				msg = "autherror";
 			}else{
-				redis->auth = tokenList[8];
+				redis->master_auth = 1;
 			}
 		}
 	}
@@ -485,6 +509,7 @@ void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, G
 
 int GentProcessReply::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+		if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 		if(num == 5 && tokenList[4] == "close") {
 			redis->conn->SetStatus(Status::CONN_CLOSE);	
 		}else if(num == 5 && tokenList[4] == "complete") {
@@ -506,6 +531,27 @@ void GentProcessReply::Complete(string &outstr,const char *recont, uint64_t len,
 {
 
 }
+
+int GentProcessAuth::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(num != 5) return -1;
+	string str = tokenList[4].substr(0,GetLength(tokenList[3]));	
+	GentConfig &config = GentFrame::Instance()->config;
+	if(config["auth"] == "") {
+		redis->SetAuth(1);
+		return 0;	
+	}
+	if(str != config["auth"])  return AUTH_FAIL;
+	redis->conn->SetStatus(Status::CONN_DATA);	
+	return 0;
+}
+
+void GentProcessAuth::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	redis->SetAuth(1);
+	outstr = "+OK\r\n"; 		
+}
+
 
 int GentRedis::ParseCommand(const string &data)
 {
@@ -535,8 +581,16 @@ int GentRedis::Process(const char *rbuf, uint64_t size, string &outstr)
 		return 0;
 	}else if(status == -2) {
 		outstr = Info("wrong number of arguments for 'keys' command",REDIS_ERROR);
+		return 0;
 	}else if(status == -3) {
 		outstr = Info("key is very very long",REDIS_ERROR);
+		return 0;
+	}else if(status == AUTH_REQ_FAIL) {
+		outstr = Info(REDIS_AUTH_REQ, "-");
+		return 0;
+	}else if(status == AUTH_FAIL) {
+		outstr = Info(REDIS_AUTH_FAIL, REDIS_ERROR);
+		return 0;
 	}
 	return status;
 }

@@ -86,6 +86,7 @@ public:
 		dest_list[name] = d;
 	};
     void Init(int sfd);
+	void SetAuth(int auth){comm->SetAuth(auth);};
 private:
     int InitRead(int &rbytes);
 	void ResetConnect(); 
