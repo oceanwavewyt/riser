@@ -33,7 +33,7 @@ usage see --help
     
 ### client
      redis's method: set(key, value),setex(key,value,time),get(key),mget(array),delete(key),keys,exists(key),
-     close(),ttl(key),auth(string)
+                     close(),ttl(key),auth(string)
      
      memcache's method:  set(key, value), get(key), get(array), delete(key), close()
      
