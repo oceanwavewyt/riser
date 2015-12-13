@@ -108,6 +108,7 @@ public:
 class GentReplication : public GentDestroy
 {
 	string rep_name;
+	bool is_run;
 	//0:初始状态;1:正在同步状态;
 	int status;
 	//当全量同步时候，导出所有影片的ID到que
@@ -134,9 +135,10 @@ public:
 	void Push(int type, string &key);
 	uint64_t QueLength(){return main_que_length;};
 	void GetInfo(string &str);
+	bool SetLogout();
 private:
 	void Reply(int type, string &key,string &outstr, const string &nr="", uint64_t expire=0);
-	void Pop();	
+	void Pop(bool is_rep=true);	
 	itemData *front_element();
 };
 
@@ -163,6 +165,7 @@ public:
 public:
 	GentRepMgr(const string &name);
 	~GentRepMgr();
+	void Init();
 	void Destroy(int id);	
 	bool Logout(string &name);	
 	GentReplication *Get(const string &name);

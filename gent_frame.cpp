@@ -11,6 +11,7 @@
 #include "gent_thread.h"
 #include "gent_level.h"
 #include "gent_redis.h"
+ #include "gent_repl.h"
 
 GentFrame *GentFrame::instance_ = NULL;
 
@@ -63,6 +64,7 @@ int GentFrame::Init(struct riserserver *server, const char *configfile)
             return false;
         }
     }
+    GentRepMgr::Instance("master")->Init();
 	/*
 	else if(config["type"] == "filter") {
 		GentFilter *p;

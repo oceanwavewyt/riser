@@ -31,6 +31,7 @@ GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INI
 {
 	if(name == "master") {
    		string pathname = GentDb::Instance()->GetPath()+"/REPLICATION_INFO";
+   		cout << pathname <<endl;
    		repfile_ = new GentFile<repinfo>(pathname, SLAVE_NUM);	
 		if(!repfile_->Init(rep_map_)) {
 			LOG(GentLog::ERROR, "init replication infomation failed.");
@@ -146,8 +147,21 @@ void GentRepMgr::CannelConnect() {
 bool GentRepMgr::Logout(string &name)
 {
 	//注销队列
-		
+	std::map<string,GentReplication*>::iterator it = rep_list_.find(name);
+	if(it == rep_list_.end()) return true;
+	if(!rep_list_[name]->SetLogout()) return false;
+	GentReplication *r = rep_list_[name];
+	delete r;
+	rep_list_.erase(it);
 	return true;
+}
+
+void GentRepMgr::Init() 
+{
+	map<string,repinfo *>::iterator it;
+	for(it=rep_map_.begin(); it!=rep_map_.end();it++) {
+		rep_list_[it->first] = new GentReplication(it->first, it->second);
+	}
 }
 
 GentReplication *GentRepMgr::Get(const string &name)
@@ -231,12 +245,13 @@ uint64_t GentRepMgr::QueLength()
 GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0),
 main_que_length(0)
 {
+	is_run = true;
 	slave_start_time = time(NULL);	
 	rep_name = name;
 	rinfo_ = rinfo;
 	current_node = NULL;
-	cout << "ser_time:"<<rinfo_->ser_time << endl;
-	cout << "rep_time:"<<rinfo_->rep_time << endl;
+	//cout << "ser_time:"<<rinfo_->ser_time << endl;
+	//cout << "rep_time:"<<rinfo_->rep_time << endl;
 	if(!rinfo_->ser_time || rinfo_->ser_time > rinfo_->rep_time) {
 		LOG(GentLog::WARN, "sync all data for %s slave.", name.c_str());
 		//设置所有的磁盘数据到队列
@@ -259,11 +274,14 @@ main_que_length(0)
 }
 
 GentReplication::~GentReplication(){
-
+	while(main_que_length>0) {
+		Pop(false);
+	}
 }
 
 void GentReplication::Push(int type, string &key)
 {
+	if(is_run == false) return;
 	AutoLock lock(&que_push_lock);
 	itemData *item = new itemData(key,type);
 	main_que.push(item);
@@ -278,17 +296,21 @@ void GentReplication::Push(int type, string &key)
 	rinfo_->set("ser_time",time(NULL));
 }
 
-void GentReplication::Pop()
+void GentReplication::Pop(bool is_rep)
 {
 	AutoLock lock(&que_push_lock);
 	itemData *it;
 	if(!is_update_que) {
 	 	it= main_que.pop();
-		rinfo_->set("rep_time",time(NULL));
+	 	if(is_rep == true) {
+			rinfo_->set("rep_time",time(NULL));
+		}
 	}else{
 		it= que.pop();
 		if(it == NULL && !rinfo_->rep_time ) {
-			rinfo_->set("rep_time", time(NULL));
+			if(is_rep == true) {
+				rinfo_->set("rep_time", time(NULL));
+			}
 		}
 	}
 	if(it != NULL) {
@@ -313,6 +335,14 @@ itemData *GentReplication::front_element()
 		return main_que.front_element();
 	}
 	return it;
+}
+
+bool GentReplication::SetLogout()
+{
+	if(conn_) return false;
+	is_run = false;
+	rinfo_->set("available",0);
+	return true;
 }
 
 void GentReplication::GetInfo(string &str)
