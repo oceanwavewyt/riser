@@ -1,5 +1,5 @@
 #OBJNAME=libgentle.a
-OBJNAME=riser
+OBJNAME=riser-server
 
 include ./makefile.pub
 
