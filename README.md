@@ -38,9 +38,11 @@ usage see --help
      memcache's method:  set(key, value), get(key), get(array), delete(key), close()
      
 ### redis command line
-     set, get,del, keys, exists, info, ping
+     set, get,del, keys, exists, info, ping, slave name clear
      其中 info rep  命令查看slave状况   
-
+     如果某个slave不使用，但master还保留该slave队列，这时通过 slave name clear 命令清除
+     (其中name为slave的name,可以通过info rep来查看)
+	
 ### replicaton
      开启配置文件riser.conf中，
      #slaveof_ip=127.0.0.1
