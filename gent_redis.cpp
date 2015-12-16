@@ -85,14 +85,22 @@ void GentRedis::SetCommands()
 
 int GentProcessSlave::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL; 
+	if(num != 7) return -1;
+	string act = tokenList[6].substr(0,GetLength(tokenList[5]));
+	if(act != "clear") return -1;
 	redis->conn->SetStatus(Status::CONN_DATA);
+	redis->keystr = tokenList[4].substr(0,GetLength(tokenList[3]));
 	return 0;
 }
 
 void GentProcessSlave::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	outstr = "+OK\r\n";
-	cout << outstr<<endl;
+	if(!GentRepMgr::Instance("master")->Logout(redis->keystr)) {
+		outstr = redis->Info(redis->keystr+" is run,failed to stop", REDIS_ERROR);		
+	}else{
+		outstr = "+OK\r\n";
+	}
 }
 
 int GentProcessGet::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
