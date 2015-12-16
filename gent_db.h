@@ -15,7 +15,7 @@
 #include "gent_command.h"
 #include "gent_redis.h"
 
-const uint64_t MAX_WRITE_CLEAR = 1000; 
+const uint64_t MAX_WRITE_CLEAR = 50000; 
 struct metaData
 {
 	int datatype;
