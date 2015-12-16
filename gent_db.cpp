@@ -308,8 +308,12 @@ bool GentDb::Init(string &err)
 	leveldb::Status status = leveldb::DB::Open(options, pathname , &db);
     if(status.ok())
     {
+		leveldb::Options op;
+		op.create_if_missing = true;
+		op.target_file_size = 32;
+		op.write_buffer_size = 100*1024*1024;
 		string mp = pathname+meta_path;
-		leveldb::Status meta_status = leveldb::DB::Open(options, mp , &meta_db);
+		leveldb::Status meta_status = leveldb::DB::Open(op, mp , &meta_db);
         if(meta_status.ok()) return true;
 		return false;
     }
