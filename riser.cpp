@@ -41,13 +41,14 @@ void version() {
 }
 
 void usage() {
-    fprintf(stderr,"Usage: ./riser [options]\n");
-    fprintf(stderr,"       ./riser -v or --version\n");
-    fprintf(stderr,"       ./riser -h or --help\n");
+    fprintf(stderr,"Usage: ./riser-server [options]\n");
+    fprintf(stderr,"       ./riser-server -v or --version\n");
+    fprintf(stderr,"       ./riser-server -h or --help\n");
     fprintf(stderr,"Examples:\n");
-    fprintf(stderr,"       ./riser (run the server with default conf)\n");
-    fprintf(stderr,"       ./riser -c /etc/riser.conf\n");
-    fprintf(stderr,"       ./riser -p 3555\n");
+    fprintf(stderr,"       ./riser-server (run the server with default conf)\n");
+    fprintf(stderr,"       ./riser-server -c conf/riser.conf\n");
+	fprintf(stderr,"       ./riser-server -d -c conf/riser.conf\n");
+    fprintf(stderr,"       ./riser-server -p 3555\n");
     exit(1);
 }
 
