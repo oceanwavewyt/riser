@@ -26,7 +26,8 @@ usage see --help
   extension of php.
 
 ### Build:
-    ./install.sh
+    ./install.sh  path(安装路径)
+    如: ./install.sh  /var/riser
 
 ### config file
     riser.conf
