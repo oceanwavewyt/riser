@@ -28,6 +28,7 @@ usage see --help
 ### Build:
     ./install.sh  path(安装路径)
     如: ./install.sh  /var/riser
+    服务启动: 进入安装目录， 运行 ./riser-server -h 查看帮助
 
 ### config file
     riser.conf
