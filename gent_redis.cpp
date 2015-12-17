@@ -26,12 +26,8 @@ GentRedis::GentRedis(GentConnect *c):GentCommand(c)
   auth = 0;
   rlbytes = 0;
   expire = 0;
-  subc = NULL;
 }
 GentRedis::~GentRedis(){
-	if(subc) {
-		delete subc;
-	}
 }
 
 void GentRedis::SetCommands()
@@ -481,7 +477,7 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 	//rep name auth authstr
 	//rep name ok
 	//验证auth是否合法
-	msg = tokenList[6];
+	redis->repmsg = tokenList[6];
 	//LOG(GentLog::INFO, "fd:%d,GentProcessRep::Parser: %s",redis->conn->fd,msg.c_str());
 	if(redis->master_auth == 0) {
 		GentConfig &config = GentFrame::Instance()->config;
@@ -490,7 +486,8 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 		}else{			
 			if(num != 9 || tokenList[6] != "auth" || 
 					tokenList[8] != config["master_auth"]) {
-				msg = "autherror";
+				//msg = "autherror";
+				redis->repmsg = "autherror";
 			}else{
 				redis->master_auth = 1;
 			}
@@ -510,7 +507,7 @@ void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, G
 		outstr = REDIS_ERROR+" slave full,manual clear\r\n";
 		return;
 	}
-	if(!rep->Start(msg, redis->conn, outstr)) {
+	if(!rep->Start(redis->repmsg, redis->conn, outstr)) {
 		redis->conn->SetStatus(Status::CONN_WAIT);
 	}
 }
@@ -569,14 +566,17 @@ int GentRedis::ParseCommand(const string &data)
 	if(num==0) return 0;
 	if(num < 3) return -1;
 	std::map<string, GentSubCommand*>::iterator it=commands.find(tokenList[2]);
+/*
 	if(subc) {
 		delete subc;
 		subc = NULL;
 	}
+*/
 	if(it == commands.end()){
 		return -1;
 	}
-	subc = (*it).second->Clone();
+	//subc = (*it).second->Clone();
+	subc = (*it).second;
 	return subc->Parser(num, tokenList, data, this);
 }
 

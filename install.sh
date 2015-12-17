@@ -23,6 +23,6 @@ if [ $# -ge 1 ]; then
 	cp -r $curpath/lib  ./
 	test -d conf || mkdir  conf/
 	test -d log  || mkdir  log/
-	test -f riser.conf || cp  $curpath/riser.conf  conf/
+	test -f conf/riser.conf || cp  $curpath/riser.conf  conf/
 	cp $curpath/riser-server  ./
 fi

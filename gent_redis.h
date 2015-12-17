@@ -183,9 +183,8 @@ public:
 };
 class GentProcessRep : public GentSubCommand
 {
-	string msg;
 public:
-	GentProcessRep(){msg="";};
+	GentProcessRep(){};
 	~GentProcessRep(){};
 public:
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
@@ -266,6 +265,7 @@ private:
 	string keystr;
 	vector<string> keyvec;
 	string content;
+    string repmsg;
 	GentSubCommand *subc; 
 	uint64_t  rlbytes;
 	uint64_t  expire;
