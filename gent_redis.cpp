@@ -93,7 +93,7 @@ int GentProcessSlave::Parser(int num,vector<string> &tokenList,const string &dat
 void GentProcessSlave::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	if(!GentRepMgr::Instance("master")->Logout(redis->keystr)) {
-		outstr = redis->Info(redis->keystr+" is run,failed to stop", REDIS_ERROR);		
+		redis->Info(redis->keystr+" is run,failed to stop", outstr , REDIS_ERROR);		
 	}else{
 		outstr = "+OK\r\n";
 	}
@@ -154,7 +154,7 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 	redis->content += string(recont,len);
 	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes, 0)) {
 		if(!redis->Slave()) {
-			outstr = redis->Info("NOT_STORED",REDIS_ERROR);
+			redis->Info("NOT_STORED",outstr, REDIS_ERROR);
 		}else{
 			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);	
 		}
@@ -205,7 +205,7 @@ void GentProcessSetex::Complete(string &outstr,const char *recont, uint64_t len,
 	redis->content += string(recont,len);
 	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes, redis->expire)) {
 		if(!redis->Slave()) {
-			outstr = redis->Info("NOT_STORED",REDIS_ERROR);
+			redis->Info("NOT_STORED", outstr, REDIS_ERROR);
 		}else{
 			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);	
 		}
@@ -585,19 +585,19 @@ int GentRedis::Process(const char *rbuf, uint64_t size, string &outstr)
 	string data(rbuf,size);
 	int status = ParseCommand(data);
 	if(status == -1) {
-		outstr = Info("unknown command",REDIS_ERROR);
+		Info("unknown command",outstr, REDIS_ERROR);
 		return 0;
 	}else if(status == -2) {
-		outstr = Info("wrong number of arguments for 'keys' command",REDIS_ERROR);
+		Info("wrong number of arguments for 'keys' command",outstr, REDIS_ERROR);
 		return 0;
 	}else if(status == -3) {
-		outstr = Info("key is very very long",REDIS_ERROR);
+		Info("key is very very long",outstr, REDIS_ERROR);
 		return 0;
 	}else if(status == AUTH_REQ_FAIL) {
-		outstr = Info(REDIS_AUTH_REQ, "-");
+		Info(REDIS_AUTH_REQ, outstr, "-");
 		return 0;
 	}else if(status == AUTH_FAIL) {
-		outstr = Info(REDIS_AUTH_FAIL, REDIS_ERROR);
+		Info(REDIS_AUTH_FAIL,outstr, REDIS_ERROR);
 		return 0;
 	}
 	return status;
@@ -622,12 +622,13 @@ int GentRedis::Split(const string &str, const string &delimit, vector<string> &v
 	return num;	
 }                                                                                  
 
-string GentRedis::Info(const string &msg, const string &type)
+void GentRedis::Info(const string &msg, string &outstr, const string &type)
 {
 	if(msg == "") {
-		return type+"\r\n";
-	}
-	return type+" "+msg+"\r\n";	
+		outstr = type+"\r\n";
+	}else{
+		outstr = type+" "+msg+"\r\n";
+	}	
 }
 
 
@@ -648,7 +649,7 @@ void GentRedis::ProcessStats(string &outstr)
 void GentRedis::Complete(string &outstr, const char *recont, uint64_t len)
 {
 	if(subc == NULL) {
-		outstr = Info("command",REDIS_ERROR);
+		Info("command",outstr, REDIS_ERROR);
 		return;
 	}
 	subc->Complete(outstr, recont, len, this);

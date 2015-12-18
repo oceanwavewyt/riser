@@ -285,7 +285,7 @@ private:
 	int Split(const string &str, const string &delimit, vector<string> &v);
 	uint64_t GetLength(string &str);
 	int ParseCommand(const string &str);
-	string Info(const string &msg, const string &);
+	void Info(const string &msg, string &outstr, const string &);
     void ProcessStats(string &);
 };
 #endif
