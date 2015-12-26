@@ -155,18 +155,18 @@ void GentThread::Handle(int fd, short which, void *arg) {
          LOG(GentLog::WARN, "Can't read from libevent pipe");
 	 }
 	//    GentConnect *nconn = GentFrame::Instance()->msg_.Pop();
-    	dataItem *item = GentFrame::Instance()->msg_.Pop();
+    dataItem *item = GentFrame::Instance()->msg_.Pop();
 	GentConnect *c = GentAppMgr::Instance()->GetConnect(item->sfd);
-  	free(item);
-		 
-    	LOG(GentLog::INFO, "start deal new connection fd:%d", c->fd);
+  	free(item);	 
+    LOG(GentLog::BUG, "start deal new connection fd:%d", c->fd);
 	event_set(&c->ev, c->fd, eventRead ,GentEvent::Handle , (void *)c);
-    	event_base_set(me->base, &c->ev);
-    	c->ev_flags = eventRead;
-    	if (event_add(&c->ev, 0) == -1) {
+    event_base_set(me->base, &c->ev);
+    c->ev_flags = eventRead;
+    if (event_add(&c->ev, 0) == -1) {
 		cout << "add nconn failed" <<endl;
+		LOG(GentLog::ERROR, "GentThread::Handle add event failed");
 		c->Destruct();
-        	GentAppMgr::Instance()->RetConnect(c);
-    	}
+        GentAppMgr::Instance()->RetConnect(c);
+    }
 }
 

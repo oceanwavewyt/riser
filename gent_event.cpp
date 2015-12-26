@@ -42,7 +42,7 @@ int GentEvent::AddEvent(GentConnect *conn,void(*handle)(const int fd, const shor
 	event_set(&conn->ev, conn->fd, eventRead, handle,conn);
 	event_base_set(main_base_, &conn->ev);
 	if(event_add(&conn->ev, 0) == -1) {
-		LOG(GentLog::INFO, "add event of %d failed", conn->fd);
+		LOG(GentLog::ERROR, "add event of %d failed", conn->fd);
 		return -1;
 	}
 	return 0;
@@ -52,7 +52,7 @@ int GentEvent::UpdateEvent(int fd,GentConnect *c, int state) {
     if(c->ev_flags == state) return 0;
 	struct event_base *base = c->ev.ev_base;
 	if(event_del(&c->ev)==-1){
-        cout << "event_del failed" << endl;
+		LOG(GentLog::ERROR, "delete event failed");	
         return -1;
     }
     LOG(GentLog::BUG, "GentEvent::Update set event %d", fd);
@@ -61,7 +61,7 @@ int GentEvent::UpdateEvent(int fd,GentConnect *c, int state) {
 	c->ev_flags = state;
 	LOG(GentLog::BUG, "GentEvent::Update add event %d", fd);
 	if(event_add(&c->ev, 0)==-1){
-        cout << "event_add failed" << endl;
+        LOG(GentLog::ERROR, "add event failed");
         return -1;
     }
 	return 0;

@@ -105,7 +105,7 @@ GentConnect *GentAppMgr::GetConnect(int sfd)
          c->Init(sfd);
     	total_conn++;
     }
-    LOG(GentLog::INFO,"add fd:%d to conn_mgr", sfd); 
+    LOG(GentLog::BUG,"add fd:%d to conn_mgr", sfd); 
     conn_mgr[sfd] = c;
     return c;
 }

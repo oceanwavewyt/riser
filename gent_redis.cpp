@@ -150,7 +150,7 @@ int GentProcessSet::Parser(int num,vector<string> &tokenList,const string &data,
 
 void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	LOG(GentLog::WARN, "commandtype::comm_set");
+	LOG(GentLog::BUG, "commandtype::comm_set");
 	redis->content += string(recont,len);
 	if(!GentDb::Instance()->Put(redis->keystr, redis->content.c_str(), redis->rlbytes, 0)) {
 		if(!redis->Slave()) {
