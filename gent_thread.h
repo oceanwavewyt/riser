@@ -17,9 +17,9 @@ typedef struct THREADINFO {
 	int id;
 	unsigned thread_id;
 	void *th;
-    GentEvent *gevent;
-	//struct event event_;
-	//struct event_base *evbase;
+    	//GentEvent *gevent;
+	struct event event;
+	struct event_base *base;
 }THREADINFO;
 
 class GentThread
@@ -27,7 +27,7 @@ class GentThread
 	static GentThread *intanceth_;
 
 	int thread_count_;
-	THREADINFO threads_[MAX_THREAD];
+	THREADINFO *threads_;
 	//struct event_base *base_;
 	//struct event_base *evbase_;
 	int lastid_;
@@ -41,7 +41,7 @@ public:
 	GentThread();
 	~GentThread();
 	void Start();
-	void init(int thread_count=1);
+	void init(int fd, int thread_count=1);
 	void SendThread();
 	void SetupThread(THREADINFO *thread);
 	static void* ClearHandle(void *arg);

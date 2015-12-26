@@ -27,7 +27,7 @@ void GentThread::UnIntance() {
 }
 
 
-GentThread::GentThread():thread_count_(10){
+GentThread::GentThread():thread_count_(1){
 	lastid_ = 0;
 	//base_ = event_init();
 }
@@ -35,12 +35,23 @@ GentThread::GentThread():thread_count_(10){
 GentThread::~GentThread(){
 
 }
-void GentThread::init(int thread_count) {
-	thread_count_ = thread_count;
+ 
+void GentThread::init(int fd, int thread_count) {
+	thread_count_ = thread_count+1;
+	threads_ = (THREADINFO *)malloc(thread_count_ * sizeof(THREADINFO));
+	memset(threads_, 0, thread_count_ * sizeof(THREADINFO));	
+	threads_[0].id = 0;
+	threads_[0].base = event_init();
+	event_set(&threads_[0].event, fd, eventRead, GentEvent::HandleMain, NULL);                
+	event_base_set(threads_[0].base, &threads_[0].event);                                 
+	if(event_add(&threads_[0].event, 0) == -1) {                                    
+    		LOG(GentLog::INFO, "add main event of %d failed", fd);            
+    		return;                                                         
+	}
+
 	int i;
     LOG(GentLog::INFO, "init child thread");
-	for(i=0; i<thread_count_; ++i) {
-//		cout <<"GentThread::init:  " <<  i << endl;
+	for(i=1; i<thread_count_; ++i) {
 		int fd[2];
 		if(pipe(fd)) {
 			LOG(GentLog::ERROR,"thread initialize failed");
@@ -49,24 +60,24 @@ void GentThread::init(int thread_count) {
 		threads_[i].id = i;
 		threads_[i].rec_id = fd[0];
 		threads_[i].send_id = fd[1];
-		threads_[i].th = this;
-        threads_[i].gevent= new GentEvent();
-		//threads_[i].evbase = base_;
-		//threads_[i].evbase = event_init();
 		SetupThread(&threads_[i]);
 	}
 }
 void GentThread::SetupThread(THREADINFO *thread) {
-	//event_set(&thread->event_, thread->rec_id, EV_READ | EV_PERSIST,GentThread::Handle,thread);
-	//event_base_set(thread->evbase, &thread->event_);
-	//event_add(&thread->event_, 0);
-    GentConnect *conn = new GentConnect(thread->rec_id);
-    conn->gevent = thread->gevent;
-    thread->gevent->AddEvent(conn, GentThread::Handle);
+	//thread->gevent = new GentEvent();
+	thread->base = event_init();
+	event_set(&thread->event, thread->rec_id, eventRead, GentThread::Handle, thread);                
+	event_base_set(thread->base, &thread->event);                                 
+	if(event_add(&thread->event, 0) == -1) {                                    
+    		LOG(GentLog::INFO, "add event of %d failed", thread->rec_id);            
+    		return;                                                         
+	}                                                                      
+
 }
 
 void GentThread::SendThread() {
 	int tid = (lastid_+1)%thread_count_;
+	if(tid == 0) tid = 1;
 	lastid_ = tid;
 	if (write(threads_[tid].send_id, "", 1) != 1) {
 	        perror("Writing to thread notify pipe");
@@ -76,22 +87,7 @@ void GentThread::SendThread() {
 void *GentThread::Work(void *arg) {
 	THREADINFO *thread = static_cast<THREADINFO *>(arg);
     LOG(GentLog::INFO, "start the %d thread's %ld", thread->id, pthread_self());
-    thread->gevent->Loop();
-//	while(true) {
-//		GentThread::Intance()->Handle2(thread);
-//	}
-//	while(true) {
-//		struct timeval tv;
-//		//每10毫秒执行一次
-//		tv.tv_sec = 0;
-//		tv.tv_usec = 1000;
-//		event_base_loopexit(thread->evbase, &tv);
-//		event_base_dispatch(thread->evbase);
-		//GentRep::Intance()->Ret();
-
-//	}
-
-//	event_base_loop(thread->evbase,0);
+	event_base_loop(thread->base,0);
 	return ((void *)0);
 }
 
@@ -105,7 +101,7 @@ void *GentThread::Rep(void *arg) {
 
 void GentThread::Start() {
 	int i;
-	for(i=0; i<thread_count_; ++i) {
+	for(i=1; i<thread_count_; ++i) {
 		pthread_attr_t attr;
 		pthread_t pid;
 		int ret;
@@ -129,6 +125,8 @@ void GentThread::Start() {
 			exit(0);
 		}		
 	}
+	INFO(GentLog::INFO,"start successful");	
+	event_base_loop(threads_[0].base,0);
 }
 
 bool GentThread::StartClear() {
@@ -152,20 +150,23 @@ void *GentThread::ClearHandle(void *arg) {
 
 void GentThread::Handle(int fd, short which, void *arg) {
 	char buf[2];
-	//THREADINFO *thread = static_cast<THREADINFO *>(arg);
-    GentConnect *c = static_cast<GentConnect *>(arg);
+	THREADINFO *me = (THREADINFO *)arg;
 	 if (read(fd, buf, 1) != 1){
          LOG(GentLog::WARN, "Can't read from libevent pipe");
 	 }
-    GentConnect *nconn = GentFrame::Instance()->msg_.Pop();
-    nconn->gevent = c->gevent;
-    LOG(GentLog::INFO, "start deal new connection");
-    nconn->gevent->AddEvent(nconn, GentEvent::Handle);
-    
-	//GentThread *gthread = static_cast<GentThread *>(thread->th);
-//	cout << "GentThread::Handle " << pthread_self()<< endl;
-//    string ret = "ok";
-//    write(fd,ret.c_str(),ret.size());
-//    close(fd);
+	//    GentConnect *nconn = GentFrame::Instance()->msg_.Pop();
+    	dataItem *item = GentFrame::Instance()->msg_.Pop();
+	GentConnect *c = GentAppMgr::Instance()->GetConnect(item->sfd);
+  	free(item);
+		 
+    	LOG(GentLog::INFO, "start deal new connection fd:%d", c->fd);
+	event_set(&c->ev, c->fd, eventRead ,GentEvent::Handle , (void *)c);
+    	event_base_set(me->base, &c->ev);
+    	c->ev_flags = eventRead;
+    	if (event_add(&c->ev, 0) == -1) {
+		cout << "add nconn failed" <<endl;
+		c->Destruct();
+        	GentAppMgr::Instance()->RetConnect(c);
+    	}
 }
 

@@ -40,6 +40,13 @@ public:
 	}; 
 };
 
+typedef struct dataItem
+{
+	int sfd;
+	char ip[50];
+	int port;		
+}dataItem;
+
 class GentConnect
 {
 	int clen;
@@ -63,13 +70,13 @@ class GentConnect
 	map<string, GentDestroy *> dest_list;
 public:
     struct event ev;
-    GentEvent *gevent;
     int fd;
 	uint64_t start_time;
     struct sockaddr request_addr;
     bool is_slave;
 	char ip[50];
 	int port;
+	int ev_flags;
 public:
     GentConnect(int);
     ~GentConnect();

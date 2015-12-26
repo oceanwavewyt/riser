@@ -29,7 +29,7 @@ void GentFrame::Unstance() {
 }
 
 GentFrame::GentFrame() {
-	msg_.Resize(100);
+	msg_.Resize(MAX_CONNECT);
 }
 
 
@@ -148,17 +148,10 @@ int GentFrame::Run(int port) {
 	if(fd <= 0) {
 		return -1;
 	}
-	GentConnect *conn = new GentConnect(fd);
-    GentEvent *gevent = new GentEvent();
-    conn->gevent = gevent;
-    
-	gevent->AddEvent(conn,GentEvent::HandleMain);
-	GentThread::Intance()->init(atoi(config["threads"].c_str()));
+	int num = (config["threads"] == "")?1:atoi(config["threads"].c_str());
+	GentThread::Intance()->init(fd, num);
 	//启动线程
-//    std::cout << "start " << std::endl;
 	GentThread::Intance()->Start();
-	INFO(GentLog::INFO,"start successful");	
-	gevent->Loop();
     return 0;
 }
 

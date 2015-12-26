@@ -10,8 +10,10 @@
 
 
 GentAppMgr *GentAppMgr::intance_ = NULL;
+CommLock GentAppMgr::lock;
 
 GentAppMgr *GentAppMgr::Instance() {
+	AutoLock loc(&lock);
 	if(intance_ == NULL) {
 		intance_ = new GentAppMgr();
 	}
@@ -91,16 +93,20 @@ bool GentAppMgr::Init()
 
 GentConnect *GentAppMgr::GetConnect(int sfd)
 {
-    size_t len = conn_mgr.size();
+    size_t len = free_conn_mgr.size();
+    AutoLock lock(&conn_lock);
+	GentConnect *c;
     if(len > 0) {
-        AutoLock lock(&conn_lock);
-        GentConnect *c= conn_mgr[len-1];
+        c= free_conn_mgr[len-1];
         c->Init(sfd);
-        conn_mgr.pop_back();
-        return c;
+        free_conn_mgr.pop_back();
+    }else{
+    	 c = new GentConnect(sfd);
+         c->Init(sfd);
+    	total_conn++;
     }
-    GentConnect *c = new GentConnect(sfd);
-    total_conn++;
+    LOG(GentLog::INFO,"add fd:%d to conn_mgr", sfd); 
+    conn_mgr[sfd] = c;
     return c;
 }
 
@@ -124,13 +130,19 @@ void GentAppMgr::RetConnect(GentConnect *c)
 {
     assert(c!=NULL);
     AutoLock lock(&conn_lock);
-    conn_mgr.push_back(c);
+	CONNPOOL::iterator it = conn_mgr.find(c->fd);
+	if(it == conn_mgr.end()) {
+		LOG(GentLog::FATAL,"link fd:%d not find", c->fd);		
+		exit(1);
+	}
 	c->fd = -1;
+	free_conn_mgr.push_back(c);
+	conn_mgr.erase(it);
 }
 
 size_t GentAppMgr::GetConnCount()
 {
-    return total_conn - conn_mgr.size();
+    return total_conn - free_conn_mgr.size();
 }
 
 size_t GentAppMgr::GetTotalConnCount()

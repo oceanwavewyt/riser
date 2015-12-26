@@ -31,7 +31,7 @@ public:
 	~GentEvent();
 	int AddEvent(GentConnect *,void (*)(const int, const short, void *));
     void DelEvent() {event_del(&ev_);};
-	int UpdateEvent(int fd,GentConnect *c, int);
+	static int UpdateEvent(int fd,GentConnect *c, int);
 	int AddTimeEvent(struct timeval *tv, void (*)(const int, const short, void *));
 	void Loop();
 	int AcceptSocket(struct evhttp *http, int fd);
@@ -66,4 +66,4 @@ public:
 	static void UnIntance();
 };
 */
-#endif /* GENT_EVENT_H_ */
+#endif /* GEN_EVENT_H_ */

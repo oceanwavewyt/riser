@@ -13,20 +13,22 @@ class GentCommand;
 class GentConnect;
 typedef std::map<int,std::vector<GentBasic *> > APP_MODULE;
 typedef std::map<int,GentCommand*> PLUGIN;
-typedef std::vector<GentConnect *> CONNPOOL;
-
+typedef std::vector<GentConnect *> FREE_CONNPOOL;
+typedef std::map<int, GentConnect *> CONNPOOL;
 
 
 
 class GentAppMgr
 {
 	static GentAppMgr *intance_;
+	static  CommLock lock;
 private:
 	APP_MODULE app_mgr_;
 	PLUGIN plus_mgr;
 	unsigned int def_num;
 	GentCommand *plus;
     CONNPOOL conn_mgr;
+	FREE_CONNPOOL free_conn_mgr;
     CommLock conn_lock;
     size_t total_conn;
 public:

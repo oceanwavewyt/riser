@@ -60,6 +60,7 @@ void GentConnect::Init(int sfd) {
     remainsize = 0;
 	sendsize = 0;
 	cursendsize = 0;
+	ev_flags = eventRead; 
     curstatus = Status::CONN_READ;
     //configure info
     comm = GentAppMgr::Instance()->GetCommand(this, fd);
@@ -98,20 +99,25 @@ int GentConnect::TryRunning(string &outstr2) {
             case Status::CONN_READ:
                 outstr = "";
                 readNum = InitRead(rbytes);
-                LOG(GentLog::BUG, "init read the number of byte is %d.", readNum);
+                LOG(GentLog::BUG, "init read fd:%d the number of byte is %d.", fd, readNum);
 				if(readNum < 0) {
                     LOG(GentLog::BUG, "init read the number of byte less than zero");
                     outstr2 = "read error\r\n";
                     Reset();
                     return readNum;
-                }else if(readNum == 0) {                                
-                    return readNum;
+                }else if(readNum == 0) {
+					curstatus = Status::CONN_WAIT;                                
+                    break;
                 }
                 remainsize = comm->Process(rbuf, rbytes, outstr);
                  if(!remainsize && outstr != "") {
                      curstatus = Status::CONN_WRITE;
                      Reset();
-                     gevent->UpdateEvent(fd, this, eventWrite);
+		     LOG(GentLog::BUG, "remainsize false, outstr!=null updateevent.");
+                     if(GentEvent::UpdateEvent(fd, this, eventWrite)==-1) {
+			return -1;
+		     }
+		     return 0;
                 }
                 break;
             case Status::CONN_NREAD:
@@ -131,20 +137,26 @@ int GentConnect::TryRunning(string &outstr2) {
                 comm->Complete(outstr,content, actualsize);
                 if(outstr != "") {
 					curstatus = Status::CONN_WRITE;
-                	gevent->UpdateEvent(fd, this, eventWrite);
+					LOG(GentLog::BUG, "conn_data updateevent");
+                	if(GentEvent::UpdateEvent(fd, this, eventWrite)==-1) {
+						return -1;
+					}
                 }
                 return 0;
             case Status::CONN_WRITE:
                 Reset();
 				OutString(outstr);
-                return 0;
+                //return 0;
+                break;
             case Status::CONN_WAIT:
 				LOG(GentLog::BUG, "the status of %d is connect wait", fd);
                 remainsize = 0;
                 Reset();
                 curstatus = Status::CONN_READ;
-                //GentEvent::Instance()->UpdateEvent(fd, this);
-                gevent->UpdateEvent(fd, this, eventRead);
+				LOG(GentLog::BUG, "conn_wait updateevent");
+                if(GentEvent::UpdateEvent(fd, this, eventRead)==-1) {
+					return -1;	
+				}
                 
                 return 0;
             case Status::CONN_CLOSE:
@@ -212,11 +224,11 @@ int GentConnect::OutString(const string &str) {
 	while(sendsize>0) {
     	slen = send(fd, curpos+cursendsize, sendsize, 0);
 		if (slen == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-			gevent->UpdateEvent(fd, this, eventWrite);
+			LOG(GentLog::BUG, "OutString updateevent.");	
+			GentEvent::UpdateEvent(fd, this, eventWrite);
 			return 0;	
 		}
 		if(slen<0) return -1;
-		//cout << "write: " << slen << " : " << str.size() << " length: "<< length << endl;
 		sendsize -= slen;
 		cursendsize += slen;
 	}
@@ -228,7 +240,8 @@ void GentConnect::SetWrite(const string &str)
 {
 	outstr = str;
 	curstatus = Status::CONN_WRITE;
-    gevent->UpdateEvent(fd, this, eventWrite);
+	LOG(GentLog::BUG, "SetWrite updateevent");
+    	GentEvent::UpdateEvent(fd, this, eventWrite);
 }
 
 void GentConnect::SetStatus(int s) {
@@ -258,8 +271,9 @@ int GentConnect::NextRead() {
 	    SetStatus(Status::CONN_CLOSE);
 	    return 0;
 	}                                                               
-	if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) {   
-        gevent->UpdateEvent(fd, this, eventRead);
+	if (res == -1 && (errno == EAGAIN || errno == EWOULDBLOCK)) { 
+	LOG(GentLog::BUG, "NextRead updateevent");  
+        GentEvent::UpdateEvent(fd, this, eventRead);
 		return -1;                                                            
 	}
 	SetStatus(Status::CONN_CLOSE);                                                               

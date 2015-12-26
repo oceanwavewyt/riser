@@ -15,7 +15,7 @@
 #define SMALL_LEN 1000
 #define MAX_LEN 10240
 
-class GentConnect;
+#include "gent_connect.h"
 //template <class T,class Alloc = std::allocator<T> >
 template <class T>
 class GentMsg
@@ -85,5 +85,6 @@ public:
 };
 
 typedef GentMsg<GentConnect *>  GENT_MSG_CONNECT;
+typedef GentMsg<dataItem *>  GENT_MSG_ITEM;
 //typedef GentMsg<COMM_REP>  GENT_REP_COMM;
 #endif /* GENT_MSG_H_ */

@@ -31,7 +31,6 @@ GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INI
 {
 	if(name == "master") {
    		string pathname = GentDb::Instance()->GetPath()+"/REPLICATION_INFO";
-   		cout << pathname <<endl;
    		repfile_ = new GentFile<repinfo>(pathname, SLAVE_NUM);	
 		if(!repfile_->Init(rep_map_)) {
 			LOG(GentLog::ERROR, "init replication infomation failed.");
@@ -109,7 +108,7 @@ int GentRepMgr::LinkMaster(GentEvent *ev_, const string &host, int port) {
 	connect_ = GentAppMgr::Instance()->GetConnect(sfd);
 	connect_->SetAuth(1);
 	connect_->is_slave = true;
-	connect_->gevent = ev_;
+	//connect_->gevent = ev_;
 	return sfd;
 }
 

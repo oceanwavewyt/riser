@@ -161,7 +161,7 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 	}else{
 		//GentList::Instance()->Save(keystr);
 		GentRepMgr::Instance("master")->Push(itemData::ADD, redis->keystr);
-		LOG(GentLog::WARN, "it is sucess for %s stored",redis->keystr.c_str());
+		LOG(GentLog::INFO, "it is sucess for %s stored",redis->keystr.c_str());
 		if(!redis->Slave()) {
 			outstr=REDIS_INFO+"\r\n";
 		}else{
@@ -212,7 +212,7 @@ void GentProcessSetex::Complete(string &outstr,const char *recont, uint64_t len,
 	}else{
 		//GentList::Instance()->Save(keystr);
 		GentRepMgr::Instance("master")->Push(itemData::ADD, redis->keystr);
-		LOG(GentLog::WARN, "it is sucess for %s stored",redis->keystr.c_str());
+		LOG(GentLog::INFO, "it is sucess for %s stored",redis->keystr.c_str());
 		if(!redis->Slave()) {
 			outstr=REDIS_INFO+"\r\n";
 		}else{
@@ -585,19 +585,24 @@ int GentRedis::Process(const char *rbuf, uint64_t size, string &outstr)
 	string data(rbuf,size);
 	int status = ParseCommand(data);
 	if(status == -1) {
-		Info("unknown command",outstr, REDIS_ERROR);
+		outstr = REDIS_ERROR + " unknown command\r\n";
+		//Info("unknown command",outstr, REDIS_ERROR);
 		return 0;
 	}else if(status == -2) {
-		Info("wrong number of arguments for 'keys' command",outstr, REDIS_ERROR);
+		outstr = REDIS_ERROR + " wrong number of arguments for 'keys' command\r\n";
+		//Info("wrong number of arguments for 'keys' command",outstr, REDIS_ERROR);
 		return 0;
 	}else if(status == -3) {
-		Info("key is very very long",outstr, REDIS_ERROR);
+		outstr = REDIS_ERROR + " key is very very long\r\n";
+		//Info("key is very very long",outstr, REDIS_ERROR);
 		return 0;
 	}else if(status == AUTH_REQ_FAIL) {
-		Info(REDIS_AUTH_REQ, outstr, "-");
+		outstr = "- " + REDIS_AUTH_REQ + "\r\n";
+		//Info(REDIS_AUTH_REQ, outstr, "-");
 		return 0;
 	}else if(status == AUTH_FAIL) {
-		Info(REDIS_AUTH_FAIL,outstr, REDIS_ERROR);
+		outstr = REDIS_ERROR + " " + REDIS_AUTH_FAIL + "\r\n";
+		//Info(REDIS_AUTH_FAIL,outstr, REDIS_ERROR);
 		return 0;
 	}
 	return status;
