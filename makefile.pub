@@ -1,7 +1,6 @@
 hw := $(shell sh -c './gent_hw.sh')
 CC:=g++
 CXX:=g++
-DEBUG=DEBUG
 OUTPUTNAME:=riser
 OUTPATH=output
 ROOT=./include/
@@ -21,7 +20,7 @@ objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 all: $(OBJNAME)
 
 %.o:%.cpp
-	$(CXX) $(CPPFLAGS) -c $< -o $@ $(INCLUDES) -D$(DEBUG)
+	$(CXX) $(CPPFLAGS) -c $< -o $@ $(INCLUDES) 
 
 clean:
 	-rm -f $(OUTPUTNAME) $(objects)

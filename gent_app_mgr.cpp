@@ -90,7 +90,7 @@ bool GentAppMgr::Init()
     }
 	return true;
 }
-
+/*
 GentConnect *GentAppMgr::GetConnect(int sfd)
 {
     size_t len = free_conn_mgr.size();
@@ -109,6 +109,26 @@ GentConnect *GentAppMgr::GetConnect(int sfd)
     conn_mgr[sfd] = c;
     return c;
 }
+*/
+GentConnect *GentAppMgr::GetConnect(int sfd)
+{
+    size_t len = free_conn_mgr.size();
+    AutoLock lock(&conn_lock);
+	GentConnect *c;
+    if(len > 0) {
+        c= free_conn_mgr.back();
+        c->Init(sfd);
+        free_conn_mgr.pop_back();
+    }else{
+    	 c = new GentConnect(sfd);
+         c->Init(sfd);
+    	 total_conn++;
+    }
+    LOG(GentLog::BUG,"add fd:%d to conn_mgr", sfd); 
+    conn_mgr[sfd] = c;
+    return c;
+}
+
 
 GentCommand *GentAppMgr::GetCommand(GentConnect *connect,int id)
 {
@@ -136,8 +156,19 @@ void GentAppMgr::RetConnect(GentConnect *c)
 		exit(1);
 	}
 	c->fd = -1;
-	free_conn_mgr.push_back(c);
+	free_conn_mgr.push_front(c);
 	conn_mgr.erase(it);
+	//check link num
+	size_t linkNum = GetConnCount()*5;
+	if(linkNum < free_conn_mgr.size()) {
+		size_t num = free_conn_mgr.size() - linkNum;
+		for(size_t i=1; i<=num; i++) {
+			GentConnect *conn = free_conn_mgr.front();
+			delete conn;
+			total_conn--;
+			free_conn_mgr.pop_front();
+		}
+	}
 }
 
 size_t GentAppMgr::GetConnCount()

@@ -13,7 +13,7 @@ class GentCommand;
 class GentConnect;
 typedef std::map<int,std::vector<GentBasic *> > APP_MODULE;
 typedef std::map<int,GentCommand*> PLUGIN;
-typedef std::vector<GentConnect *> FREE_CONNPOOL;
+typedef std::list<GentConnect *> FREE_CONNPOOL;
 typedef std::map<int, GentConnect *> CONNPOOL;
 
 

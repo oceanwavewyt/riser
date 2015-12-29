@@ -137,20 +137,20 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
 void GentEvent::Handle(const int fd, const short which, void *arg) {
 	GentConnect *c = static_cast<GentConnect *>(arg);
     if(c->fd != fd) {
-        c->Destruct();
 		if(event_del(&c->ev) == -1) {
         	LOG(GentLog::ERROR, "event del fail");
 		}
+        	c->Destruct();
 		GentAppMgr::Instance()->RetConnect(c);
         return;
 	}
 	string outstr;
     int readNum = c->TryRunning(outstr);
     if(readNum < 0) {
-        c->Destruct();
 		if(event_del(&c->ev) == -1) {
 			LOG(GentLog::ERROR, "event del fail");
 		}
+        c->Destruct();
         GentAppMgr::Instance()->RetConnect(c);
         return;
     }    
