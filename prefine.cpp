@@ -7,11 +7,13 @@
 #include "prefine.h"
 static const char *levelname[] = {"BUG","INFO","WARN", "ERROR", "FATAL"};
 FILE *GentLog::logfd = stdout;
+string GentLog::logfile = "";
 int GentLog::runLevel = GentLog::INFO;
 
 int GentLog::setfd(string &filename)
 {
 	if(filename == "") return 1;
+	GentLog::logfile = filename;
 	if((logfd = fopen(filename.c_str(), "a+")) == NULL) {
 		return 0;
 	}	
@@ -52,6 +54,10 @@ void GentLog::write(int levels, const char *file, const int line, const char *fu
 #else
 	snprintf(str, LINEBUFSIZE, "%s [%d-%02d-%02d %02d:%02d:%02d] [%lu] %s", levelname[levels], tm->tm_year+1900,tm->tm_mon,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self(), buf);	
 #endif
+	if(GentLog::logfile != "" && access(GentLog::logfile.c_str(),0) == -1) {
+		fclose(logfd);
+		GentLog::setfd(GentLog::logfile);
+	}
 	fprintf(logfd, "%s\n", str);                                                                  	
 	fflush(logfd);
 }

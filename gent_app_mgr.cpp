@@ -159,7 +159,7 @@ void GentAppMgr::RetConnect(GentConnect *c)
 	free_conn_mgr.push_front(c);
 	conn_mgr.erase(it);
 	//check link num
-	size_t linkNum = GetConnCount()*5;
+	size_t linkNum = GetConnCount()*20;
 	if(linkNum < free_conn_mgr.size()) {
 		size_t num = free_conn_mgr.size() - linkNum;
 		for(size_t i=1; i<=num; i++) {

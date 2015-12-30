@@ -56,6 +56,7 @@ public:
 	enum logLevel {BUG=0,INFO=1,WARN=2,ERROR=3,FATAL=4 };
 	static int runLevel;
 	static FILE *logfd;
+	static string logfile;
 	static int setfd(string &filename);
 	static void setLevel(string &loglevel);
 	static void write(int levels, const char *file, const int line, const char *func, const char *format, ...);
