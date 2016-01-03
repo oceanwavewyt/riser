@@ -42,7 +42,7 @@ public:
 	~GentThread();
 	void Start();
 	void init(int fd, int thread_count=1);
-	void SendThread();
+	bool SendThread(dataItem *d);
 	void SetupThread(THREADINFO *thread);
 	static void* ClearHandle(void *arg);
 	bool StartClear();

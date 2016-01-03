@@ -75,13 +75,16 @@ void GentThread::SetupThread(THREADINFO *thread) {
 
 }
 
-void GentThread::SendThread() {
+bool GentThread::SendThread(dataItem *d) {
 	int tid = (lastid_+1)%thread_count_;
 	if(tid == 0) tid = 1;
+    GentFrame::Instance()->msg_[tid].Push(d);	
 	lastid_ = tid;
 	if (write(threads_[tid].send_id, "", 1) != 1) {
 	        perror("Writing to thread notify pipe");
+		return false;
 	}
+	return true;
 }
 
 void *GentThread::Work(void *arg) {
@@ -155,7 +158,7 @@ void GentThread::Handle(int fd, short which, void *arg) {
          LOG(GentLog::WARN, "Can't read from libevent pipe");
 	 }
 	//    GentConnect *nconn = GentFrame::Instance()->msg_.Pop();
-    dataItem *item = GentFrame::Instance()->msg_.Pop();
+    dataItem *item = GentFrame::Instance()->msg_[me->id].Pop();
 	GentConnect *c = GentAppMgr::Instance()->GetConnect(item->sfd);
   	free(item);	 
     LOG(GentLog::BUG, "start deal new connection fd:%d", c->fd);

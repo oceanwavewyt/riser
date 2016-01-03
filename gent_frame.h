@@ -23,7 +23,7 @@ private:
     struct sockaddr_in addr;
 public:
 	//GENT_MSG_CONNECT msg_;
-	GENT_MSG_ITEM msg_;
+	map<int, GENT_MSG_ITEM> msg_;
     GentConfig config;
 	struct riserserver *s;
 public:

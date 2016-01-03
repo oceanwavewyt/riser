@@ -29,7 +29,7 @@ void GentFrame::Unstance() {
 }
 
 GentFrame::GentFrame() {
-	msg_.Resize(MAX_CONNECT);
+	//msg_.Resize(MAX_CONNECT);
 }
 
 
@@ -148,7 +148,13 @@ int GentFrame::Run(int port) {
 	if(fd <= 0) {
 		return -1;
 	}
+	GentAppMgr::Instance();
 	int num = (config["threads"] == "")?1:atoi(config["threads"].c_str());
+	for(int i=1; i<=num; i++) {
+		GENT_MSG_ITEM mitem;
+		msg_[i] = mitem;
+		msg_[i].Resize(MAX_CONNECT);
+	}
 	GentThread::Intance()->init(fd, num);
 	//启动线程
 	GentThread::Intance()->Start();

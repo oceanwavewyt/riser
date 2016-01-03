@@ -50,9 +50,9 @@ void GentLog::write(int levels, const char *file, const int line, const char *fu
 	tm = localtime(&now);
 	char str[LINEBUFSIZE];
 #ifdef _DARWIN                                                   
-	snprintf(str, LINEBUFSIZE, "%s [%d-%02d-%02d %02d:%02d:%02d] [%lu] %s", levelname[levels], tm->tm_year+1900,tm->tm_mon,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self()->__sig, buf);
+	snprintf(str, LINEBUFSIZE, "%s [%d-%02d-%02d %02d:%02d:%02d] [%lu] %s", levelname[levels], tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self()->__sig, buf);
 #else
-	snprintf(str, LINEBUFSIZE, "%s [%d-%02d-%02d %02d:%02d:%02d] [%lu] %s", levelname[levels], tm->tm_year+1900,tm->tm_mon,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self(), buf);	
+	snprintf(str, LINEBUFSIZE, "%s [%d-%02d-%02d %02d:%02d:%02d] [%lu] %s", levelname[levels], tm->tm_year+1900,tm->tm_mon+1,tm->tm_mday,tm->tm_hour,tm->tm_min,tm->tm_sec, pthread_self(), buf);	
 #endif
 	if(GentLog::logfile != "" && access(GentLog::logfile.c_str(),0) == -1) {
 		fclose(logfd);

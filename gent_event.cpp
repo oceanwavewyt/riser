@@ -130,8 +130,11 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
  	memcpy(&sin, &addr, sizeof(sin));
 	sprintf(d->ip, inet_ntoa(sin.sin_addr));	
 	d->port = sin.sin_port; 
-	GentFrame::Instance()->msg_.Push(d);
-    GentThread::Intance()->SendThread();
+    if(!GentThread::Intance()->SendThread(d)) {
+		free(d);
+		LOG(GentLog::ERROR, "send thread data failed");
+		close(sfd);
+	}
 }
 
 void GentEvent::Handle(const int fd, const short which, void *arg) {

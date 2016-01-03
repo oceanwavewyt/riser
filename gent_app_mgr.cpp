@@ -112,8 +112,8 @@ GentConnect *GentAppMgr::GetConnect(int sfd)
 */
 GentConnect *GentAppMgr::GetConnect(int sfd)
 {
-    size_t len = free_conn_mgr.size();
     AutoLock lock(&conn_lock);
+    size_t len = free_conn_mgr.size();
 	GentConnect *c;
     if(len > 0) {
         c= free_conn_mgr.back();
