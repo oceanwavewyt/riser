@@ -1,7 +1,7 @@
 hw := $(shell sh -c './gent_hw.sh')
 CC:=g++
 CXX:=g++
-OUTPUTNAME:=riser
+OUTPUTNAME:=riser-server
 OUTPATH=output
 ROOT=./include/
 INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
