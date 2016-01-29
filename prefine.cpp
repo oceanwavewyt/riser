@@ -9,6 +9,12 @@ static const char *levelname[] = {"BUG","INFO","WARN", "ERROR", "FATAL"};
 FILE *GentLog::logfd = stdout;
 string GentLog::logfile = "";
 int GentLog::runLevel = GentLog::INFO;
+bool GentLog::isServer = true;
+
+void GentLog::setServer(bool s)
+{
+	GentLog::isServer = s;
+}
 
 int GentLog::setfd(string &filename)
 {
@@ -37,6 +43,7 @@ void GentLog::setLevel(string &loglevel)
 
 void GentLog::write(int levels, const char *file, const int line, const char *func, const char *format, ...)
 {
+	if(!GentLog::isServer) return;
 	if(levels < GentLog::runLevel) return;
 	char buf[LOGBUFSIZE];                  
 	va_list ap;

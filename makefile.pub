@@ -1,26 +1,29 @@
 hw := $(shell sh -c './gent_hw.sh')
 CC:=g++
 CXX:=g++
-OUTPUTNAME:=riser-server
+OUTPUT_NAME_SERVER:=riser-server
+OUTPUT_SERVER_OBJ=gent_app_mgr.o gent_command.o gent_config.o gent_connect.o gent_db.o gent_event.o gent_frame.o gentle.o gent_level.o gent_list.o gent_redis.o gent_repl.o gent_thread.o gent_util.o prefine.o riser.o
+OUTPUT_NAME_CLIENT:=riser-cli
+OUTPUT_CLIENT_OBJ=gent_util.o prefine.o pack/linenoise/linenoise.o riser-cli.o
 OUTPATH=output
 ROOT=./include/
 INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
 
 LDFLAGS +=-lpthread -levent ./lib/libleveldb.a
+CLDFLAGS +=-lhiredis -L./lib/ ./lib/libhiredis.a
 CPPFLAGS += -fPIC -Wall
 OS := $(shell uname -s)
 IS_DARWIN := $(shell echo $(OS)|grep -i Darwin)
 ifdef IS_DARWIN
 LDFLAGS += -D_DARWIN
 endif
-
 objects := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 
-.PHONY: all clean
-all: $(OBJNAME)
+all: $(OUTPUT_NAME_SERVER) $(OUTPUT_NAME_CLIENT)
 
+.PHONY: all clean
 %.o:%.cpp
 	$(CXX) $(CPPFLAGS) -c $< -o $@ $(INCLUDES) 
 
 clean:
-	-rm -f $(OUTPUTNAME) $(objects)
+	-rm -f $(OUTPUT_NAME_SERVER) $(OUTPUT_NAME_CLIENT) $(objects)

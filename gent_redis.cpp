@@ -56,6 +56,8 @@ void GentRedis::SetCommands()
 	GentProcessQuit *quit=new GentProcessQuit();	
 	commands["quit"] = quit;
 	commands["QUIT"] = quit;
+	commands["exit"] = quit;
+	commands["EXIT"] = quit;
 	GentProcessKeys *keys=new GentProcessKeys();	
 	commands["keys"] = keys;
 	commands["KEYS"] = keys;
@@ -114,6 +116,7 @@ void GentProcessGet::Complete(string &outstr,const char *recont, uint64_t len, G
     if(!GentDb::Instance()->Get(redis->keystr, nr))
     {
         outstr = "$-1\r\n";
+		return;
     }
     char retbuf[50]={0};
     snprintf(retbuf,50, "$%u\r\n",(unsigned int)nr.size());

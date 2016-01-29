@@ -110,14 +110,14 @@ int GentConnect::TryRunning(string &outstr2) {
                     break;
                 }
                 remainsize = comm->Process(rbuf, rbytes, outstr);
-                 if(!remainsize && outstr != "") {
+                if(!remainsize && outstr != "") {
                      curstatus = Status::CONN_WRITE;
                      Reset();
-		     LOG(GentLog::BUG, "remainsize false, outstr!=null updateevent.");
+		     		 LOG(GentLog::BUG, "remainsize false, outstr!=null updateevent.");
                      if(GentEvent::UpdateEvent(fd, this, eventWrite)==-1) {
-			return -1;
-		     }
-		     return 0;
+						return -1;
+		     		}
+		     		return 0;
                 }
                 break;
             case Status::CONN_NREAD:
@@ -146,8 +146,8 @@ int GentConnect::TryRunning(string &outstr2) {
             case Status::CONN_WRITE:
                 Reset();
 				OutString(outstr);
-                //return 0;
-                break;
+                return 0;
+                //break;
             case Status::CONN_WAIT:
 				LOG(GentLog::BUG, "the status of %d is connect wait", fd);
                 remainsize = 0;

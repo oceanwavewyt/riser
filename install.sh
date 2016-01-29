@@ -4,8 +4,13 @@ if [ ! -d $libpath ]; then
 fi
 cd pack/libevent/
 ./configure  && make && make install
+cd ../linenoise/ && make
+cp linenoise.h ../../include/
 cd ../leveldb/
 make && cp libleveldb.* ../../$libpath/
+cd ../hiredis/
+make && cp libhiredis.a ../../$libpath/
+cp *.h ../../include/  
 cd ../../
 make
 if [ $# -ge 1 ]; then
