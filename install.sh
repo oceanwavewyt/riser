@@ -30,4 +30,5 @@ if [ $# -ge 1 ]; then
 	test -d log  || mkdir  log/
 	test -f conf/riser.conf || cp  $curpath/riser.conf  conf/
 	cp $curpath/riser-server  ./
+	cp $curpath/riser-cli  ./
 fi
