@@ -146,8 +146,8 @@ int GentConnect::TryRunning(string &outstr2) {
             case Status::CONN_WRITE:
                 Reset();
 				OutString(outstr);
-                return 0;
-                //break;
+                //return 0;
+                break;
             case Status::CONN_WAIT:
 				LOG(GentLog::BUG, "the status of %d is connect wait", fd);
                 remainsize = 0;
