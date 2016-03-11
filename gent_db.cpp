@@ -257,6 +257,10 @@ bool GentDb::GetPathname(string &err)
 		err = config["leveldb_db_path"]  + "  not access";
 		return false;
 	}
+	string sep = config["leveldb_db_path"].substr(config["leveldb_db_path"].size()-1,1);
+	if(sep != "/") {
+		config["leveldb_db_path"] = config["leveldb_db_path"]+"/";
+	}
 	pathname = config["leveldb_db_path"]+config["leveldb_db_name"];
 	return true;
 }
