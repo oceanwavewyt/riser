@@ -103,7 +103,7 @@ int main(int argc, char **argv)
         }
     
     }
-   	
+        signal(SIGPIPE, SIG_IGN);	
 	if(getrlimit(RLIMIT_NOFILE, &rlim) != 0) {
 		std::cout << "get rlimit failed\n";
 		return 1;
