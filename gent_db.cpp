@@ -29,6 +29,7 @@ GentDb::GentDb():key_num(0)
 	meta_path = "/meta";    
 	is_clear = false;
 	write_num = 0;
+	trigger_num_save = 0;
 }
 
 GentDb::~GentDb()
@@ -71,11 +72,15 @@ bool GentDb::Get(string &key, string &value, uint64_t &expire)
 bool GentDb::Put(string &key, string &value,uint64_t expire, int datatype)
 {
 	AutoLock lockclear(&clear_lock);	
-    leveldb::Slice s2 = value;
+	cout << trigger_num_save << endl;
+	string metaData;
+	leveldb::Status keyStatus= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
+	
+	leveldb::Slice s2 = value;
     leveldb::Status s = db->Put(leveldb::WriteOptions(), key, s2);
-    if(key_num > 0) {
+    if(!keyStatus.ok()) {
 		AutoLock lock(&key_num_lock);
-		key_num++;
+		SetNum(++key_num);
 	}
 	if(s.ok()) {
 		string meData;
@@ -84,20 +89,26 @@ bool GentDb::Put(string &key, string &value,uint64_t expire, int datatype)
 		meta_db->Put(leveldb::WriteOptions(), key, s3);
 	}
 	write_num++;
+	trigger_num_save++;
 	return s.ok();
 }
 
 bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype)
 {
 	AutoLock lockclear(&clear_lock);
+	cout << trigger_num_save << endl;
+
 	if(write_num > MAX_WRITE_CLEAR && is_clear == false) {
 		GentThread::Intance()->StartClear();
 		write_num = 0;	
 	}
-    leveldb::Status s = db->Put(leveldb::WriteOptions(), key, leveldb::Slice(val,len));
-    if(key_num > 0) {
+	string metaData;
+	leveldb::Status keyStatus= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
+    
+	leveldb::Status s = db->Put(leveldb::WriteOptions(), key, leveldb::Slice(val,len));
+    if(!keyStatus.ok()) {
 		AutoLock lock(&key_num_lock);
-		key_num++;
+		SetNum(++key_num);
 	}
 	if(s.ok()) {
 		string meData;
@@ -106,15 +117,16 @@ bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, in
 		meta_db->Put(leveldb::WriteOptions(), key, s3);
 	}
 	write_num++;
+	trigger_num_save++;
 	return s.ok();
 }
 
 bool GentDb::Del(string &key)
 {
 	leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
-	if(key_num > 0) {
+	if(key_num > 0 && s.ok()) {
 		AutoLock lock(&key_num_lock);
-		key_num--;
+		SetNum(--key_num);
 	}
 	if(s.ok()) {
 		meta_db->Delete(leveldb::WriteOptions(), key);
@@ -164,6 +176,7 @@ uint64_t GentDb::TotalSize() {
 uint64_t GentDb::Count(const string &pre) 
 {
 	if(pre == "" && key_num > 0) return key_num;
+	cout << "no count" <<endl;
 	leveldb::ReadOptions options;
 	options.snapshot = meta_db->GetSnapshot();
 	leveldb::Iterator* it = meta_db->NewIterator(options);
@@ -187,6 +200,7 @@ uint64_t GentDb::Count(const string &pre)
 	if(pre == "" && key_num == 0) {
 		AutoLock lock(&key_num_lock);
 		key_num = num;
+		SetNum(key_num);
 	}
 	return num;
 }
@@ -245,6 +259,12 @@ uint64_t GentDb::Keys(vector<string> &outvec, const string &pre)
 	return num;
 }
 
+bool GentDb::GetProperty(const string& property, std::string* value)
+{
+	leveldb::Slice p = property;	
+	db->GetProperty(p,value);	
+	return true;	
+}
 
 bool GentDb::GetPathname(string &err)
 {
@@ -324,11 +344,36 @@ bool GentDb::Init(string &err)
 		op.write_buffer_size = 100*1024*1024;
 		string mp = pathname+meta_path;
 		leveldb::Status meta_status = leveldb::DB::Open(op, mp , &meta_db);
-        if(meta_status.ok()) return true;
+        LoadNum();
+		if(meta_status.ok()) return true;
 		return false;
     }
     err = status.ToString();
     return false;
+}
+
+void GentDb::SetNum(uint64_t num) {
+	if(trigger_num_save < 100) return;
+	string fname = pathname+NUM_NAME;
+	char buf[100]={0};
+	snprintf(buf,100, "%llu",(unsigned long long)num);
+	FILE *f = fopen(fname.c_str(),"w");
+	if(f == NULL) return;
+	if(fwrite(buf,100,1,f) == 1) {
+		trigger_num_save = 0;
+	}
+	fclose(f);
+}
+
+void GentDb::LoadNum() {
+	string fname = pathname+NUM_NAME;
+	char buf[100]={0};
+	FILE *f = fopen(fname.c_str(),"r");
+	if(f == NULL) return;
+	if(fread(buf,100,1,f) == 1) {
+		key_num = atoll(buf);
+	}
+	fclose(f);
 }
 
 string &GentDb::GetPath() {

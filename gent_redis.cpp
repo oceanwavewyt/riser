@@ -342,9 +342,25 @@ int GentProcessInfo::Parser(int num,vector<string> &tokenList,const string &data
 	return 0;
 }
 
+int GentProcessInfo::TotalTableFiles(string &ret) {
+    		int result = 0;
+    		for (int level = 0; level < 7; level++) {
+      			std::string property;
+				char buf[30];
+ 				snprintf(buf, sizeof(buf), "%llu", (unsigned long long) level);
+				string b(buf);
+        	 	GentDb::Instance()->GetProperty("leveldb.num-files-at-level"+b, &property);
+				result += atoi(property.c_str());
+    			ret += "   level_"+b+":"+property.c_str()+"\n";
+			}
+    		return result;
+}
+
+
 void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
 	char retbuf[500] = {0};
+
 	if(redis->keystr == "rep") {
 		string master_info;
 		GentRepMgr::Instance("master")->GetSlaveInfo(master_info);
@@ -353,7 +369,7 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 		snprintf(retbuf,500,
 			"# Master\r\n"
 			"%s\r\n"
-			"# Slave\r\n"
+			"# Slave\r\s"
 			"%s\r\n"
 			,
 			 master_info.c_str(),	
@@ -368,12 +384,14 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 		if(config["slaveof_ip"] != "" && config["slaveof_port"] != "") {
 			role += (role == "")?"slave":",slave";
 		}
-			
+		string levelnumstr="";
+		TotalTableFiles(levelnumstr);	
 		GentUtil::BytesToHuman(hmen, totals);
 		snprintf(retbuf,500,"# Server\r\n"
 				"process_id: %ld\r\n"
 				"port: %d\r\n"
 				"config_file: %s\r\n"
+				"file_num: %s\r\n"
 				"\r\n# Clients\r\n"
 				"total_connect: %u\r\n"
 				"current_connect: %u\r\n"
@@ -390,6 +408,7 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 	             (long) getpid(),
 				 GentFrame::Instance()->s->port,
 				 GentFrame::Instance()->s->configfile,
+				 levelnumstr.c_str(), 
 				 (unsigned int)GentAppMgr::Instance()->GetTotalConnCount(),
 				 (unsigned int)GentAppMgr::Instance()->GetConnCount(),
 				 (unsigned long long)totals,

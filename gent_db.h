@@ -16,6 +16,7 @@
 #include "gent_redis.h"
 
 const uint64_t MAX_WRITE_CLEAR = 50000; 
+const string NUM_NAME = "/NUMBER";
 struct metaData
 {
 	int datatype;
@@ -33,6 +34,7 @@ private:
 	string meta_path;
 	uint64_t key_num;
 	uint64_t write_num;
+	int trigger_num_save;
 	CommLock key_num_lock;	
 	CommLock clear_lock;
 	leveldb::DB* meta_db;
@@ -48,6 +50,7 @@ public:
 	bool Get(string &key,string &value, uint64_t &expire);
 	bool Ttl(string &key, uint64_t &expire);
     bool Del(string &key);
+	bool GetProperty(const string& property, std::string* value);
 	uint64_t Count(const string &pre="");
 	uint64_t Keys(vector<string> &outvec, const string &pre="*");
 	uint64_t ClearExpireKey();	
@@ -57,6 +60,8 @@ private:
 	bool GetPathname(string &);
 	void MetaSerialize(string &outstr, int datatype, uint64_t expire=0);
 	void MetaUnserialize(string &str, struct metaData *dat);
+	void SetNum(uint64_t);
+	void LoadNum();
 public:
 	static GentDb *Instance();
 	static void UnIntance();

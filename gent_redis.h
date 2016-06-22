@@ -174,6 +174,7 @@ public:
 	GentProcessInfo(){};
 	~GentProcessInfo(){};
 public:
+	int TotalTableFiles(string &);
 	int Parser(int,vector<string> &,const string &data, GentRedis *);
 	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
 	GentSubCommand *Clone()
