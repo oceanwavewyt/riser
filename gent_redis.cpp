@@ -248,10 +248,7 @@ void GentProcessMget::Complete(string &outstr,const char *recont, uint64_t len, 
     for(iter=redis->keyvec.begin(); iter!=redis->keyvec.end(); iter++)
     {
         string nr="";
-        if(!GentDb::Instance()->Get(*iter, nr))
-        {
-            continue;
-        }
+        GentDb::Instance()->Get(*iter, nr);
 		num++;
         char retbuf[20]={0};
         snprintf(retbuf,20, "$%u\r\n", (unsigned int)nr.size());
@@ -369,9 +366,8 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 		snprintf(retbuf,500,
 			"# Master\r\n"
 			"%s\r\n"
-			"# Slave\r\s"
-			"%s\r\n"
-			,
+			"# Slave\r\n"
+			"%s\r\n",
 			 master_info.c_str(),	
 			 slave_info.c_str()
 			 );
