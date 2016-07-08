@@ -19,6 +19,10 @@ bool GentSubCommand::IsAuth(GentRedis *r)
 	}
 	return false;
 }
+int GentSubCommand::ContinueParser(const string &data, GentRedis *redis)
+{
+	return 0;
+}
 
 GentRedis::GentRedis(GentConnect *c):GentCommand(c)
 {
@@ -26,6 +30,7 @@ GentRedis::GentRedis(GentConnect *c):GentCommand(c)
   auth = 0;
   rlbytes = 0;
   expire = 0;
+  mdata.init();
 }
 GentRedis::~GentRedis(){
 }
@@ -41,6 +46,9 @@ void GentRedis::SetCommands()
 	GentProcessSetex *ex=new GentProcessSetex();	
 	commands["setex"] = ex;
 	commands["SETEX"] = ex;
+	GentProcessMset *ms=new GentProcessMset();	
+	commands["mset"] = ms;
+	commands["MSET"] = ms;
 	GentProcessAuth *ah=new GentProcessAuth();	
 	commands["auth"] = ah;
 	commands["AUTH"] = ah;
@@ -50,6 +58,9 @@ void GentRedis::SetCommands()
 	GentProcessMget *m=new GentProcessMget();	
 	commands["mget"] = m;
 	commands["MGET"] = m;
+	GentProcessRandomkey *rd=new GentProcessRandomkey();	
+	commands["randomkey"] = rd;
+	commands["RANDOMKEY"] = rd;
 	GentProcessDel *del=new GentProcessDel();	
 	commands["del"] = del;
 	commands["DEL"] = del;
@@ -172,6 +183,148 @@ void GentProcessSet::Complete(string &outstr,const char *recont, uint64_t len, G
 		}
 	}
 }
+
+int GentProcessMset::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	LOG(GentLog::INFO, "mset parser"); 
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
+	redis->conn->SetStatus(Status::CONN_NREAD);
+	if(num < 7) return -1;
+	int fieldNum = atoi(tokenList[0].substr(1).c_str());
+	if((fieldNum - 1)%2 != 0) return -1;
+	//keys_values
+	redis->mdata.totalSetNum = (fieldNum - 1)/2;					
+	redis->mdata.setNum = redis->mdata.totalSetNum;	
+	size_t pos = data.find_first_of(tokenList[0],0);
+	if(pos == string::npos) return -1;
+	
+	int i = 2;
+	while(i>=0) {
+		pos = data.find_first_of("\r\n", pos);
+		if(pos == string::npos) return -1;
+		pos+=2;
+		i--;
+	}
+	string dat = data.substr(pos);
+	int ret = ItemParser(dat, redis); 
+	if(ret == MGET_REQ){
+		redis->conn->SetStatus(Status::CONN_CONREAD);		
+	}
+	return ret;
+}
+
+
+
+void GentProcessMset::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	if(!GentDb::Instance()->BatchPut(redis->mdata.keys_values)){	
+		if(!redis->Slave()) {
+			redis->Info("NOT_STORED",outstr, REDIS_ERROR);
+		}else{
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 0);	
+		}
+	}else{
+		std::map<std::string,std::string>::iterator it;
+		for(it = redis->mdata.keys_values.begin(); it != redis->mdata.keys_values.end(); it++) {
+			string key = it->first;
+			GentRepMgr::Instance("master")->Push(itemData::ADD, key);
+		}
+		LOG(GentLog::INFO, "it is sucess for mset stored");
+		if(!redis->Slave()) {
+			outstr=REDIS_INFO+"\r\n";
+		}else{
+			GentRepMgr::Instance("slave")->SlaveReply(outstr, 1);	
+		}
+	}
+}
+
+int GentProcessMset::ContinueParser(const string &data, GentRedis *redis)
+{
+	string data2 = redis->mdata.content + data;
+	int ret = ItemParser(data2, redis); 
+	if(ret == MGET_REQ){
+		redis->conn->SetStatus(Status::CONN_CONREAD);		
+	}
+	if(ret == 0) {
+		redis->conn->SetStatus(Status::CONN_DATA);
+	}
+	return ret;
+}
+
+int GentProcessMset::ItemParser(string &data, GentRedis *redis)
+{
+	size_t pos = 0;
+	while(redis->mdata.setNum > 0) {
+		string key = "";
+		size_t clpos = 0;
+		if(redis->mdata.cur_key == "") {
+			size_t p = data.find_first_of("\r\n", pos); 
+			if(p == string::npos) {
+				LOG(GentLog::BUG,"-6 111");
+				redis->mdata.content = data.substr(pos);
+				return MGET_REQ;
+			}
+			//LOG(GentLog::INFO,":::%s",data.substr(pos).c_str());
+			string d = data.substr(pos, p-pos);	
+			size_t keyLen = GetLength(d);
+			if(data.size() < (p+2+keyLen)){
+				LOG(GentLog::BUG,"-6 222");
+				redis->mdata.content = data.substr(pos); 
+				return MGET_REQ;				
+			}
+			key = data.substr(p+2, keyLen);
+			clpos = p+2+keyLen+2;
+			redis->mdata.cur_key = key;
+			redis->mdata.cur_key_end = clpos;
+		}else{
+			key = redis->mdata.cur_key;
+			clpos = redis->mdata.cur_key_end;
+		}
+		//if(data.substr(p+2+keyLen, 2) != "\r\n") {
+		//	LOG(GentLog::BUG,"-6 333");	
+		//	redis->mdata.content = data.substr(pos); 
+		//	return MGET_REQ;
+		//}
+		//content length start
+		size_t cpos = 0;
+		size_t cLen = 0;
+		if(redis->mdata.cur_content_len <= 0) {
+			cpos = data.find_first_of("\r\n", clpos);
+			if(cpos == string::npos) {
+				LOG(GentLog::BUG, "-6 444");
+				redis->mdata.content = data.substr(pos);
+				return MGET_REQ;
+			}
+			string d = data.substr(clpos, cpos-clpos);	
+			cLen = GetLength(d);
+			redis->mdata.cur_content_len = cLen;
+			cpos = cpos + 2;
+			redis->mdata.cur_content_start = cpos;
+		}else{
+			cpos = redis->mdata.cur_content_start;
+			cLen = redis->mdata.cur_content_len;
+		}
+		//LOG(GentLog::INFO, "data.size:%d,cpos:%d,cLen:%d", data.size(), cpos, cLen);	
+		if(data.size() < (cpos+cLen)){
+			redis->mdata.content = data.substr(pos); 
+			return MGET_REQ;				
+		}
+		redis->mdata.keys_values[key] = data.substr(cpos,cLen);
+		pos = cpos+cLen+2;
+		redis->mdata.set();
+		data = data.substr(pos);
+		pos = 0;
+		LOG(GentLog::INFO,"data.size:%d, ok key: %s",data.size(),key.c_str());
+	}
+	if(redis->mdata.setNum != 0) {
+		LOG(GentLog::BUG, "-6 666");
+		redis->mdata.content = data.substr(pos); 
+		return MGET_REQ;
+	}
+	return 0;
+}
+
+
 
 int GentProcessSetex::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
@@ -433,6 +586,22 @@ void GentProcessQuit::Complete(string &outstr,const char *recont, uint64_t len, 
 	return;
 }
 
+int GentProcessRandomkey::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
+{
+	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
+	redis->conn->SetStatus(Status::CONN_DATA);
+	return 0;
+}
+
+void GentProcessRandomkey::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
+{
+	GentDb::Instance()->Random(outstr);
+	char s[260]={0};
+	snprintf(s,260,"$%u\r\n%s\r\n",(unsigned int)outstr.size(),outstr.c_str());
+	outstr=string(s);	
+}
+
+
 int GentProcessKeys::Parser(int num,vector<string> &tokenList,const string &data,GentRedis *redis)
 {
 	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
@@ -623,7 +792,14 @@ int GentRedis::Process(const char *rbuf, uint64_t size, string &outstr)
 		//Info(REDIS_AUTH_FAIL,outstr, REDIS_ERROR);
 		return 0;
 	}
+	LOG(GentLog::BUG, "return status:%d",status);	
 	return status;
+}
+
+int GentRedis::ContinueProcess(const char *cbuf, uint64_t size, string &outstr)
+{
+	string data(cbuf,size);
+	return subc->ContinueParser(data, this);	
 }
 
 uint64_t GentRedis::GetLength(string &str) 
@@ -632,7 +808,7 @@ uint64_t GentRedis::GetLength(string &str)
 }
 int GentRedis::Split(const string &str, const string &delimit, vector<string> &v) {
     uint64_t pos,last_pos=0;                                                           
-    int num = 0;                                                                   
+    int num = 0;
     while((pos = str.find_first_of(delimit,last_pos)) != string::npos){                
         if(pos == last_pos){                                                           
             last_pos+=2;                                                                
@@ -640,7 +816,8 @@ int GentRedis::Split(const string &str, const string &delimit, vector<string> &v
             v.push_back(str.substr(last_pos, pos-last_pos));                           
             num++;                                                                     
             last_pos = pos+2;                                                          
-        }                                                                              
+        }
+		if(num == 10 && (v[2] == "mset" || v[2] == "MSET")) break;                                                                              
     }
 	return num;	
 }                                                                                  

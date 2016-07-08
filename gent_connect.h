@@ -23,7 +23,8 @@ public:
         CONN_WRITE = 3,
         CONN_WAIT = 4,
         CONN_CLOSE = 5,
-		CONN_DATA = 6
+		CONN_DATA = 6,
+		CONN_CONREAD = 7
     };
 };
 
@@ -52,12 +53,15 @@ class GentConnect
 	int clen;
     GentCommand *comm;	    
     char *rbuf;
-
     char *rcurr;
     char *content;
     char *rcont;
     int rsize;
     int rbytes;
+
+	char *cbuf;
+	int csize;
+	int cbytes;
 
     string outstr;
 
@@ -96,6 +100,7 @@ public:
 	void SetAuth(int auth){comm->SetAuth(auth);};
 private:
     int InitRead(int &rbytes);
+	int ContinueRead(int &cbytes);
 	void ResetConnect(); 
 	int NextRead();
     void Reset();

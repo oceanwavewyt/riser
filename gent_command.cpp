@@ -24,4 +24,7 @@ void GentCommand::Reset()
     //if(rcurr) free(rcurr);
 }
 
-
+int GentCommand::ContinueProcess(const char *cbuf, uint64_t size, string &outstr)
+{
+	return 0;
+}

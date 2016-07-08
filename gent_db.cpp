@@ -121,6 +121,28 @@ bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, in
 	return s.ok();
 }
 
+bool GentDb::BatchPut(std::map<string, string> &data)
+{
+	AutoLock lockclear(&clear_lock);
+	leveldb::WriteBatch batch;	
+	std::map<string, string>::iterator it;
+	for(it=data.begin(); it!=data.end(); it++) {
+		batch.Put(it->first, it->second);
+	}
+	leveldb::Status s = db->Write(leveldb::WriteOptions(), &batch);
+	if(s.ok()) {
+		for(it=data.begin(); it!=data.end(); it++) {
+			string meData;
+			MetaSerialize(meData, 0, 0);
+			leveldb::Slice s3 = meData;
+			meta_db->Put(leveldb::WriteOptions(), it->first, s3);
+			write_num++;
+			trigger_num_save++;
+		}
+	}
+	return s.ok();
+}
+
 bool GentDb::Del(string &key)
 {
 	leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
@@ -173,10 +195,33 @@ uint64_t GentDb::TotalSize() {
 	return sizes[0];
 }
 
+bool GentDb::Random(string &out) 
+{
+	out = "";
+	if(key_num == 0) return false;
+	uint64_t max = 1000;
+	if(key_num < max) max = key_num;
+	uint64_t i = 1;  
+	uint64_t ni = rand()%max;
+	leveldb::ReadOptions options;
+	options.snapshot = meta_db->GetSnapshot();
+	leveldb::Iterator* it = meta_db->NewIterator(options);
+	for (it->SeekToFirst(); it->Valid(); it->Next()) {
+		if(i >= ni) {
+		   out = it->key().ToString();
+		   break;
+		}
+		i++;
+	}
+	meta_db->ReleaseSnapshot(options.snapshot);
+	delete it;
+	return true;
+}
+
+
 uint64_t GentDb::Count(const string &pre) 
 {
 	if(pre == "" && key_num > 0) return key_num;
-	cout << "no count" <<endl;
 	leveldb::ReadOptions options;
 	options.snapshot = meta_db->GetSnapshot();
 	leveldb::Iterator* it = meta_db->NewIterator(options);

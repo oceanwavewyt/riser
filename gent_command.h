@@ -50,6 +50,7 @@ public:
     virtual void Complete(string &outstr, const char *recont, uint64_t len) = 0;
     virtual GentCommand *Clone(GentConnect *) = 0;
 	virtual bool Init(string &msg) = 0;
+	virtual int ContinueProcess(const char *cbuf, uint64_t size, string &outstr);
 	virtual void Reset();
     void SetAuth(int ah) {auth = ah;};
 public:

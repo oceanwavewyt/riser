@@ -20,6 +20,7 @@ static const string REDIS_AUTH_FAIL="invalid password";
 static const uint64_t REDIS_EXPIRE_TIME = LONG_MAX;
 static const int AUTH_REQ_FAIL = -4;
 static const int AUTH_FAIL = -5;
+static const int MGET_REQ = -6;
 class GentRedis;
 class GentSubCommand
 {
@@ -35,6 +36,7 @@ public:
 	virtual int Parser(int,vector<string> &,const string &, GentRedis *)=0;
 	virtual void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)=0;	
 	virtual GentSubCommand *Clone()=0;
+	virtual int ContinueParser(const string &data, GentRedis *);
 };
 class GentProcessGet : public GentSubCommand
 {
@@ -61,6 +63,22 @@ public:
 	{
 		return new GentProcessSet();
 	};
+};
+class GentProcessMset : public GentSubCommand
+{
+public:
+	GentProcessMset(){};
+	~GentProcessMset(){};
+public:
+	int Parser(int,vector<string> &,const string &,GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	int ContinueParser(const string &data, GentRedis *);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessMset();
+	};
+private:
+	int ItemParser(string &data, GentRedis *redis);
 };
 class GentProcessSetex : public GentSubCommand
 {
@@ -142,6 +160,21 @@ public:
 		return new GentProcessKeys();
 	};
 };
+
+class GentProcessRandomkey : public GentSubCommand
+{
+public:
+	GentProcessRandomkey(){};
+	~GentProcessRandomkey(){};
+public:
+	int Parser(int,vector<string> &,const string &data, GentRedis *);
+	void Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis);
+	GentSubCommand *Clone()
+	{
+		return new GentProcessRandomkey();
+	};
+};
+
 class GentProcessExists : public GentSubCommand
 {
 public:
@@ -236,9 +269,37 @@ public:
 	};
 };
 
+typedef struct mset_data {
+	map<string, string> keys_values;
+	string content;
+	string cur_key;
+	size_t cur_key_end;
+	size_t cur_content_len;
+	size_t cur_content_start;
+	int totalSetNum;
+	int setNum;
+	void init() {
+		content = "";
+		cur_key = "";
+		cur_content_len = 0;
+		cur_content_start = 0;
+		totalSetNum = 0;
+		setNum = 0;
+	};
+	void set() {
+		setNum--;
+		cur_key = "";
+		cur_key_end = 0;
+		cur_content_start = 0;
+		cur_content_len = 0;
+		content = "";
+	};	
+}mset_data;
+
 class GentRedis: public GentCommand
 {
 	friend class GentProcessSet;
+	friend class GentProcessMset;
 	friend class GentProcessSetex;
 	friend class GentProcessGet;
 	friend class GentProcessMget;
@@ -253,6 +314,7 @@ class GentRedis: public GentCommand
 	friend class GentProcessReply;
 	friend class GentProcessSlave;
 	friend class GentProcessAuth;
+	friend class GentProcessRandomkey;
 	static std::map<string, GentSubCommand*> commands;
 public:
 	enum datatype
@@ -264,6 +326,7 @@ public:
 private:
 	int master_auth;
 	string keystr;
+	mset_data mdata;
 	vector<string> keyvec;
 	string content;
     string repmsg;
@@ -275,7 +338,8 @@ public:
     ~GentRedis();
 	static void SetCommands();
 public:
-   int Process(const char *rbuf, uint64_t size, string &outstr);	
+   int Process(const char *rbuf, uint64_t size, string &outstr);
+   int ContinueProcess(const char *cbuf, uint64_t size, string &outstr);
    void Complete(string &outstr, const char *, uint64_t);
    GentCommand *Clone(GentConnect *);
    int GetStatus();

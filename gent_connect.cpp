@@ -60,6 +60,9 @@ void GentConnect::Init(int sfd) {
     remainsize = 0;
 	sendsize = 0;
 	cursendsize = 0;
+	csize = 0;
+	cbytes = 0;
+	cbuf = NULL;
 	ev_flags = eventRead; 
     curstatus = Status::CONN_READ;
     //configure info
@@ -86,6 +89,10 @@ void GentConnect::Reset() {
     if(content) {
         free(content);
     }
+	if(cbuf) {
+		free(cbuf);
+		cbuf = NULL;
+	}
     ReAllocation();
 }
 
@@ -159,7 +166,37 @@ int GentConnect::TryRunning(string &outstr2) {
 				}
                 
                 return 0;
+			case Status::CONN_CONREAD:
+				if(!cbuf) {
+					csize = GentCommand::READ_BUFFER_SIZE;
+		        	cbuf = (char *)malloc(csize);
+					memset(cbuf,0, csize);
+				}
+				readNum = ContinueRead(cbytes);
+				if(readNum < 0) {
+                    LOG(GentLog::BUG, "continue read the number of byte less than zero");
+                    outstr2 = "read error\r\n";
+                    Reset();
+                    return readNum;
+                }else if(readNum == 0) {
+					//wait                               
+                   	if(GentEvent::UpdateEvent(fd, this, eventRead)==-1) {
+						return -1;	
+					}
+					return 0; 
+                }
+				if(!comm->ContinueProcess(cbuf, cbytes, outstr)) {
+					free(cbuf);
+					csize = 0;
+					cbytes = 0;
+					cbuf = NULL;
+				}else{
+					memset(cbuf,0 ,csize);
+					cbytes = 0;
+				}
+				break;
             case Status::CONN_CLOSE:
+
                 return -1;		
             default:
                 return -1;
@@ -278,4 +315,49 @@ int GentConnect::NextRead() {
 	}
 	SetStatus(Status::CONN_CLOSE);                                                               
 	return 0;
+}
+
+int GentConnect::ContinueRead(int &cbytes) {                         
+    int gotdata = 0;                                                     
+    int res;                                                             
+    int num_allocs = 0;                                                  
+ 	                                                                      
+    while (1) {                                                          
+        if (cbytes >= csize) {
+            if (num_allocs == 4) {                                       
+                return gotdata;                                          
+            }                                                            
+            ++num_allocs;                                                
+            char *new_rbuf = (char *)realloc(cbuf, csize * 2);
+            if (!new_rbuf) {                                             
+                LOG(GentLog::ERROR, "Couldn't realloc input buffer");
+                rbytes = 0; /* ignore what we read */
+                return -2;                                               
+            } 
+            cbuf = new_rbuf;                               
+            csize *= 2;
+        }                                                                
+                                                                         
+        int avail = csize - cbytes;
+        res = read(fd, cbuf + cbytes, avail);                   
+		if (res > 0) {                                                   
+            gotdata = 1;                                                 
+            cbytes += res;
+            if (res == avail) {                                          
+                continue;                                                
+            } else {                                                     
+                break;                                                   
+            }                                                            
+        }                                                                
+       if (res == 0) {
+           return -3;                                       
+       }                                                    
+       if (res == -1) {
+           if (errno == EAGAIN || errno == EWOULDBLOCK) {   
+               break;                                       
+           }
+           return -1;
+       }                                                    
+   }
+   return gotdata;                                          
 }

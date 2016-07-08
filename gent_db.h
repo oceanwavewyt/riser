@@ -10,6 +10,7 @@
 #define riser_gent_db_h
 #include <leveldb/db.h>
 #include <leveldb/cache.h>
+#include <leveldb/write_batch.h>
 #include <leveldb/filter_policy.h>
 #include "prefine.h"
 #include "gent_command.h"
@@ -46,7 +47,8 @@ public:
     bool Init(string &err);
     bool Put(string &key, string &value, uint64_t expire, int datatype=GentRedis::TY_STRING);
     bool Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype=GentRedis::TY_STRING);
-    bool Get(string &key,string &value);
+    bool BatchPut(std::map<string, string> &data);
+	bool Get(string &key,string &value);
 	bool Get(string &key,string &value, uint64_t &expire);
 	bool Ttl(string &key, uint64_t &expire);
     bool Del(string &key);
@@ -55,6 +57,7 @@ public:
 	uint64_t Keys(vector<string> &outvec, const string &pre="*");
 	uint64_t ClearExpireKey();	
 	uint64_t TotalSize();
+	bool Random(string &out);	
 	string &GetPath();
 private:
 	bool GetPathname(string &);
