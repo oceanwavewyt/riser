@@ -88,7 +88,23 @@ public:
 			return p->data;  
         }  
     }  
-  
+ 
+	bool front_nums_element(std::vector<T> &dat, int num)
+	{	
+		if(front == rear)
+		{
+			return false;
+		}
+		NODE<T> *p = front->next;
+		while(num > 0) {
+			dat.push_back(p->data);
+			num--;
+			if(p->next == NULL) break;
+			p = p->next;
+		}		
+		return true;
+	}	
+ 
     T back_element()  
     {  
         if (front == rear)  
@@ -155,14 +171,19 @@ public:
 	string name;
 	int type;
 	int tm;
+	bool is_sync;
 public:
 	itemData(const string &key, int optype)
 	{
 		name = key;
 		type = optype;
 		tm = time(NULL);
+		is_sync = false;
 	}	
 	~itemData(){};
+	void setSync(){
+		is_sync = true;
+	};
 };
 /* 
 int main(int argc,char* argv[])  

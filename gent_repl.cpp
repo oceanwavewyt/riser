@@ -260,6 +260,7 @@ main_que_length(0)
 		GentDb::Instance()->Keys(outvec, "*");
 		for(it=outvec.begin();it!=outvec.end();it++) {
 			itemData *item = new itemData(*it,itemData::ADD);
+			cout << item->name <<endl;
 			que.push(item);
 			main_que_length++;	
 		}
@@ -299,23 +300,40 @@ void GentReplication::Pop(bool is_rep)
 {
 	AutoLock lock(&que_push_lock);
 	itemData *it;
+	int num = 1;
+	int max = SYNC_NUM*2;
 	if(!is_update_que) {
-	 	it= main_que.pop();
-	 	if(is_rep == true) {
-			rinfo_->set("rep_time",time(NULL));
+		while(num <= max) {
+			it = main_que.front_element();
+			if(it == NULL || it->is_sync == false) break; 
+			it= main_que.pop();
+	 		if(is_rep == true) {
+				rinfo_->set("rep_time",time(NULL));
+			}
+			delete it;
+			it = NULL;
+			num++;
 		}
 	}else{
-		it= que.pop();
-		if(it == NULL && !rinfo_->rep_time ) {
-			if(is_rep == true) {
-				rinfo_->set("rep_time", time(NULL));
+		while(num <= max) {
+			it = que.front_element();
+			if(it == NULL) break;
+			if(it->is_sync == false) break;
+			it= que.pop();
+			if(it == NULL && !rinfo_->rep_time ) {
+				if(is_rep == true) {
+					rinfo_->set("rep_time", time(NULL));
+				}
 			}
+			delete it;
+			it = NULL;
+			num++;
 		}
 	}
-	if(it != NULL) {
-		main_que_length--;
-		delete it;
+	if(num > 1) {
+		main_que_length-=num+1;
 	}
+	if(it && it->is_sync) delete it;
 	it = NULL;
 }
 
@@ -335,6 +353,23 @@ itemData *GentReplication::front_element()
 	}
 	return it;
 }
+
+bool GentReplication::front_nums_element(std::vector<itemData *> &dat, int num)
+{
+	AutoLock lock(&que_push_lock);
+	if(!is_update_que) {
+		return main_que.front_nums_element(dat, num);
+	}
+	if(!que.front_nums_element(dat, num)){
+		is_update_que = false;
+		if(!rinfo_->rep_time ) {
+			rinfo_->set("rep_time", time(NULL));	
+		}
+		return main_que.front_nums_element(dat, num);
+	}
+	return true;
+}
+
 
 bool GentReplication::SetLogout()
 {
@@ -389,37 +424,70 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 			return true;
 		}
 	}
+	outstr = "";
 	//同步数据
-	itemData *it = front_element();
-	if(it == NULL) {
-		//outstr = "*2\r\n$5\r\nreply\r\n$8\r\ncomplete\r\n";
+	vector<itemData *> syncData;
+	if(!front_nums_element(syncData, SYNC_NUM)) {
 		outstr = "";
 		return false;
 	}
 	status = 1;
-	if(it->type == itemData::ADD) {
+	vector<itemData *>::iterator iter;
+	int msetNum = 0;
+	for(iter = syncData.begin(); iter != syncData.end(); iter++) {
+		itemData *it = *iter;
+		cout << "syncData: "<< it->name <<endl;
+		if(it->type != itemData::ADD && msetNum != 0) return MsetReply(outstr, msetNum);
+		if(it->type != itemData::ADD) {
+			Reply(itemData::DEL, it->name, outstr);
+			it->setSync();
+			return true;
+		}
 		string nr = "";
 		LOG(GentLog::INFO, "sync the key of %s data.", it->name.c_str());
 		uint64_t expire;
 		if(!GentDb::Instance()->Get(it->name, nr, expire)) {
-			Reply(itemData::DEL, it->name,	outstr);
-			return true;		
+			if(msetNum == 0) {
+				Reply(itemData::DEL, it->name,	outstr);
+				it->setSync();
+				return true;
+			}
+			return MsetReply(outstr, msetNum);		
 		}
 		uint64_t t = (unsigned long long)time(NULL);
 		if(expire != 0 && expire < t) {
-			Reply(itemData::DEL, it->name,  outstr);
-			return true;
+			if(msetNum == 0) {
+				Reply(itemData::DEL, it->name,	outstr);
+				it->setSync();
+				return true;
+			}
+			return MsetReply(outstr, msetNum);
 		}
 		if(expire != 0) {
+			if(msetNum > 0) return MsetReply(outstr, msetNum);
 			expire = expire - t;
+			LOG(GentLog::INFO, "reply %s.", it->name.c_str());
+			Reply(itemData::ADD, it->name, outstr, nr, expire);	
+			it->setSync();
+			return true;
 		}
-		LOG(GentLog::INFO, "reply %s.", it->name.c_str());
-		Reply(itemData::ADD, it->name, outstr, nr, expire);
-		return true;
-	}				
-	Reply(itemData::DEL, it->name, outstr);
-	return true;
+		string itstr; 
+		if(it->name != "") {
+			ReplyItem(it->name, itstr, nr);
+			outstr += itstr;
+			msetNum++;
+		}
+		it->setSync();	
+	}
+	return MsetReply(outstr, msetNum);	
+}
 
+bool GentReplication::MsetReply(string &outstr, int num)
+{
+	char headstr[30]={0};
+	snprintf(headstr,30,"*%d\r\n$4\r\nmset\r\n", num*2+1);
+	outstr = headstr + outstr;
+	return true;
 }
 
 void GentReplication::Reply(int type, string &key,string &outstr, const string &nr, uint64_t expire)
@@ -441,6 +509,15 @@ void GentReplication::Reply(int type, string &key,string &outstr, const string &
 		outstr=retstr;		
 	}
 	//cout << outstr <<endl;	
+}
+
+void GentReplication::ReplyItem(string &key,string &outstr, const string &nr)
+{
+	char retstr[100] = {0};	
+	snprintf(retstr,100,"$%ld\r\n%s\r\n$%ld\r\n",
+				(unsigned long)key.size(),key.c_str(),(unsigned long)nr.size());
+
+	outstr=retstr+nr+"\r\n";
 }
 
 

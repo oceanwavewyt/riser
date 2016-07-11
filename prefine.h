@@ -47,6 +47,8 @@ const int WRITE_BUFFER_SIZE = 32;
 const int SLAVE_NAME_SIZE = 50;
 //从服务器数量最多1024
 const int SLAVE_NUM = 1024;
+//一次同步最大的数量
+const int SYNC_NUM = 10;
 //队列最大链接数
 const int MAX_CONNECT = 10000;
 //LOG

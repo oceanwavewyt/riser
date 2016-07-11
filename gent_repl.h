@@ -138,8 +138,11 @@ public:
 	bool SetLogout();
 private:
 	void Reply(int type, string &key,string &outstr, const string &nr="", uint64_t expire=0);
+	void ReplyItem(string &key,string &outstr, const string &nr);
 	void Pop(bool is_rep=true);	
 	itemData *front_element();
+	bool front_nums_element(std::vector<itemData *> &dat, int num);
+	bool MsetReply(string &outstr, int num);
 };
 
 

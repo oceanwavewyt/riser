@@ -11,7 +11,7 @@ INCLUDES += -I$(ROOT) -I/usr/include/ -L./lib/
 
 LDFLAGS +=-lpthread -levent ./lib/libleveldb.a
 CLDFLAGS +=-lhiredis -L./lib/ ./lib/libhiredis.a
-CPPFLAGS += -fPIC -Wall
+CPPFLAGS +=-g -fPIC -Wall
 OS := $(shell uname -s)
 IS_DARWIN := $(shell echo $(OS)|grep -i Darwin)
 ifdef IS_DARWIN
