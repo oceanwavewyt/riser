@@ -260,7 +260,6 @@ main_que_length(0)
 		GentDb::Instance()->Keys(outvec, "*");
 		for(it=outvec.begin();it!=outvec.end();it++) {
 			itemData *item = new itemData(*it,itemData::ADD);
-			cout << item->name <<endl;
 			que.push(item);
 			main_que_length++;	
 		}

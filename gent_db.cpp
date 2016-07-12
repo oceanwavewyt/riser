@@ -72,7 +72,6 @@ bool GentDb::Get(string &key, string &value, uint64_t &expire)
 bool GentDb::Put(string &key, string &value,uint64_t expire, int datatype)
 {
 	AutoLock lockclear(&clear_lock);	
-	cout << trigger_num_save << endl;
 	string metaData;
 	leveldb::Status keyStatus= meta_db->Get(leveldb::ReadOptions(), key, &metaData);
 	
@@ -96,7 +95,6 @@ bool GentDb::Put(string &key, string &value,uint64_t expire, int datatype)
 bool GentDb::Put(string &key, const char *val, uint64_t len, uint64_t expire, int datatype)
 {
 	AutoLock lockclear(&clear_lock);
-	cout << trigger_num_save << endl;
 
 	if(write_num > MAX_WRITE_CLEAR && is_clear == false) {
 		GentThread::Intance()->StartClear();
