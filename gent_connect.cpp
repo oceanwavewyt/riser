@@ -29,6 +29,13 @@ GentConnect::~GentConnect()
 {
     Destruct();
 }
+
+void GentConnect::SetClientData(dataItem *d)
+{
+	memcpy(ip, d->ip, 50);
+	port = d->port;
+}
+
 void GentConnect::Destruct()
 {
     if(rbuf) {

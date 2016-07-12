@@ -126,11 +126,17 @@ void GentEvent::HandleMain(const int fd, const short which, void *arg) {
 
    	dataItem *d = (dataItem *)malloc(sizeof(dataItem));
 	d->sfd = sfd;
+
+	struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+    inet_ntop(AF_INET,(void*)&(s->sin_addr),d->ip,50);
+	/*
 	struct sockaddr_in sin;
  	memcpy(&sin, &addr, sizeof(sin));
-	sprintf(d->ip, inet_ntoa(sin.sin_addr));	
-	d->port = sin.sin_port; 
-    if(!GentThread::Intance()->SendThread(d)) {
+	sprintf(d->ip, inet_ntoa(sin.sin_addr));
+	*/	
+	//d->port = sin.sin_port; 
+    d->port = ntohs(s->sin_port);
+	if(!GentThread::Intance()->SendThread(d)) {
 		free(d);
 		LOG(GentLog::ERROR, "send thread data failed");
 		close(sfd);

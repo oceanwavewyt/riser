@@ -98,6 +98,7 @@ public:
 	};
     void Init(int sfd);
 	void SetAuth(int auth){comm->SetAuth(auth);};
+	void SetClientData(dataItem *d);
 private:
     int InitRead(int &rbytes);
 	int ContinueRead(int &cbytes);

@@ -160,7 +160,8 @@ void GentThread::Handle(int fd, short which, void *arg) {
 	//    GentConnect *nconn = GentFrame::Instance()->msg_.Pop();
     dataItem *item = GentFrame::Instance()->msg_[me->id].Pop();
 	GentConnect *c = GentAppMgr::Instance()->GetConnect(item->sfd);
-  	free(item);	 
+  	c->SetClientData(item);
+	free(item);	 
     LOG(GentLog::BUG, "start deal new connection fd:%d", c->fd);
 	event_set(&c->ev, c->fd, eventRead ,GentEvent::Handle , (void *)c);
     event_base_set(me->base, &c->ev);
