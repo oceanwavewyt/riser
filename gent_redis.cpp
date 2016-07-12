@@ -189,7 +189,7 @@ int GentProcessMset::Parser(int num,vector<string> &tokenList,const string &data
 	LOG(GentLog::INFO, "mset parser"); 
 	if(!IsAuth(redis)) return AUTH_REQ_FAIL;
 	redis->conn->SetStatus(Status::CONN_NREAD);
-	if(num < 7) return -1;
+	if(num < 3) return -1;
 	int fieldNum = atoi(tokenList[0].substr(1).c_str());
 	if((fieldNum - 1)%2 != 0) return -1;
 	//keys_values
@@ -305,7 +305,7 @@ int GentProcessMset::ItemParser(string &data, GentRedis *redis)
 			cLen = redis->mdata.cur_content_len;
 		}
 		//LOG(GentLog::INFO, "data.size:%d,cpos:%d,cLen:%d", data.size(), cpos, cLen);	
-		if(data.size() < (cpos+cLen)){
+		if(data.size() < (cpos+cLen+2)){
 			redis->mdata.content = data.substr(pos); 
 			return MGET_REQ;				
 		}
@@ -760,6 +760,7 @@ int GentRedis::ParseCommand(const string &data)
 	}
 */
 	if(it == commands.end()){
+
 		return -1;
 	}
 	//subc = (*it).second->Clone();
