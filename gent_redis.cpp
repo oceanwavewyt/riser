@@ -236,6 +236,7 @@ void GentProcessMset::Complete(string &outstr,const char *recont, uint64_t len, 
 			GentRepMgr::Instance("slave")->SlaveReply(outstr, 1);	
 		}
 	}
+	redis->mdata.keys_values.clear();
 }
 
 int GentProcessMset::ContinueParser(const string &data, GentRedis *redis)

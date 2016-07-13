@@ -129,7 +129,6 @@ bool GentDb::BatchPut(std::map<string, string> &data)
 	}
 	leveldb::Status s = db->Write(leveldb::WriteOptions(), &batch);
 	if(s.ok()) {
-		AutoLock lock(&key_num_lock);
 		for(it=data.begin(); it!=data.end(); it++) {
 			string meData;
 			MetaSerialize(meData, 0, 0);
@@ -137,8 +136,10 @@ bool GentDb::BatchPut(std::map<string, string> &data)
 			meta_db->Put(leveldb::WriteOptions(), it->first, s3);
 			write_num++;
 			trigger_num_save++;
-			SetNum(++key_num);
 		}
+		AutoLock lock(&key_num_lock);
+		key_num += data.size();
+		SetNum(key_num);
 	}
 	return s.ok();
 }
