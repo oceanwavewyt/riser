@@ -129,7 +129,7 @@ class GentReplication : public GentDestroy
 	CommLock que_push_lock;
 	CommLock que_pop_lock;
 public:
-	GentReplication(const string &name, repinfo *rinfo);
+	GentReplication(const string &name, repinfo *rinfo, bool is_sync_all=true);
 	~GentReplication();	
 	bool Start(string &msg, GentConnect *c, string &outstr);
 	void Push(int type, string &key);
@@ -171,7 +171,7 @@ public:
 	void Init();
 	void Destroy(int id);	
 	bool Logout(string &name);	
-	GentReplication *Get(const string &name);
+	GentReplication *Get(const string &name, bool is_sync_all=true);
 	void Push(int type, string &key);
 	uint32_t GetReplicationNum();
 	uint64_t QueLength();

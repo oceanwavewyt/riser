@@ -30,6 +30,7 @@ GentRedis::GentRedis(GentConnect *c):GentCommand(c)
   auth = 0;
   rlbytes = 0;
   expire = 0;
+  is_sync_all = true;
   mdata.init();
 }
 GentRedis::~GentRedis(){
@@ -672,12 +673,13 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 		if(config["master_auth"] == "") {
 			redis->master_auth = 1;
 		}else{			
-			if(num != 9 || tokenList[6] != "auth" || 
+			if(num != 11 || tokenList[6] != "auth" || 
 					tokenList[8] != config["master_auth"]) {
 				//msg = "autherror";
 				redis->repmsg = "autherror";
 			}else{
 				redis->master_auth = 1;
+				redis->is_sync_all = (tokenList[10]=="true")?true:false;
 			}
 		}
 	}
@@ -690,7 +692,7 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 
 void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	GentReplication *rep = GentRepMgr::Instance("master")->Get(redis->keystr);
+	GentReplication *rep = GentRepMgr::Instance("master")->Get(redis->keystr, redis->is_sync_all);
 	if(rep == NULL) {
 		outstr = REDIS_ERROR+" slave full,manual clear\r\n";
 		return;

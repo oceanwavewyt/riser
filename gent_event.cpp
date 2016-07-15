@@ -190,11 +190,19 @@ int GentEvent::Client(const string &host, int port)
 	address.sin_addr.s_addr=inet_addr(host.c_str());    
 	address.sin_family=AF_INET;  
 	address.sin_port=htons(port);
+	                                                                
 	int result=connect(client_sock, (struct sockaddr *)&address, sizeof(address));  
 	if(result==-1){  
     	LOG(GentLog::ERROR, "connect replicaton master failed");	
 		close(client_sock);
 		return -1;  
+	}
+	int flags = 1;
+	if ((flags = fcntl(client_sock, F_GETFL, 0)) < 0 ||              
+	    fcntl(client_sock, F_SETFL, flags | O_NONBLOCK) < 0) {       
+		 LOG(GentLog::ERROR, "setting client_sock O_NONBLOCK failed");
+    		close(client_sock);
+		return -1;                                                   
 	} 	
 	return client_sock; 
 }

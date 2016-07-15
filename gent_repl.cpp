@@ -115,8 +115,15 @@ int GentRepMgr::LinkMaster(GentEvent *ev_, const string &host, int port) {
 int GentRepMgr::SlaveAuth(const string &client_name, const string &auth)
 {
 	char str[300] = {0};
-	snprintf(str, 300,"*4\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\nauth\r\n$%ld\r\n%s\r\n",
-			(unsigned long)client_name.size(),client_name.c_str(), (unsigned long)auth.size(),auth.c_str());
+	GentConfig &config = GentFrame::Instance()->config;
+	string is_sync_all = "true";
+	if(config["slave_sync_all"] == "false") {
+		is_sync_all = "false";
+	} 
+	snprintf(str, 300,"*4\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\nauth\r\n$%ld\r\n%s\r\n$%ld\r\n%s\r\n",
+			(unsigned long)client_name.size(),client_name.c_str(), 
+			(unsigned long)auth.size(),auth.c_str(),
+			(unsigned long)is_sync_all.size(),is_sync_all.c_str());
 	string sendstr(str);
 	return connect_->OutString(sendstr);
 }
@@ -163,7 +170,7 @@ void GentRepMgr::Init()
 	}
 }
 
-GentReplication *GentRepMgr::Get(const string &name)
+GentReplication *GentRepMgr::Get(const string &name, bool is_sync_all)
 {
 	
 	std::map<string,GentReplication*>::iterator it = rep_list_.find(name); 	
@@ -176,7 +183,7 @@ GentReplication *GentRepMgr::Get(const string &name)
 			info = it_info->second;
 		}
 		if(info == NULL) return NULL;
-		rep_list_[name] = new GentReplication(name, info);
+		rep_list_[name] = new GentReplication(name, info, is_sync_all);
 	}	
 	return rep_list_[name];
 }
@@ -241,7 +248,7 @@ uint64_t GentRepMgr::QueLength()
 	return len;
 }
 
-GentReplication::GentReplication(const string &name, repinfo *rinfo):status(0),
+GentReplication::GentReplication(const string &name, repinfo *rinfo, bool is_sync_all):status(0),
 main_que_length(0)
 {
 	is_run = true;
@@ -249,23 +256,23 @@ main_que_length(0)
 	rep_name = name;
 	rinfo_ = rinfo;
 	current_node = NULL;
-	//cout << "ser_time:"<<rinfo_->ser_time << endl;
-	//cout << "rep_time:"<<rinfo_->rep_time << endl;
 	if(!rinfo_->ser_time || rinfo_->ser_time > rinfo_->rep_time) {
-		LOG(GentLog::WARN, "sync all data for %s slave.", name.c_str());
-		//设置所有的磁盘数据到队列
-		is_update_que = true;	
-		vector<string> outvec;
-		vector<string>::iterator it;
-		GentDb::Instance()->Keys(outvec, "*");
-		for(it=outvec.begin();it!=outvec.end();it++) {
-			itemData *item = new itemData(*it,itemData::ADD);
-			que.push(item);
-			main_que_length++;	
-		}
-		if(!rinfo_->ser_time) {
-			AutoLock lock(&que_push_lock);
-			rinfo_->set("ser_time",time(NULL));	
+		if(is_sync_all) {
+			LOG(GentLog::WARN, "sync all data for %s slave.", name.c_str());
+			//设置所有的磁盘数据到队列
+			is_update_que = true;	
+			vector<string> outvec;
+			vector<string>::iterator it;
+			GentDb::Instance()->Keys(outvec, "*");
+			for(it=outvec.begin();it!=outvec.end();it++) {
+				itemData *item = new itemData(*it,itemData::ADD);
+				que.push(item);
+				main_que_length++;	
+			}
+			if(!rinfo_->ser_time) {
+				AutoLock lock(&que_push_lock);
+				rinfo_->set("ser_time",time(NULL));	
+			}
 		}
 	}else{
 		LOG(GentLog::WARN, "not need to sync all data for %s slave.", name.c_str());
@@ -311,7 +318,9 @@ void GentReplication::Pop(bool is_rep)
 			}
 			delete it;
 			it = NULL;
+			main_que_length--;
 			num++;
+			
 		}
 	}else{
 		while(num <= max) {
@@ -326,11 +335,9 @@ void GentReplication::Pop(bool is_rep)
 			}
 			delete it;
 			it = NULL;
+			main_que_length--;
 			num++;
 		}
-	}
-	if(num > 1) {
-		main_que_length-=num+1;
 	}
 	if(it && it->is_sync) delete it;
 	it = NULL;
@@ -435,7 +442,6 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 	int msetNum = 0;
 	for(iter = syncData.begin(); iter != syncData.end(); iter++) {
 		itemData *it = *iter;
-		cout << "syncData: "<< it->name <<endl;
 		if(it->type != itemData::ADD && msetNum != 0) return MsetReply(outstr, msetNum);
 		if(it->type != itemData::ADD) {
 			Reply(itemData::DEL, it->name, outstr);

@@ -333,6 +333,7 @@ private:
 	GentSubCommand *subc; 
 	uint64_t  rlbytes;
 	uint64_t  expire;
+	bool is_sync_all;
 public:
     GentRedis(GentConnect *c=NULL);
     ~GentRedis();

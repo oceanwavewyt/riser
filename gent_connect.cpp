@@ -200,6 +200,8 @@ int GentConnect::TryRunning(string &outstr2) {
 				}else{
 					memset(cbuf,0 ,csize);
 					cbytes = 0;
+					GentEvent::UpdateEvent(fd, this, eventRead);
+					return 0;
 				}
 				break;
             case Status::CONN_CLOSE:
@@ -360,7 +362,9 @@ int GentConnect::ContinueRead(int &cbytes) {
            return -3;                                       
        }                                                    
        if (res == -1) {
-           if (errno == EAGAIN || errno == EWOULDBLOCK) {   
+           if (errno == EAGAIN || errno == EWOULDBLOCK) {  
+		LOG(GentLog::BUG, "continue updateevent");      
+	        GentEvent::UpdateEvent(fd, this, eventRead); 
                break;                                       
            }
            return -1;
