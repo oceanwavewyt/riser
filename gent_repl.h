@@ -164,6 +164,7 @@ public:
 	enum status {INIT=0,AUTH=1,WAIT=2,CONTINUE=3};
 public:
 	static GentRepMgr *Instance(const string &name);
+	static void *ClearRep(void *arg);
 	static void UnInstance();
 	static void SlaveHandle(int fd, short which, void *arg);
 public:

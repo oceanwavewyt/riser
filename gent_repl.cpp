@@ -163,10 +163,25 @@ bool GentRepMgr::Logout(string &name)
 	std::map<string,GentReplication*>::iterator it = rep_list_.find(name);
 	if(it == rep_list_.end()) return true;
 	if(!rep_list_[name]->SetLogout()) return false;
+	pthread_attr_t attr;
+	pthread_t pid;
+	pthread_attr_init(&attr);
 	GentReplication *r = rep_list_[name];
-	delete r;
+	int ret = pthread_create(&pid,&attr,GentRepMgr::ClearRep,r);
+	if(ret != 0) { 
+		LOG(GentLog::ERROR, "start clear %s replication failed.", name.c_str());	
+		return false;
+	}
 	rep_list_.erase(it);
 	return true;
+}
+
+void *GentRepMgr::ClearRep(void *arg) 
+{
+	LOG(GentLog::WARN, "start clearRep replication.");
+	GentReplication *r = static_cast<GentReplication *>(arg);	
+	delete r;
+	return ((void *)0);
 }
 
 void GentRepMgr::Init() 
