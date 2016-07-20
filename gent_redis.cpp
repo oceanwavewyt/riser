@@ -685,13 +685,21 @@ int GentProcessRep::Parser(int num,vector<string> &tokenList,const string &data,
 
 void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	GentReplication *rep = GentRepMgr::Instance("master")->Get(redis->keystr, redis->is_sync_all);
-	if(rep == NULL) {
-		outstr = REDIS_ERROR+" slave full,manual clear\r\n";
-		return;
-	}
-	if(!rep->Start(redis->repmsg, redis->conn, outstr)) {
-		redis->conn->SetStatus(Status::CONN_WAIT);
+	if(redis->master_auth == 0) {
+		if(redis->repmsg == "auth" ) {
+			outstr = "*2\r\n$5\r\nreply\r\n$6\r\nauthok\r\n";
+		}else{
+			outstr = "*2\r\n$5\r\nreply\r\n$9\r\nautherror\r\n";
+		}
+	}else{
+		GentReplication *rep = GentRepMgr::Instance("master")->Get(redis->keystr, redis->is_sync_all);
+		if(rep == NULL) {
+			outstr = REDIS_ERROR+" slave full,manual clear\r\n";
+			return;
+		}
+		if(!rep->Start(redis->repmsg, redis->conn, outstr)) {
+			redis->conn->SetStatus(Status::CONN_WAIT);
+		}
 	}
 }
 
