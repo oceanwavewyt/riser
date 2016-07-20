@@ -511,22 +511,15 @@ int GentProcessInfo::TotalTableFiles(string &ret) {
 
 void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, GentRedis *redis)
 {
-	char retbuf[500] = {0};
 
 	if(redis->keystr == "rep") {
 		string master_info;
 		GentRepMgr::Instance("master")->GetSlaveInfo(master_info);
 		string slave_info;
 		GentRepMgr::Instance("slave")->GetInfo(slave_info);
-		snprintf(retbuf,500,
-			"# Master\r\n"
-			"%s\r\n"
-			"# Slave\r\n"
-			"%s\r\n",
-			 master_info.c_str(),	
-			 slave_info.c_str()
-			 );
+		outstr = "# Master\r\n"+master_info + "# Slave\r\n" + slave_info+"\r\n";
 	}else {
+		char retbuf[500] = {0};
 	    uint64_t totals = GentDb::Instance()->TotalSize(); 
 		char hmen[64]={0};
 		GentConfig &config = GentFrame::Instance()->config;
@@ -569,8 +562,8 @@ void GentProcessInfo::Complete(string &outstr,const char *recont, uint64_t len, 
 				 slaveNum,
 				 (unsigned long long)GentRepMgr::Instance("master")->QueLength()
 				 );
+				outstr = retbuf;
 	}
-	outstr = retbuf;
     char c[50]={0};
 	snprintf(c,50,"$%u\r\n",(unsigned int)outstr.size()-2);
 	outstr = c+outstr;

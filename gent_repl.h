@@ -156,6 +156,7 @@ class GentRepMgr
 	GentFile<repinfo> *repfile_;
 	map<string,repinfo *> rep_map_;
 	uint64_t slave_start_time;
+	size_t slave_send_time;
 	string server_id_;
 private:
 	int LinkMaster(GentEvent *ev_, const string &host, int port);	

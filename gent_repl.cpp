@@ -37,6 +37,7 @@ GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INI
 		}
 	}
 	server_id_ = GentFrame::Instance()->s->server_id;
+	slave_send_time = 0;
 }
 
 GentRepMgr::~GentRepMgr()
@@ -60,7 +61,12 @@ void GentRepMgr::SlaveHandle(int fd, short which, void *arg)
 void GentRepMgr::Slave(GentEvent *e) 
 {
 	if(status == GentRepMgr::AUTH || status == GentRepMgr::WAIT){
-		if(connect_ && connect_->fd>0) return;
+		if(connect_ && connect_->fd>0){
+			if(slave_send_time > 0 && time(NULL) - slave_send_time > 600) {
+				CannelConnect();
+			}
+			return;
+		}
 		status = GentRepMgr::CONTINUE;
 	}
 	GentConfig &config = GentFrame::Instance()->config;
@@ -98,6 +104,7 @@ void GentRepMgr::Slave(GentEvent *e)
 			CannelConnect();
 			return;
 		}
+		slave_send_time = time(NULL);
 		status = GentRepMgr::WAIT;
 	}
 }
