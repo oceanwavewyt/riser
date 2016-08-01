@@ -22,7 +22,7 @@ GentConnect::GentConnect(int sfd):rbuf(NULL)
 	st_map[Status::CONN_WAIT] = "wait"; 
 	st_map[Status::CONN_CLOSE] = "close";
 	st_map[Status::CONN_DATA] = "parse";
-
+	st_map[Status::CONN_CONREAD] = "continue_read";
 }
 
 GentConnect::~GentConnect()
@@ -48,16 +48,16 @@ void GentConnect::Destruct()
     }
 	start_time = 0;	
     if(fd<0) return;
-	map<string, GentDestroy*>::iterator it;
+	set<GentDestroy*>::iterator it;
 	for(it=dest_list.begin();it!=dest_list.end();it++) {
-		(*it).second->Destroy();
-		dest_list.erase(it);	
+		(*it)->Destroy();
 	}
+	dest_list.clear();
     GentAppMgr::Instance()->Destroy(fd);
 	close(fd);
 	curstatus = Status::CONN_CLOSE;
 	LOG(GentLog::BUG, "file description %d close.", fd);
-    
+   	comm = NULL; 
 }
 void GentConnect::Init(int sfd) {
     fd = sfd;

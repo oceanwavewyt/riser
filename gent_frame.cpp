@@ -30,6 +30,7 @@ void GentFrame::Unstance() {
 
 GentFrame::GentFrame() {
 	//msg_.Resize(MAX_CONNECT);
+	master_msg_.Resize(MAX_CONNECT);
 }
 
 
@@ -117,7 +118,7 @@ int GentFrame::ServerSocket(int port)  {
 	if((fd = Socket()) == -1) {
 		return -1;
 	}
-	snprintf(s->server_id,100,"%s_%d",SERVER_ID.c_str(),port);
+	snprintf(s->server_id,sizeof(s->server_id),"%s_%d",SERVER_ID.c_str(),port);
 	bzero(&addr,sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(port);
@@ -155,6 +156,7 @@ int GentFrame::Run(int port) {
 		msg_[i] = mitem;
 		msg_[i].Resize(MAX_CONNECT);
 	}
+	//master_msg_.Resize(MAX_CONNECT);
 	GentThread::Intance()->init(fd, num);
 	//启动线程
 	GentThread::Intance()->Start();

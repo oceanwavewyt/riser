@@ -4,6 +4,7 @@
 #include "gent_app_mgr.h"
 #include "gent_frame.h"
 #include "gent_util.h"
+#include "gent_thread.h"
 
 GentRepMgr *GentRepMgr::intanceMaster_ = NULL;
 GentRepMgr *GentRepMgr::intanceSlave_ = NULL;
@@ -38,6 +39,7 @@ GentRepMgr::GentRepMgr(const string &name):connect_(NULL),status(GentRepMgr::INI
 	}
 	server_id_ = GentFrame::Instance()->s->server_id;
 	slave_send_time = 0;
+	slave_start_time = 0;
 }
 
 GentRepMgr::~GentRepMgr()
@@ -46,6 +48,29 @@ GentRepMgr::~GentRepMgr()
 	for(it=rep_list_.begin();it!=rep_list_.end();it++){
 		delete (*it).second;
 	}
+}
+
+void GentRepMgr::MasterHandle(int fd, short which, void *arg)
+{
+	char buf[2];
+	 if (read(fd, buf, 1) != 1){
+         LOG(GentLog::WARN, "Can't read from libevent pipe");
+	 }
+	 cout << "GentRepMgr::MasterHandle" << endl;
+     GentReplication *rep = GentFrame::Instance()->master_msg_.Pop();
+	 if(!rep->GetConn()) return;
+	 GentRedis *redis =static_cast<GentRedis *>(rep->GetConn()->comm);
+	 rep = GentRepMgr::Instance("master")->Get(redis->keystr, redis->is_sync_all); 
+	 string outstr;
+	 if(rep == NULL) {
+		outstr = REDIS_ERROR+" slave full,manual clear\r\n";
+	 }else{
+	 	if(!rep->Start(redis->repmsg, redis->conn, outstr)) {
+			redis->conn->SetStatus(Status::CONN_WAIT);
+	 	}
+	}
+	redis->conn->OutString(outstr);
+	redis->conn->Reset();	
 }
 
 void GentRepMgr::SlaveHandle(int fd, short which, void *arg) 
@@ -61,18 +86,22 @@ void GentRepMgr::SlaveHandle(int fd, short which, void *arg)
 void GentRepMgr::Slave(GentEvent *e) 
 {
 	if(status == GentRepMgr::AUTH || status == GentRepMgr::WAIT){
-		if(connect_ && connect_->fd>0){
+		if(conn_ && conn_->fd>0){
 			if(slave_send_time > 0 && time(NULL) - slave_send_time > 600) {
-				CannelConnect();
+				//CannelConnect();
 			}
 			return;
 		}
 		status = GentRepMgr::CONTINUE;
 	}
 	GentConfig &config = GentFrame::Instance()->config;
-	if(!connect_) {
+	if(!conn_ || conn_->GetStatus() == "close") {
 		if(config["slaveof_ip"] == "" || config["slaveof_port"] == "") return;
 		int port = atoi(config["slaveof_port"].c_str());
+		if(conn_) {
+			conn_ = NULL;
+			delete conn_;
+		}
 		if(LinkMaster(e, config["slaveof_ip"], port)<=0) return;
 		if(slave_start_time == 0) {
 			slave_start_time = time(NULL);
@@ -87,21 +116,21 @@ void GentRepMgr::Slave(GentEvent *e)
 			//认证过程	
 			int sdnum = SlaveAuth(server_id_, config["master_auth"]);
 			if(sdnum == -1) {
-				CannelConnect();
+				//CannelConnect();
 				return;
 			}
 			status = GentRepMgr::AUTH;
 		}
-		e->AddEvent(connect_, GentEvent::Handle);
+		e->AddEvent(conn_, GentEvent::Handle);
 		return;
 	}else if(status == GentRepMgr::CONTINUE) {
 		char str[300] = {0};
 		snprintf(str, 300,"*3\r\n$3\r\nrep\r\n$%ld\r\n%s\r\n$4\r\ndata\r\n",
 			(unsigned long)server_id_.size(),server_id_.c_str());
 		string sendstr(str);
-		int sdnum = connect_->OutString(sendstr);
+		int sdnum = conn_->OutString(sendstr);
 		if(sdnum == -1) {		
-			CannelConnect();
+			//CannelConnect();
 			return;
 		}
 		slave_send_time = time(NULL);
@@ -112,10 +141,10 @@ void GentRepMgr::Slave(GentEvent *e)
 int GentRepMgr::LinkMaster(GentEvent *ev_, const string &host, int port) {
 	int sfd = ev_->Client(host,port);		
 	if(sfd < 0) return sfd;
-	connect_ = GentAppMgr::Instance()->GetConnect(sfd);
-	connect_->SetAuth(1);
-	connect_->is_slave = true;
-	//connect_->gevent = ev_;
+	conn_ = GentAppMgr::Instance()->GetConnect(sfd);
+	conn_->RegDestroy(this);
+	conn_->SetAuth(1);
+	conn_->is_slave = true;
 	return sfd;
 }
 
@@ -132,7 +161,7 @@ int GentRepMgr::SlaveAuth(const string &client_name, const string &auth)
 			(unsigned long)auth.size(),auth.c_str(),
 			(unsigned long)is_sync_all.size(),is_sync_all.c_str());
 	string sendstr(str);
-	return connect_->OutString(sendstr);
+	return conn_->OutString(sendstr);
 }
 
 void GentRepMgr::SlaveReply(string &outstr, int suc)
@@ -150,12 +179,12 @@ void GentRepMgr::SlaveSetStatus(int t)
 }
 
 void GentRepMgr::CannelConnect() {
-	event_del(&connect_->ev);                    
-	if(connect_->fd > 0) {
-		connect_->Destruct();                        
-		GentAppMgr::Instance()->RetConnect(connect_);
+	event_del(&conn_->ev);                    
+	if(conn_->fd > 0) {
+		conn_->Destruct();                        
+		GentAppMgr::Instance()->RetConnect(conn_);
 	}
-	connect_ = NULL;
+	conn_ = NULL;
 }
 bool GentRepMgr::Logout(string &name)
 {
@@ -314,12 +343,10 @@ void GentReplication::Push(int type, string &key)
 	itemData *item = new itemData(key,type);
 	main_que.push(item);
 	//通知slave
-	if(main_que_length == 0) {
-		if(conn_ && conn_->fd>0) {
-			string outstr = "*2\r\n$5\r\nreply\r\n$8\r\ncomplete\r\n";
-			conn_->SetWrite(outstr);	
-		}
+	if(main_que_length == 0 && conn_ && conn_->fd>0) {
+		GentThread::Intance()->SendMasterMsg(this);
 	}
+	
 	main_que_length++;
 	rinfo_->set("ser_time",time(NULL));
 }
@@ -409,13 +436,14 @@ bool GentReplication::SetLogout()
 
 void GentReplication::GetInfo(string &str)
 {
-	char ret[500] = {0};
+
 	string s = "";
 	if(!conn_) {
 		s = "close";
 	}else{
 		s = conn_->GetStatus();
 	}
+	char ret[500]={0};
 	snprintf(ret,500,"name:%s,ip:%s,start:%s,last:%s,status:%s,need_sync: %lld\r\n",
 			rep_name.c_str(),slave_ip.c_str(),
 			GentUtil::TimeToStr(slave_start_time).c_str(),
@@ -429,7 +457,7 @@ bool GentReplication::Start(string &msg, GentConnect *c, string &outstr)
 {
 	conn_ = c;
 	slave_ip = conn_->ip;
-	c->RegDestroy(rep_name, this);
+	c->RegDestroy(this);
 	slave_last_time = time(NULL);
 	if(msg == "auth" ) {
 		outstr = "*2\r\n$5\r\nreply\r\n$6\r\nauthok\r\n";

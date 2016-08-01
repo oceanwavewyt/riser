@@ -22,9 +22,9 @@ private:
     
     struct sockaddr_in addr;
 public:
-	//GENT_MSG_CONNECT msg_;
 	map<int, GENT_MSG_ITEM> msg_;
-    GentConfig config;
+   	GENT_MSG_REP  master_msg_; 
+	GentConfig config;
 	struct riserserver *s;
 public:
 	GentFrame();

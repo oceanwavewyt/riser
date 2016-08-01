@@ -54,7 +54,7 @@ public:
 		//cout <<"push start" << size_ <<endl;
 		pthread_mutex_lock(&lock_);
 		while(size_ >= app_cq_.size()) {
-			cout <<"push wait" <<endl;
+			cout <<size_ << ":"<<app_cq_.size() << "push wait" <<endl;
 			pthread_cond_wait(&empt_cond_, &lock_);
 		}
 		int index = (start_+size_)%app_cq_.size();
@@ -83,8 +83,8 @@ public:
 		return appName;
 	}
 };
-
-typedef GentMsg<GentConnect *>  GENT_MSG_CONNECT;
+class GentReplication;
+typedef GentMsg<GentReplication *>  GENT_MSG_REP;
 typedef GentMsg<dataItem *>  GENT_MSG_ITEM;
 //typedef GentMsg<COMM_REP>  GENT_REP_COMM;
 #endif /* GENT_MSG_H_ */

@@ -28,6 +28,7 @@ class GentThread
 
 	int thread_count_;
 	THREADINFO *threads_;
+	THREADINFO *master_thread_;
 	//struct event_base *base_;
 	//struct event_base *evbase_;
 	int lastid_;
@@ -36,6 +37,7 @@ public:
 	static void UnIntance();
 	static void* Work(void *);
 	static void *Rep(void *);
+	static void *Master(void *);
 	static void Handle(int fd, short which, void *arg);
 public:
 	GentThread();
@@ -43,7 +45,8 @@ public:
 	void Start();
 	void init(int fd, int thread_count=1);
 	bool SendThread(dataItem *d);
-	void SetupThread(THREADINFO *thread);
+	bool SendMasterMsg(GentReplication *r);
+	void SetupThread(THREADINFO *thread, void(*handle)(const int fd, const short which, void *arg));
 	static void* ClearHandle(void *arg);
 	bool StartClear();
 };

@@ -146,7 +146,7 @@ private:
 };
 
 
-class GentRepMgr
+class GentRepMgr : public GentDestroy
 {
 	static GentRepMgr *intanceMaster_;
 	static GentRepMgr *intanceSlave_;
@@ -167,6 +167,7 @@ public:
 	static void *ClearRep(void *arg);
 	static void UnInstance();
 	static void SlaveHandle(int fd, short which, void *arg);
+	static void MasterHandle(int fd, short which, void *arg);
 public:
 	GentRepMgr(const string &name);
 	~GentRepMgr();

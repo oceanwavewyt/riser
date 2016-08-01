@@ -33,9 +33,8 @@ public:
 
 class GentCommand
 {
-protected:
-    GentConnect *conn;
 public:
+    GentConnect *conn;
     //char *rbuf;
     //char *rcurr;
 	//char *rcont;

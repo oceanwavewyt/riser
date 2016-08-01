@@ -60,13 +60,25 @@ void GentThread::init(int fd, int thread_count) {
 		threads_[i].id = i;
 		threads_[i].rec_id = fd[0];
 		threads_[i].send_id = fd[1];
-		SetupThread(&threads_[i]);
+		SetupThread(&threads_[i], GentThread::Handle);
 	}
+	//master thread
+	master_thread_ = (THREADINFO *)malloc(sizeof(THREADINFO));
+	memset(master_thread_, 0, sizeof(THREADINFO));
+	int fds[2];
+	if(pipe(fds)) {
+		LOG(GentLog::ERROR,"thread initialize failed");
+		exit(1);
+	}
+	master_thread_->id = i+1;
+	master_thread_->rec_id = fds[0];
+	master_thread_->send_id = fds[1];
+	SetupThread(master_thread_, GentRepMgr::MasterHandle);
 }
-void GentThread::SetupThread(THREADINFO *thread) {
+void GentThread::SetupThread(THREADINFO *thread, void(*handle)(const int fd, const short which, void *arg)) {
 	//thread->gevent = new GentEvent();
 	thread->base = event_init();
-	event_set(&thread->event, thread->rec_id, eventRead, GentThread::Handle, thread);                
+	event_set(&thread->event, thread->rec_id, eventRead, handle, thread);                
 	event_base_set(thread->base, &thread->event);                                 
 	if(event_add(&thread->event, 0) == -1) {                                    
     		LOG(GentLog::INFO, "add event of %d failed", thread->rec_id);            
@@ -81,6 +93,15 @@ bool GentThread::SendThread(dataItem *d) {
     GentFrame::Instance()->msg_[tid].Push(d);	
 	lastid_ = tid;
 	if (write(threads_[tid].send_id, "", 1) != 1) {
+	        perror("Writing to thread notify pipe");
+		return false;
+	}
+	return true;
+}
+
+bool GentThread::SendMasterMsg(GentReplication *r) {
+    GentFrame::Instance()->master_msg_.Push(r);	
+	if (write(master_thread_->send_id, "", 1) != 1) {
 	        perror("Writing to thread notify pipe");
 		return false;
 	}
@@ -128,6 +149,15 @@ void GentThread::Start() {
 			exit(0);
 		}		
 	}
+	pthread_attr_t attr;
+	pthread_t pid;
+	pthread_attr_init(&attr);
+	int ret = pthread_create(&pid,&attr,GentThread::Master,master_thread_);
+	if(ret != 0) {
+		INFO(GentLog::ERROR,"thread create failed");
+		exit(0);
+	}
+
 	INFO(GentLog::INFO,"start successful");	
 	event_base_loop(threads_[0].base,0);
 }
@@ -173,4 +203,9 @@ void GentThread::Handle(int fd, short which, void *arg) {
         GentAppMgr::Instance()->RetConnect(c);
     }
 }
-
+void *GentThread::Master(void *arg) {
+	THREADINFO *thread = static_cast<THREADINFO *>(arg);
+    LOG(GentLog::INFO, "start master the %d thread's %ld", thread->id, pthread_self());
+	event_base_loop(thread->base,0);
+	return ((void *)0);
+}

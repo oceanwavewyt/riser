@@ -11,6 +11,8 @@
 #include <event.h>
 #include "prefine.h"
 #include "gent_command.h"
+#include <set>
+
 class GentEvent;
 
 class Status
@@ -28,18 +30,7 @@ public:
     };
 };
 
-class GentDestroy
-{
-protected:
-	GentConnect *conn_;
-public:
-    GentDestroy(){};
-    virtual ~GentDestroy(){};
-public:
-    void Destroy(){
-		conn_ = NULL;
-	}; 
-};
+
 
 typedef struct dataItem
 {
@@ -47,11 +38,10 @@ typedef struct dataItem
 	char ip[50];
 	int port;		
 }dataItem;
-
+class GentDestroy;
 class GentConnect
 {
 	int clen;
-    GentCommand *comm;	    
     char *rbuf;
     char *rcurr;
     char *content;
@@ -62,7 +52,6 @@ class GentConnect
 	char *cbuf;
 	int csize;
 	int cbytes;
-
     string outstr;
 
 	uint64_t sendsize;
@@ -71,7 +60,7 @@ class GentConnect
 	uint64_t remainsize;
 	uint64_t actualsize;
    	map<int,string> st_map;
-	map<string, GentDestroy *> dest_list;
+	std::set<GentDestroy*> dest_list;
 public:
     struct event ev;
     int fd;
@@ -81,6 +70,7 @@ public:
 	char ip[50];
 	int port;
 	int ev_flags;
+    GentCommand *comm;	    
 public:
     GentConnect(int);
     ~GentConnect();
@@ -91,21 +81,39 @@ public:
     string GetStatus();
 	void SetWrite(const string &str);
 	void Destruct();
-	void RegDestroy(string &name, GentDestroy *d){
-		map<string, GentDestroy*>::iterator it = dest_list.find(name);
-		if(it != dest_list.end()) return;
-		dest_list[name] = d;
+	void RegDestroy(GentDestroy *d){
+		dest_list.insert(d);
 	};
     void Init(int sfd);
 	void SetAuth(int auth){comm->SetAuth(auth);};
 	void SetClientData(dataItem *d);
+    void Reset();
 private:
     int InitRead(int &rbytes);
 	int ContinueRead(int &cbytes);
 	void ResetConnect(); 
 	int NextRead();
-    void Reset();
     void ReAllocation();
+};
+
+class GentDestroy
+{
+protected:
+	GentConnect *conn_;
+public:
+    GentDestroy(){};
+    virtual ~GentDestroy(){};
+public:
+    void Destroy(){
+		conn_ = NULL;
+	};
+	GentConnect *GetConn(){
+		return conn_;
+	}; 
+	void SetConn(GentConnect *c) {
+		conn_ = c;
+		conn_->RegDestroy(this);
+	};
 };
 
 #endif

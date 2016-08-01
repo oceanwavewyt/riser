@@ -6,6 +6,7 @@
 #include "gent_app_mgr.h"
 #include "gent_frame.h"
 #include "gent_repl.h"
+#include "gent_thread.h"
 
 std::map<string, GentSubCommand*> GentRedis::commands;
 
@@ -697,9 +698,17 @@ void GentProcessRep::Complete(string &outstr,const char *recont, uint64_t len, G
 			outstr = REDIS_ERROR+" slave full,manual clear\r\n";
 			return;
 		}
+		rep->SetConn(redis->conn);
+		if(!GentThread::Intance()->SendMasterMsg(rep)) {
+			outstr = REDIS_ERROR+" send master message failed\r\n";
+		}
+		redis->conn->SetStatus(Status::CONN_WAIT);
+		/*
+		
 		if(!rep->Start(redis->repmsg, redis->conn, outstr)) {
 			redis->conn->SetStatus(Status::CONN_WAIT);
 		}
+		*/
 	}
 }
 

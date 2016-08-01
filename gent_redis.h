@@ -315,6 +315,7 @@ class GentRedis: public GentCommand
 	friend class GentProcessSlave;
 	friend class GentProcessAuth;
 	friend class GentProcessRandomkey;
+	friend class GentRepMgr;
 	static std::map<string, GentSubCommand*> commands;
 public:
 	enum datatype
