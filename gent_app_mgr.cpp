@@ -148,8 +148,8 @@ void GentAppMgr::Destroy(int id)
 
 void GentAppMgr::RetConnect(GentConnect *c)
 {
-    assert(c!=NULL);
     AutoLock lock(&conn_lock);
+    if(!c) return;
 	CONNPOOL::iterator it = conn_mgr.find(c->fd);
 	if(it == conn_mgr.end()) {
 		LOG(GentLog::FATAL,"link fd:%d not find", c->fd);		

@@ -95,6 +95,7 @@ void GentConnect::Reset() {
     //}
     if(content) {
         free(content);
+		content = NULL;
     }
 	if(cbuf) {
 		free(cbuf);
