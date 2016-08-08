@@ -56,7 +56,6 @@ void GentRepMgr::MasterHandle(int fd, short which, void *arg)
 	 if (read(fd, buf, 1) != 1){
          LOG(GentLog::WARN, "Can't read from libevent pipe");
 	 }
-	 cout << "GentRepMgr::MasterHandle" << endl;
      GentReplication *rep = GentFrame::Instance()->master_msg_.Pop();
 	 if(!rep->GetConn()) return;
 	 GentRedis *redis =static_cast<GentRedis *>(rep->GetConn()->comm);
@@ -76,19 +75,24 @@ void GentRepMgr::MasterHandle(int fd, short which, void *arg)
 void GentRepMgr::SlaveHandle(int fd, short which, void *arg) 
 {
 	GentEvent *e = static_cast<GentEvent *>(arg);
-	//cout << "create slave thread" <<endl;
 	GentRepMgr::Instance("slave")->Slave(e);
 	e->DelEvent();
 	struct timeval tv = {1,0};                    
-	e->AddTimeEvent(&tv, GentRepMgr::SlaveHandle);
+	int ret = e->AddTimeEvent(&tv, GentRepMgr::SlaveHandle);
+	while(ret == -1) {
+    	     ret = e->AddTimeEvent(&tv, GentRepMgr::SlaveHandle);
+	}                                                       
 }
 
 void GentRepMgr::Slave(GentEvent *e) 
 {
+	//string s = (conn_)?conn_->GetStatus():"null";	
+	//LOG(GentLog::WARN, "GentRepMgr::Slave,status: %d,conn:%s",status, s.c_str());
 	if(status == GentRepMgr::AUTH || status == GentRepMgr::WAIT){
 		if(conn_ && conn_->fd>0){
-			if(slave_send_time > 0 && time(NULL) - slave_send_time > 600) {
+			if(slave_send_time > 0 && time(NULL) - slave_send_time > 60) {
 				//CannelConnect();
+				status = GentRepMgr::CONTINUE;
 			}
 			return;
 		}

@@ -71,8 +71,7 @@ int GentEvent::AddTimeEvent(struct timeval *tv, void(*handle)(const int fd, cons
 	//evtimer_set(&ev_, handle, this);
 	event_set(&ev_, -1, EV_PERSIST, handle, this);
 	event_base_set(main_base_, &ev_);
-	event_add(&ev_, tv);
-	return 0;
+	return event_add(&ev_, tv);
 }
 
 void GentEvent::Loop() {
